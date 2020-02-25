@@ -5,94 +5,14 @@ import sys
 import osmnx as ox
 import requests
 from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtWidgets import QMainWindow, QApplication, QGridLayout, QWidget, QAction, \
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 
 from Views import osmBuild, sumolib
-import matplotlib.pyplot as plt
-from PyQt5.QtWebEngineWidgets import QWebEngineView
-
-class MplCanvas(FigureCanvasQTAgg):
-
-    def __init__(self, filename, parent=None, width=5, height=6, dpi=100):
-        G = ox.graph_from_file(filename)
-        GTotal = ox.graph_from_file(os.path.join(os.getcwd(), "map1.osm.xml"))
-        ec = ['orange' if e in G.edges() else 'blue' for e in GTotal.edges()]
-        nc = ['orange' if n in G.nodes() else 'blue' for n in GTotal.nodes()]
-        fig, ax = ox.plot_graph(GTotal, node_alpha=0.5, edge_color=ec, node_color=nc, show=False, fig_height=height,
-                                fig_width=width, dpi=dpi)
-        fig.subplots_adjust(left=0.0, bottom=0.0, right=1, top=1.0, wspace=0.0, hspace=0.0)
-        # self.getBackground(fig)
-        self.ax = ax
-
-        xLength = abs(self.ax.get_xlim()[0] - self.ax.get_xlim()[1])
-        yLength = abs(self.ax.get_ylim()[0] - self.ax.get_ylim()[1])
-        if xLength > yLength:
-            self.ax.set_ylim(self.ax.get_ylim()[0] - ((xLength - yLength) / 2), self.ax.get_ylim()[1] + ((xLength - yLength) / 2))
-        else:
-            self.ax.set_xlim(self.ax.get_xlim()[0] - ((yLength - xLength) / 2), self.ax.get_xlim()[1] + ((yLength - xLength) / 2))
 
 
-        self.factor = 0.01
-        super(MplCanvas, self).__init__(fig)
-        self.setParent(parent)
-        self.setMouseTracking(False)
-
-        graph_map = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
-        graph_map.save(os.path.join(os.getcwd(), "graph.html"))
-        from IPython.display import IFrame
-        IFrame(os.path.join(os.getcwd(), "graph.html"), width=600, height=500)
-
-    def getBackground(self, fig):
-        import tilemapbase
-        tilemapbase.init(create=True)
-        t = tilemapbase.tiles.build_OSM()
-        my_office = (-16.515999, 28.390851)
-
-        degree_range = 0.01
-        extent = tilemapbase.Extent.from_lonlat(my_office[0] - degree_range, my_office[0] + degree_range,
-                                                my_office[1] - degree_range, my_office[1] + degree_range)
-        extent = extent.to_aspect(1.0)
-
-        ax = fig.add_subplot(111)
-        ax.xaxis.set_visible(False)
-        ax.yaxis.set_visible(False)
-
-        plotter = tilemapbase.Plotter(extent, t, width=1000)
-        plotter.plot(ax, t)
-
-    def wheelEvent(self, event):
-        numDegrees = event.angleDelta().y() / 8
-        numSteps = numDegrees / 15
-
-        if numSteps > 0:
-            self.ax.set_xlim(self.ax.get_xlim()[0] - self.factor, self.ax.get_xlim()[1] + self.factor)
-            self.ax.set_ylim(self.ax.get_ylim()[0] - self.factor, self.ax.get_ylim()[1] + self.factor)
-        elif numSteps < 0:
-            if self.factor * 2 < abs(self.ax.get_xlim()[0] - self.ax.get_xlim()[1]) and self.factor * 2 < abs(
-                    self.ax.get_ylim()[0] - self.ax.get_ylim()[1]):
-                self.ax.set_xlim(self.ax.get_xlim()[0] + self.factor, self.ax.get_xlim()[1] - self.factor)
-                self.ax.set_ylim(self.ax.get_ylim()[0] + self.factor, self.ax.get_ylim()[1] - self.factor)
-
-        self.figure.canvas.draw()
-        event.accept()
-
-    def mousePressEvent(self, event):
-        self.initialPos = event.pos()
-
-    def mouseMoveEvent(self, event):
-        relativePos = self.initialPos - event.pos()
-        self.initialPos = event.pos()
-
-        xFactor = (relativePos.x() * abs(self.ax.get_xlim()[0] - self.ax.get_xlim()[1])) / self.width()
-        yFactor = - (relativePos.y() * abs(self.ax.get_ylim()[0] - self.ax.get_ylim()[1])) / self.height()
-
-        self.ax.set_xlim(self.ax.get_xlim()[0] + xFactor, self.ax.get_xlim()[1] + xFactor)
-        self.ax.set_ylim(self.ax.get_ylim()[0] + yFactor, self.ax.get_ylim()[1] + yFactor)
-
-
-class Example(QMainWindow):
+class POSM(QMainWindow):
 
     def __init__(self):
         super().__init__()
@@ -101,117 +21,109 @@ class Example(QMainWindow):
     def initUI(self):
         self.layout = QHBoxLayout()
 
-        # https://doc.qt.io/qt-5/qtwidgets-widgets-codeeditor-example.html
-        self.query = QTextEdit()
-        # self.layout.addWidget(self.query, 0, 0, 2, 1, Qt.AlignJustify)
-
-        self.json = ""
-        self.mplCanvas = QWebEngineView()
-        self.mplCanvas.load(QUrl.fromLocalFile(os.path.join(os.getcwd(), "graph.html")))
-
-        self.splitter = QSplitter(Qt.Horizontal)
+        self.horSplitter = QSplitter(Qt.Horizontal)
         self.editionSplitter = QSplitter(Qt.Vertical)
         self.editionSplitter.addWidget(QTextEdit())
+        self.query = QTextEdit()
         self.editionSplitter.addWidget(self.query)
-        self.splitter.addWidget(self.editionSplitter)
-        self.splitter.addWidget(self.mplCanvas)
-        self.layout.addWidget(self.splitter)
+        self.horSplitter.addWidget(self.editionSplitter)
+        self.mplCanvas = QWebEngineView()
+        self.mplCanvas.setMinimumWidth(500)
+        self.horSplitter.addWidget(self.mplCanvas)
+        self.layout.addWidget(self.horSplitter)
 
+        self.initMenuBar()
+
+        centralWidget = QWidget()
+        centralWidget.setLayout(self.layout)
+        self.setCentralWidget(centralWidget)
+        self.setWindowTitle('Python Open Street Map')
+
+    def initMenuBar(self):
         menubar = self.menuBar()
 
         fileMenu = menubar.addMenu('File')
 
-        newAct = QAction('New', self)
-        newAct.setShortcut('Ctrl+N')
-        openAct = QAction('Open', self)
-        openAct.triggered.connect(self.fileSaveAndOpen)
+        openAct = QAction('Open netedit', self)
+        openAct.triggered.connect(lambda: fileSaveAndOpen(self))
         openAct.setShortcut('Ctrl+O')
-        saveAct = QAction('Save', self)
-        saveAct.triggered.connect(self.fileSave)
-        saveAct.setShortcut('Ctrl+S')
-
-        fileMenu.addAction(newAct)
         fileMenu.addAction(openAct)
+
+        saveAct = QAction('Save output', self)
+        saveAct.triggered.connect(lambda: fileSave(self))
+        saveAct.setShortcut('Ctrl+S')
         fileMenu.addAction(saveAct)
 
         fileMenu = menubar.addMenu('Run')
 
         playAct = QAction('Play', self)
-        playAct.triggered.connect(self.callOverpass)
-        playAct.setShortcut('Ctrl+B')
-        pauseAct = QAction('Pause', self)
-        pauseAct.setShortcut('Ctrl+P')
-        self.resetAct = QAction('Zoom', self)
-        self.resetAct.setShortcut('Ctrl+I')
-
+        playAct.triggered.connect(lambda: self.mplCanvas.load(callOverpass(self.query.toPlainText())))
+        playAct.setShortcut('Ctrl+P')
         fileMenu.addAction(playAct)
-        fileMenu.addAction(pauseAct)
-        fileMenu.addAction(self.resetAct)
 
-        centralWidget = QWidget()
-        centralWidget.setLayout(self.layout)
-        self.setCentralWidget(centralWidget)
-        self.setWindowTitle('Traffic simulator')
 
-    def callOverpass(self):
-        print("Sending request")
-        overpass_url = "http://overpass-api.de/api/interpreter";
-        response = requests.get(overpass_url, params={'data': self.query.toPlainText()});
-        print("Got response")
-        f = open(os.path.join(os.getcwd(), "map.osm.xml"), "w+")
-        f.seek(0)
-        f.truncate()
-        f.write(response.text)
-        f.close()
-        print("File written")
+def fileSave(parent):
+    name, selectedFilter = QFileDialog.getSaveFileName(parent, 'Save File')
+    build(name)
 
-        self.mplCanvas = MplCanvas(os.path.join(os.getcwd(), "map.osm.xml"), self)
-        print("Drawn")
-        self.splitter.replaceWidget(1, self.mplCanvas)
-        self.splitter.setCollapsible(1, False)
-        self.splitter.addWidget(self.mplCanvas)
 
-    def fileSave(self):
-        name, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
-        self.build(name)
+def fileSaveAndOpen(parent):
+    name, selectedFilter = QFileDialog.getSaveFileName(parent, 'Save File')
+    build(name)
+    openNetedit(name + ".net.xml")
 
-    def fileSaveAndOpen(self):
-        name, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
-        self.build(name)
-        self.openNetedit(name + ".net.xml")
 
-    def build(self, name):
-        typemapdir = os.path.join(os.getcwd(), "typemap")
-        typemaps = {
-            "net": os.path.join(typemapdir, "osmNetconvert.typ.xml"),
-            "poly": os.path.join(typemapdir, "osmPolyconvert.typ.xml"),
-            "urban": os.path.join(typemapdir, "osmNetconvertUrbanDe.typ.xml"),
-            "pedestrians": os.path.join(typemapdir, "osmNetconvertPedestrians.typ.xml"),
-            "ships": os.path.join(typemapdir, "osmNetconvertShips.typ.xml"),
-            "bicycles": os.path.join(typemapdir, "osmNetconvertBicycle.typ.xml"),
-        }
+def build(name):
+    typemapdir = os.path.join(os.getcwd(), "typemap")
+    typemaps = {
+        "net": os.path.join(typemapdir, "osmNetconvert.typ.xml"),
+        "poly": os.path.join(typemapdir, "osmPolyconvert.typ.xml"),
+        "urban": os.path.join(typemapdir, "osmNetconvertUrbanDe.typ.xml"),
+        "pedestrians": os.path.join(typemapdir, "osmNetconvertPedestrians.typ.xml"),
+        "ships": os.path.join(typemapdir, "osmNetconvertShips.typ.xml"),
+        "bicycles": os.path.join(typemapdir, "osmNetconvertBicycle.typ.xml"),
+    }
 
-        options = ["-f", os.path.join(os.getcwd(), "map.osm.xml")]
-        options += ["-p", name]
+    options = ["-f", os.path.join(os.getcwd(), "map.osm.xml")]
+    options += ["-p", name]
 
-        typefiles = [typemaps["net"]]
-        netconvertOptions = osmBuild.DEFAULT_NETCONVERT_OPTS
-        netconvertOptions += ",--tls.default-type,actuated"
+    typefiles = [typemaps["net"]]
+    netconvertOptions = osmBuild.DEFAULT_NETCONVERT_OPTS
+    netconvertOptions += ",--tls.default-type,actuated"
 
-        options += ["--netconvert-typemap", ','.join(typefiles)]
-        options += ["--netconvert-options", netconvertOptions]
+    options += ["--netconvert-typemap", ','.join(typefiles)]
+    options += ["--netconvert-options", netconvertOptions]
 
-        osmBuild.build(options)
+    osmBuild.build(options)
 
-    def openNetedit(self, name):
-        netedit = sumolib.checkBinary("netedit")
-        subprocess.Popen([netedit, name])
+
+def openNetedit(name):
+    netedit = sumolib.checkBinary("netedit")
+    subprocess.Popen([netedit, name])
+
+
+def callOverpass(query):
+    print("Sending request")
+    overpass_url = "http://overpass-api.de/api/interpreter"
+    response = requests.get(overpass_url, params={'data': query})
+    print("Got response")
+    f = open(os.path.join(os.getcwd(), "map.osm.xml"), "w+")
+    f.seek(0)
+    f.truncate()
+    f.write(response.text)
+    f.close()
+    print("File written")
+
+    G = ox.graph_from_file(os.path.join(os.getcwd(), "map.osm.xml"))
+    graph_map = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
+    graph_map.save(os.path.join(os.getcwd(), "graph.html"))
+
+    return QUrl.fromLocalFile(os.path.join(os.getcwd(), "graph.html"))
 
 
 if __name__ == '__main__':
-    plt.ion()
     app = QApplication(sys.argv)
-    ex = Example()
+    ex = POSM()
     ex.show()
     sys.exit(app.exec_())
 
