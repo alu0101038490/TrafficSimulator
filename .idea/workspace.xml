@@ -5,6 +5,7 @@
       <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/TrafficSimulator.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TrafficSimulator.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Views/graph.html" beforeDir="false" afterPath="$PROJECT_DIR$/Views/graph.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Views/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Views/map.osm.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/map.osm.xml" afterDir="false" />
@@ -16,6 +17,13 @@
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -68,7 +76,7 @@
       <option name="presentableId" value="Default" />
       <updated>1582625219549</updated>
       <workItem from="1582625220761" duration="39000" />
-      <workItem from="1582625280101" duration="3792000" />
+      <workItem from="1582625280101" duration="30629000" />
     </task>
     <servers />
   </component>
@@ -80,22 +88,22 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="104" y="62" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1280.800@0.0.1280.800" timestamp="1582626151068" />
-    <state width="1238" height="90" key="GridCell.Tab.0.bottom" timestamp="1582629218581">
+    <state width="1238" height="157" key="GridCell.Tab.0.bottom" timestamp="1582731353385">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="90" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582629218581" />
-    <state width="1238" height="90" key="GridCell.Tab.0.center" timestamp="1582629218580">
+    <state width="1238" height="157" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582731353385" />
+    <state width="1238" height="157" key="GridCell.Tab.0.center" timestamp="1582731353383">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="90" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1582629218580" />
-    <state width="1238" height="90" key="GridCell.Tab.0.left" timestamp="1582629218579">
+    <state width="1238" height="157" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1582731353383" />
+    <state width="1238" height="157" key="GridCell.Tab.0.left" timestamp="1582731353383">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="90" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1582629218579" />
-    <state width="1238" height="90" key="GridCell.Tab.0.right" timestamp="1582629218580">
+    <state width="1238" height="157" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1582731353383" />
+    <state width="1238" height="157" key="GridCell.Tab.0.right" timestamp="1582731353384">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="90" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1582629218580" />
+    <state width="1238" height="157" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1582731353384" />
     <state x="141" y="23" key="SettingsEditor" timestamp="1582625916155">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
@@ -106,6 +114,6 @@
     <state x="317" y="232" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1582625283576" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582629037031" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
+    <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582731353375" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
   </component>
 </project>

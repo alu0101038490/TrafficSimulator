@@ -4,12 +4,14 @@ import sys
 
 import osmnx as ox
 import requests
+from PyQt5 import QtGui
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QTextEdit, QFileDialog, QSplitter, QHBoxLayout
+    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QPushButton
 
 from Views import osmBuild, sumolib
+from Views.EditionWidget import EditionWidget
 
 
 class POSM(QMainWindow):
@@ -23,8 +25,10 @@ class POSM(QMainWindow):
 
         self.horSplitter = QSplitter(Qt.Horizontal)
         self.editionSplitter = QSplitter(Qt.Vertical)
-        self.editionSplitter.addWidget(QTextEdit())
+        self.editionWidget = EditionWidget()
+        self.editionSplitter.addWidget(self.editionWidget)
         self.query = QTextEdit()
+        self.query.setText("out meta;")
         self.editionSplitter.addWidget(self.query)
         self.horSplitter.addWidget(self.editionSplitter)
         self.mplCanvas = QWebEngineView()
@@ -57,10 +61,13 @@ class POSM(QMainWindow):
         fileMenu = menubar.addMenu('Run')
 
         playAct = QAction('Play', self)
-        playAct.triggered.connect(lambda: self.mplCanvas.load(callOverpass(self.query.toPlainText())))
+        playAct.triggered.connect(self.playQuery)
         playAct.setShortcut('Ctrl+P')
         fileMenu.addAction(playAct)
 
+    def playQuery(self):
+        self.query.setText(str(self.editionWidget.getQuery()))
+        self.mplCanvas.load(callOverpass(self.query.toPlainText()))
 
 def fileSave(parent):
     name, selectedFilter = QFileDialog.getSaveFileName(parent, 'Save File')
