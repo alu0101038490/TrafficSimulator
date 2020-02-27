@@ -2,16 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5e036036-5583-4bb9-813f-405db159198a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/TrafficSimulator.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TrafficSimulator.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/graph.html" beforeDir="false" afterPath="$PROJECT_DIR$/Views/graph.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/EditionWidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/EditionWidget.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Views/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/main.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/map.osm.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/map.osm.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/salida.net.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/salida.net.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/salida.netccfg" beforeDir="false" afterPath="$PROJECT_DIR$/Views/salida.netccfg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tiles.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/map.net.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Views/map.net.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/map.netccfg" beforeDir="false" afterPath="$PROJECT_DIR$/Views/map.netccfg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +34,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="run.code.analysis.last.selected.profile" value="aDefault" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RunManager">
@@ -76,7 +72,7 @@
       <option name="presentableId" value="Default" />
       <updated>1582625219549</updated>
       <workItem from="1582625220761" duration="39000" />
-      <workItem from="1582625280101" duration="30629000" />
+      <workItem from="1582625280101" duration="38332000" />
     </task>
     <servers />
   </component>
@@ -88,22 +84,26 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="104" y="62" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1280.800@0.0.1280.800" timestamp="1582626151068" />
-    <state width="1238" height="157" key="GridCell.Tab.0.bottom" timestamp="1582731353385">
+    <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1582798776101">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="157" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582731353385" />
-    <state width="1238" height="157" key="GridCell.Tab.0.center" timestamp="1582731353383">
+    <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1280.800@0.0.1280.800" timestamp="1582798776101" />
+    <state width="1238" height="134" key="GridCell.Tab.0.bottom" timestamp="1582801719956">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="157" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1582731353383" />
-    <state width="1238" height="157" key="GridCell.Tab.0.left" timestamp="1582731353383">
+    <state width="1238" height="134" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582801719956" />
+    <state width="1238" height="134" key="GridCell.Tab.0.center" timestamp="1582801719955">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="157" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1582731353383" />
-    <state width="1238" height="157" key="GridCell.Tab.0.right" timestamp="1582731353384">
+    <state width="1238" height="134" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1582801719955" />
+    <state width="1238" height="134" key="GridCell.Tab.0.left" timestamp="1582801719954">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="157" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1582731353384" />
+    <state width="1238" height="134" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1582801719954" />
+    <state width="1238" height="134" key="GridCell.Tab.0.right" timestamp="1582801719955">
+      <screen x="0" y="0" width="1280" height="800" />
+    </state>
+    <state width="1238" height="134" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1582801719955" />
     <state x="141" y="23" key="SettingsEditor" timestamp="1582625916155">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
@@ -114,6 +114,6 @@
     <state x="317" y="232" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1582625283576" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582731353375" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
+    <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582801719943" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
   </component>
 </project>

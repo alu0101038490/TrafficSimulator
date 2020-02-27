@@ -3,26 +3,35 @@ from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette
 from PyQt5.QtWidgets import QWidget, QPushButton, QVBoxLayout, QScrollArea, QHBoxLayout, \
-    QSizePolicy, QComboBox, QCheckBox, QFormLayout, QGroupBox, QRadioButton, QFrame, QToolBox
+    QSizePolicy, QComboBox, QCheckBox, QFormLayout, QGroupBox, QRadioButton, QFrame, QToolBox, QTabWidget, QLabel
 
 from Models.OverpassQuery import Query, Surrounding
 
-
-class TagWidget(QWidget):
+class KeyValueWidget(QWidget):
 
     def __init__(self, parent):
         super().__init__(parent)
         self.initUI()
 
     def initUI(self):
-        layout = QFormLayout()
+        self.layout = QVBoxLayout()
 
         self.nameLabel = QComboBox()
         overpass_url = "https://taginfo.openstreetmap.org/api/4/keys/all?filter=in_wiki"
         response = requests.get(overpass_url)
         self.nameLabel.addItems([item["key"] for item in response.json()['data']])
         self.nameLabel.setEditable(True)
-        layout.addRow(self.tr("&Key:"), self.nameLabel)
+        top = QWidget()
+        removeLayout = QHBoxLayout()
+        removeLayout.setContentsMargins(0, 0, 0, 0)
+        keyLabel = QLabel("Key:")
+        keyLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        removeLayout.addWidget(keyLabel)
+        self.removeCB = QCheckBox()
+        removeLayout.addWidget(self.removeCB)
+        top.setLayout(removeLayout)
+        self.layout.addWidget(top)
+        self.layout.addWidget(self.nameLabel)
 
         valueEdition = QWidget()
         valueEdition.setLayout(QHBoxLayout())
@@ -37,7 +46,34 @@ class TagWidget(QWidget):
         self.checkboxAccuracy.setText("Exact Value")
         valueEdition.layout().addWidget(self.checkboxAccuracy)
 
-        layout.addRow(self.tr("&Value:"), valueEdition)
+        self.layout.addWidget(QLabel("Value:"))
+        self.layout.addWidget(valueEdition)
+
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        self.layout.addWidget(line)
+
+        self.setLayout(self.layout)
+
+    def isSelected(self):
+        return self.removeCB.isChecked()
+
+class TagWidget(QWidget):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.initUI()
+
+    def initUI(self):
+        self.layout = QVBoxLayout()
+
+        self.listWidget = QWidget()
+        self.listLayout = QVBoxLayout()
+        self.listWidget.setLayout(self.listLayout)
+        self.layout.addWidget(self.listWidget)
+
+        self.addKeyValue()
 
         groupBox = QGroupBox()
         radio1 = QRadioButton(self.tr("&Streets around"))
@@ -48,27 +84,34 @@ class TagWidget(QWidget):
         radio3.setObjectName("None")
         radio3.setChecked(True)
 
-        groupBoxLayout = QHBoxLayout()
+        groupBoxLayout = QVBoxLayout()
         groupBoxLayout.setContentsMargins(0,0,0,0)
         groupBoxLayout.addWidget(radio1)
         groupBoxLayout.addWidget(radio2)
         groupBoxLayout.addWidget(radio3)
         groupBox.setLayout(groupBoxLayout)
 
-        layout.addRow(self.tr("&Surroundings:"), groupBox)
+        self.layout.addWidget(QLabel("Surroundings:"))
+        self.layout.addWidget(groupBox)
 
         #self.nameLabel.currentIndexChanged.connect(self.getValuesByKey)
-        deleteButton = QPushButton()
-        deleteButton.setIcon(QtGui.QIcon('../Resources/Pictures/remove.png'))
-        deleteButton.clicked.connect(lambda: self.deleteLater())
-        layout.addRow(self.tr(""), deleteButton)
 
-        self.setLayout(layout)
+        self.setLayout(self.layout)
 
     def getValuesByKey(self, i):
         overpass_url = "https://taginfo.openstreetmap.org/api/4/key/values?key=" + self.nameLabel.itemText(i)
         response = requests.get(overpass_url)
         self.nameInput.addItems([item["value"] for item in response.json()['data'] if item["in_wiki"] == True])
+
+    def addKeyValue(self):
+        self.listLayout.addWidget(KeyValueWidget(self.listWidget))
+
+    def removeSelected(self):
+        for widget in self.listWidget.findChildren(KeyValueWidget):
+            if(widget.isSelected()):
+                widget.deleteLater()
+
+
 
 class EditionWidget(QWidget):
 
@@ -79,24 +122,26 @@ class EditionWidget(QWidget):
     def initUI(self):
         self.layout = QVBoxLayout()
 
-        buttonAdd = QPushButton()
-        buttonAdd.setText("+")
-        self.layout.addWidget(buttonAdd)
-
         tags = QScrollArea()
-        self.scrollableWidget = QToolBox()
-        tags.setWidget(self.scrollableWidget)
+        self.tabWidget = QTabWidget()
+        tags.setWidget(self.tabWidget)
         tags.setWidgetResizable(True)
         self.layout.addWidget(tags)
-
-
-        buttonAdd.clicked.connect(self.addFitler)
 
         self.setLayout(self.layout)
 
     def addFitler(self):
         new = TagWidget(self)
-        self.scrollableWidget.addItem(new, "Tag")
+        self.tabWidget.addTab(new, "Tag " + str(len(self.findChildren(TagWidget))))
+
+    def removeFilter(self):
+        self.tabWidget.currentWidget().deleteLater()
+
+    def removeKeyValue(self):
+        self.tabWidget.currentWidget().removeSelected()
+
+    def addKeyValue(self):
+        self.tabWidget.currentWidget().addKeyValue()
 
     def getQuery(self):
         query = Query()
