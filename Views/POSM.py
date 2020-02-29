@@ -1,11 +1,11 @@
 import sys
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout
 
-from Utils.SumoUtils import buildNet, openNetedit, buildHTML
+from Utils.SumoUtils import buildNet, openNetedit, buildHTML, defaultTileMap
 from Views.QueryUI import QueryUI
 
 
@@ -32,6 +32,7 @@ class POSM(QMainWindow):
 
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
+        self.mapRenderer.load(QUrl.fromLocalFile(defaultTileMap))
         self.horSplitter.addWidget(self.mapRenderer)
 
         self.layout.addWidget(self.horSplitter)

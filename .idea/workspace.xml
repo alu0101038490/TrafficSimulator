@@ -2,39 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5e036036-5583-4bb9-813f-405db159198a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/Utils/GenericUtils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Models/OverpassQuery.py" beforeDir="false" afterPath="$PROJECT_DIR$/Models/OverpassQuery.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Models/Road.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Resources/Pictures/ejemplo-rotonda.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Resources/Pictures/remove.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/EditionWidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/QueryUI.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/SimulationWindow.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/ejemplo.netccfg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/export.osm" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/graph.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/POSM.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/map.net.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/map.netccfg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/map.osm.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/map1.osm.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/osmBuild.py" beforeDir="false" afterPath="$PROJECT_DIR$/SUMO/osmBuild.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/salida.net.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/salida.netccfg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/navteqPolyconvert.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/opendriveNetconvert.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/opendriveNetconvertBicycle.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/opendriveNetconvertPedestrians.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvert.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertBicycle.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertBidiRail.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertExtraRail.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertPedestrians.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertRailUsage.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertShips.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmNetconvertUrbanDe.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmPolyconvert.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/osmPolyconvertRail.typ.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/typemap/visumPolyconvert.typ.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/SumoUtils.py" beforeDir="false" afterPath="$PROJECT_DIR$/Utils/SumoUtils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/POSM.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/POSM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/QueryUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/QueryUI.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,7 +79,7 @@
       <updated>1582625219549</updated>
       <workItem from="1582625220761" duration="39000" />
       <workItem from="1582625280101" duration="39302000" />
-      <workItem from="1582803251310" duration="9256000" />
+      <workItem from="1582803251310" duration="16368000" />
     </task>
     <servers />
   </component>
@@ -126,38 +99,38 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1280.800@0.0.1280.800" timestamp="1582798776101" />
-    <state width="1238" height="315" key="GridCell.Tab.0.bottom" timestamp="1582812798443">
+    <state width="1238" height="372" key="GridCell.Tab.0.bottom" timestamp="1582982479666">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="315" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582812798443" />
-    <state width="1238" height="315" key="GridCell.Tab.0.center" timestamp="1582812798441">
+    <state width="1238" height="372" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582982479666" />
+    <state width="1238" height="372" key="GridCell.Tab.0.center" timestamp="1582982479664">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="315" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1582812798441" />
-    <state width="1238" height="315" key="GridCell.Tab.0.left" timestamp="1582812798441">
+    <state width="1238" height="372" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1582982479664" />
+    <state width="1238" height="372" key="GridCell.Tab.0.left" timestamp="1582982479664">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="315" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1582812798441" />
-    <state width="1238" height="315" key="GridCell.Tab.0.right" timestamp="1582812798442">
+    <state width="1238" height="372" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1582982479664" />
+    <state width="1238" height="372" key="GridCell.Tab.0.right" timestamp="1582982479665">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="315" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1582812798442" />
-    <state width="1238" height="263" key="GridCell.Tab.1.bottom" timestamp="1582812603509">
+    <state width="1238" height="372" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1582982479665" />
+    <state width="1238" height="263" key="GridCell.Tab.1.bottom" timestamp="1582897323768">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582812603509" />
-    <state width="1238" height="263" key="GridCell.Tab.1.center" timestamp="1582812603508">
+    <state width="1238" height="263" key="GridCell.Tab.1.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582897323768" />
+    <state width="1238" height="263" key="GridCell.Tab.1.center" timestamp="1582897323767">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.center/0.0.1280.800@0.0.1280.800" timestamp="1582812603508" />
-    <state width="1238" height="263" key="GridCell.Tab.1.left" timestamp="1582812603507">
+    <state width="1238" height="263" key="GridCell.Tab.1.center/0.0.1280.800@0.0.1280.800" timestamp="1582897323767" />
+    <state width="1238" height="263" key="GridCell.Tab.1.left" timestamp="1582897323767">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.left/0.0.1280.800@0.0.1280.800" timestamp="1582812603507" />
-    <state width="1238" height="263" key="GridCell.Tab.1.right" timestamp="1582812603509">
+    <state width="1238" height="263" key="GridCell.Tab.1.left/0.0.1280.800@0.0.1280.800" timestamp="1582897323767" />
+    <state width="1238" height="263" key="GridCell.Tab.1.right" timestamp="1582897323768">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.right/0.0.1280.800@0.0.1280.800" timestamp="1582812603509" />
+    <state width="1238" height="263" key="GridCell.Tab.1.right/0.0.1280.800@0.0.1280.800" timestamp="1582897323767" />
     <state x="141" y="23" key="SettingsEditor" timestamp="1582625916155">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
@@ -169,6 +142,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582801719943" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
-    <SUITE FILE_PATH="coverage/TrafficSimulator$POSM.coverage" NAME="POSM Coverage Results" MODIFIED="1582812798432" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
+    <SUITE FILE_PATH="coverage/TrafficSimulator$POSM.coverage" NAME="POSM Coverage Results" MODIFIED="1582982479650" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
   </component>
 </project>

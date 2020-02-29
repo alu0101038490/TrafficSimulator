@@ -10,6 +10,7 @@ from Views import osmBuild, sumolib
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 responsePath = os.path.join(resDir, "temp", "response.osm.xml")
+defaultTileMap = os.path.join(resDir, "html", "tile.html")
 tilePath = os.path.join(resDir, "temp", "tile.html")
 typemapPath = os.path.join(resDir, "typemap")
 

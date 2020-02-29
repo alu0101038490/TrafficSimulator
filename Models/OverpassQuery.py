@@ -7,21 +7,42 @@ class Surround(Enum):
     NONE = 3
 
 
-class Query(object):
+class OverpassRequest(object):
+
+    def __init__(self, surrounding, aroundRadius=100):
+        super().__init__()
+        self.filters = {}
+        self.surrounding = surrounding
+        self.aroundRadius = aroundRadius
+
+    def addFilter(self, key, value, exactValue):
+        self.filters[key] = (value, exactValue)
+
+    def getQL(self):
+        ql = "(way" if self.surrounding == Surround.AROUND else "way"
+        for key, (value, exact) in self.filters.items():
+            ql += '["' + key + '"'
+            ql += '=' if exact else '~'
+            ql += '"' + value + '"]'
+        if self.surrounding == Surround.AROUND:
+            ql += ";way(around:" + str(self.aroundRadius) + ");)"
+        return ql
+
+
+class OverpassQuery(object):
 
     def __init__(self):
         super().__init__()
-        self.tags = {}
+        self.requests = {}
 
-    def addTag(self, key, value, exactValue, surrounding):
-        self.tags[key] = (value, exactValue, surrounding)
+    def addRequest(self, name, request):
+        self.requests[name] = request
 
     def getQL(self):
-        str = "(\n"
-        if len(self.tags) > 0:
-            str += "\tway"
-            for key, (value, exact, s) in self.tags.items():
-                str += "[\"" + key
-                str += '"="' if exact else '"~"'
-                str += value + ("\"]" if exact else "\",i]")
-        return str + ";\n\t>;\n);\nout meta;"
+        statement = ""
+        combination = "(\n"
+        for name, request in self.requests.items():
+            statement += request.getQL() + "->." + name + ";\n"
+            combination += "\t." + name + ";\n"
+
+        return statement + combination + "\t>;\n);\nout meta;"

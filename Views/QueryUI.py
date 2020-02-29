@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel
 
-from Models.OverpassQuery import Query, Surround
+from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
+from Utils.GenericUtils import nextString
 from Utils.TaginfoUtils import getOfficialKeys
 
 
@@ -57,6 +58,15 @@ class FilterWidget(QWidget):
         self.layout.addWidget(line)
 
         self.setLayout(self.layout)
+
+    def getKey(self):
+        return self.keyInput.currentText()
+
+    def getValue(self):
+        return self.valueInput.currentText()
+
+    def isExactValueSelected(self):
+        return self.checkboxAccuracy.isChecked()
 
     def isSelectedToDelete(self):
         return self.removeCB.isChecked()
@@ -118,6 +128,7 @@ class QueryUI(QWidget):
     def __init__(self):
         super().__init__()
         self.keyValues = getOfficialKeys()
+        self.lastRequestName = "a"
         self.initUI()
 
     def initUI(self):
@@ -127,6 +138,7 @@ class QueryUI(QWidget):
         requestsArea.setWidgetResizable(True)
 
         self.requestTabs = QTabWidget()
+        self.addRequest()
         requestsArea.setWidget(self.requestTabs)
 
         self.layout.addWidget(requestsArea)
@@ -134,7 +146,10 @@ class QueryUI(QWidget):
         self.setLayout(self.layout)
 
     def addRequest(self):
-        self.requestTabs.addTab(RequestWidget(self, self.keyValues), "1")
+        requestWidget = RequestWidget(self, self.keyValues)
+        requestWidget.setObjectName(self.lastRequestName)
+        self.requestTabs.addTab(requestWidget, self.lastRequestName)
+        self.lastRequestName = nextString(self.lastRequestName)
 
     def removeRequest(self):
         self.requestTabs.currentWidget().deleteLater()
@@ -146,16 +161,20 @@ class QueryUI(QWidget):
         self.requestTabs.currentWidget().removeFilters()
 
     def getQuery(self):
-        query = Query()
-        for widget in self.findChildren(RequestWidget):
-            selectedRadioButton = [b for b in widget.findChildren(QRadioButton) if b.isChecked() == True][0]
-            switcher = {
-                "Adjacent": Surround.ADJACENT,
-                "Around": Surround.AROUND,
-                "None": Surround.NONE
-            }
-            query.addTag(widget.nameLabel.currentText(),
-                         widget.nameInput.currentText(),
-                         widget.checkboxAccuracy.isChecked(),
-                         switcher.get(selectedRadioButton.objectName()))
+        query = OverpassQuery()
+
+        switcher = {
+            "Adjacent": Surround.ADJACENT,
+            "Around": Surround.AROUND,
+            "None": Surround.NONE
+        }
+
+        for requestWidget in self.findChildren(RequestWidget):
+            selectedSurrounding = [b for b in requestWidget.findChildren(QRadioButton) if b.isChecked()][0]
+            request = OverpassRequest(switcher.get(selectedSurrounding.objectName()))
+            for filterWidget in requestWidget.findChildren(FilterWidget):
+                request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected())
+
+            query.addRequest(requestWidget.objectName(), request)
+
         return query
