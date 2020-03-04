@@ -1,11 +1,16 @@
+import os
+
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
-    QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView
+    QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
+    QPushButton
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
 from Utils.TaginfoUtils import getOfficialKeys
+import osmnx as ox
+from Utils.SumoUtils import responsePath, tempDir, writeXMLResponse
 
 
 class DisambiguationTable(QAbstractTableModel):
@@ -13,11 +18,11 @@ class DisambiguationTable(QAbstractTableModel):
     def __init__(self, data=None):
         QAbstractTableModel.__init__(self)
 
-        self.headerItems = list(data[0][0].keys()) if data and len(data) != 0 else []
+        self.headerItems = ["highway", "name", "maxspeed", "ref", "lanes", "oneway"]
         self.columnCount = len(self.headerItems)
 
         self.alt = data
-        self.rowCount = len(self.alt)
+        self.rowCount = len(self.alt) if data else 0
 
     def rowCount(self, parent=QModelIndex(), **kwargs):
         return self.rowCount
@@ -153,34 +158,12 @@ class RequestWidget(QWidget):
 
         self.layout.addWidget(surroundGB)
 
-        import osmnx as ox
-        import requests
+        line = QFrame(self)
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        self.layout.addWidget(line)
 
-        taginfoURL = "https://taginfo.openstreetmap.org/api/4/key/combinations?key=name&filter=ways"
-        response = requests.get(taginfoURL)
-        keys = [item["other_key"] for item in
-                sorted(response.json()['data'], key=lambda x: x["together_count"], reverse=True)[:5]]
-
-        from Utils.SumoUtils import responsePath
-        jsonResponse = ox.overpass_json_from_file(responsePath)
-        alt = []
-        for i in jsonResponse["elements"]:
-            if i["type"] == "way":
-                tags = {}
-                for k in keys:
-                    tags[k] = i["tags"].get(k)
-
-                isIn = False
-                for i in range(len(alt)):
-                    if tags == alt[i][0]:
-                        alt[i] = (alt[i][0], alt[i][1] + 1)
-                        isIn = True
-                        break
-                if not isIn:
-                    alt.append((tags, 1))
-        alt = sorted(alt, key=lambda x: x[1], reverse=True)
-
-        self.model = DisambiguationTable(alt)
+        self.model = DisambiguationTable()
 
         self.table_view = QTableView()
         self.table_view.setModel(self.model)
@@ -189,9 +172,54 @@ class RequestWidget(QWidget):
         self.horizontal_header.setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontal_header.setStretchLastSection(True)
 
+        self.table_view.setVisible(False)
+        self.table_view.setMinimumHeight(300)
         self.layout.addWidget(self.table_view)
 
+        buttonTable = QPushButton()
+        buttonTable.setText("Update table")
+        buttonTable.clicked.connect(self.showTable)
+
+        self.layout.addWidget(buttonTable)
+
         self.setLayout(self.layout)
+
+    def showTable(self):
+        query = OverpassQuery()
+
+        switcher = {
+            "Adjacent": Surround.ADJACENT,
+            "Around": Surround.AROUND,
+            "None": Surround.NONE
+        }
+
+        selectedSurrounding = [b for b in self.findChildren(QRadioButton) if b.isChecked()][0]
+        request = OverpassRequest(switcher.get(selectedSurrounding.objectName()))
+        for filterWidget in self.findChildren(FilterWidget):
+            request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected())
+
+        query.addRequest(self.objectName(), request)
+
+        tableDir = os.path.join(tempDir, "table.osm.xml")
+        writeXMLResponse(query.getQL(), tableDir)
+
+        jsonResponse = ox.overpass_json_from_file(tableDir)
+        alt = []
+        for i in jsonResponse["elements"]:
+            if i["type"] == "way":
+                isIn = False
+                for j in range(len(alt)):
+                    if i["tags"] == alt[j][0]:
+                        alt[j] = (alt[j][0], alt[j][1] + 1)
+                        isIn = True
+                        break
+                if not isIn:
+                    alt.append((i["tags"], 1))
+        alt = sorted(alt, key=lambda x: x[1], reverse=True)
+
+        self.table_view.setModel(DisambiguationTable(alt))
+        self.table_view.setVisible(True)
+
 
     def addFilter(self):
         self.filtersLayout.addWidget(FilterWidget(self.filtersWidget, self.keyValues))

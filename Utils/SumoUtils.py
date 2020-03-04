@@ -9,6 +9,7 @@ from PyQt5.QtCore import QUrl
 from Views import osmBuild, sumolib
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
+tempDir = os.path.join(resDir, "temp")
 responsePath = os.path.join(resDir, "temp", "response.osm.xml")
 defaultTileMap = os.path.join(resDir, "html", "tile.html")
 tilePath = os.path.join(resDir, "temp", "tile.html")
@@ -42,16 +43,18 @@ def openNetedit(inputName):
     netedit = sumolib.checkBinary("netedit")
     subprocess.Popen([netedit, inputName])
 
-
-def buildHTML(query):
+def writeXMLResponse(query, outputFilename=responsePath):
     overpassUrl = "http://overpass-api.de/api/interpreter"
     response = requests.get(overpassUrl, params={'data': query})
 
-    f = open(responsePath, "w+")
+    f = open(outputFilename, "w+")
     f.seek(0)
     f.truncate()
     f.write(response.text)
     f.close()
+
+def buildHTML(query):
+    writeXMLResponse(query)
 
     G = ox.graph_from_file(responsePath, retain_all=True)
     graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
