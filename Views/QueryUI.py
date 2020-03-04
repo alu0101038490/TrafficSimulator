@@ -1,9 +1,50 @@
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
-    QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel
+    QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
 from Utils.TaginfoUtils import getOfficialKeys
+
+
+class DisambiguationTable(QAbstractTableModel):
+
+    def __init__(self, data=None):
+        QAbstractTableModel.__init__(self)
+
+        self.headerItems = list(data[0][0].keys()) if data and len(data) != 0 else []
+        self.columnCount = len(self.headerItems)
+
+        self.alt = data
+        self.rowCount = len(self.alt)
+
+    def rowCount(self, parent=QModelIndex(), **kwargs):
+        return self.rowCount
+
+    def columnCount(self, parent=QModelIndex(), **kwargs):
+        return self.columnCount
+
+    def headerData(self, section, orientation, role):
+        if role != Qt.DisplayRole:
+            return None
+        if orientation == Qt.Horizontal:
+            return self.headerItems[section]
+        else:
+            return "{}".format(section)
+
+    def data(self, index, role=Qt.DisplayRole):
+        column = index.column()
+        row = index.row()
+
+        if role == Qt.DisplayRole:
+            return self.alt[row][0].get(self.headerItems[column])
+        elif role == Qt.BackgroundRole:
+            return QColor(Qt.white)
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignRight
+
+        return None
 
 
 class FilterWidget(QWidget):
@@ -111,6 +152,44 @@ class RequestWidget(QWidget):
         surroundGB.setLayout(surroundLayout)
 
         self.layout.addWidget(surroundGB)
+
+        import osmnx as ox
+        import requests
+
+        taginfoURL = "https://taginfo.openstreetmap.org/api/4/key/combinations?key=name&filter=ways"
+        response = requests.get(taginfoURL)
+        keys = [item["other_key"] for item in
+                sorted(response.json()['data'], key=lambda x: x["together_count"], reverse=True)[:5]]
+
+        from Utils.SumoUtils import responsePath
+        jsonResponse = ox.overpass_json_from_file(responsePath)
+        alt = []
+        for i in jsonResponse["elements"]:
+            if i["type"] == "way":
+                tags = {}
+                for k in keys:
+                    tags[k] = i["tags"].get(k)
+
+                isIn = False
+                for i in range(len(alt)):
+                    if tags == alt[i][0]:
+                        alt[i] = (alt[i][0], alt[i][1] + 1)
+                        isIn = True
+                        break
+                if not isIn:
+                    alt.append((tags, 1))
+        alt = sorted(alt, key=lambda x: x[1], reverse=True)
+
+        self.model = DisambiguationTable(alt)
+
+        self.table_view = QTableView()
+        self.table_view.setModel(self.model)
+
+        self.horizontal_header = self.table_view.horizontalHeader()
+        self.horizontal_header.setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.horizontal_header.setStretchLastSection(True)
+
+        self.layout.addWidget(self.table_view)
 
         self.setLayout(self.layout)
 

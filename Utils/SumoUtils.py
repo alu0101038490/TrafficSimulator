@@ -53,7 +53,7 @@ def buildHTML(query):
     f.write(response.text)
     f.close()
 
-    G = ox.graph_from_file(responsePath)
+    G = ox.graph_from_file(responsePath, retain_all=True)
     graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
     graphMap.save(tilePath)
 
