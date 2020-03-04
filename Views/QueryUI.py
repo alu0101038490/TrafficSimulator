@@ -24,6 +24,9 @@ class DisambiguationTable(QAbstractTableModel):
         self.alt = data
         self.rowCount = min(5, len(self.alt)) if self.alt else 0
 
+    def getDictData(self, index):
+        return {k: self.alt[index][0].get(k) for k in self.headerItems}
+
     def showMore(self):
         newRowCount = min(self.rowCount + 5, len(self.alt)) if self.alt else 0
         if newRowCount != self.rowCount:
@@ -125,8 +128,17 @@ class FilterWidget(QWidget):
     def getValue(self):
         return self.valueInput.currentText()
 
+    def setKey(self, key):
+        self.keyInput.setEditText(key)
+
+    def setValue(self, value):
+        self.valueInput.setEditText(value)
+
     def isExactValueSelected(self):
         return self.checkboxAccuracy.isChecked()
+
+    def setExactValue(self, bool):
+        self.checkboxAccuracy.setChecked(bool)
 
     def isSelectedToDelete(self):
         return self.removeCB.isChecked()
@@ -178,11 +190,15 @@ class RequestWidget(QWidget):
         self.layout.addWidget(line)
 
         self.tableView = QTableView()
+        self.tableView.doubleClicked.connect(self.addFilterFromCell)
         self.tableView.setModel(DisambiguationTable())
 
-        self.horizontal_header = self.tableView.horizontalHeader()
-        self.horizontal_header.setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.horizontal_header.setStretchLastSection(True)
+        self.horizontalHeader = self.tableView.horizontalHeader()
+        self.horizontalHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.horizontalHeader.setStretchLastSection(True)
+
+        self.verticalHeader = self.tableView.verticalHeader()
+        self.verticalHeader.sectionDoubleClicked.connect(self.addFiltersFromRow)
 
         self.tableView.setVisible(False)
         self.tableView.setMinimumHeight(300)
@@ -256,8 +272,26 @@ class RequestWidget(QWidget):
     def showLess(self):
         self.tableView.model().showLess()
 
-    def addFilter(self):
-        self.filtersLayout.addWidget(FilterWidget(self.filtersWidget, self.keyValues))
+    def addFilter(self, key="", value="", accuracy=False):
+        filter = FilterWidget(self.filtersWidget, self.keyValues)
+        filter.setKey(key)
+        filter.setValue(value)
+        filter.setExactValue(accuracy)
+        self.filtersLayout.addWidget(filter)
+
+    def addFilterFromCell(self, signal):
+        key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
+        value = self.tableView.model().itemData(signal).get(0)
+        self.addFilter(key, value, True)
+
+    def addFiltersFromRow(self, index):
+        row = self.tableView.model().getDictData(index)
+        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
+        for k, v in row.items():
+            if k in currentKeys.keys():
+                currentKeys[k].setValue(v)
+            else:
+                self.addFilter(k, v, True)
 
     def removeFilters(self):
         for widget in self.filtersWidget.findChildren(FilterWidget):
