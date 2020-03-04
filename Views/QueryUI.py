@@ -1,5 +1,6 @@
 import os
 
+import osmnx as ox
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
@@ -8,9 +9,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
+from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
-import osmnx as ox
-from Utils.SumoUtils import responsePath, tempDir, writeXMLResponse
 
 
 class DisambiguationTable(QAbstractTableModel):
@@ -22,7 +22,21 @@ class DisambiguationTable(QAbstractTableModel):
         self.columnCount = len(self.headerItems)
 
         self.alt = data
-        self.rowCount = len(self.alt) if data else 0
+        self.rowCount = min(5, len(self.alt)) if self.alt else 0
+
+    def showMore(self):
+        newRowCount = min(self.rowCount + 5, len(self.alt)) if self.alt else 0
+        if newRowCount != self.rowCount:
+            self.beginInsertRows(QModelIndex(), self.rowCount, newRowCount - 1)
+            self.rowCount = newRowCount
+            self.endInsertRows()
+
+    def showLess(self):
+        newRowCount = max(self.rowCount - 5, 2) if self.alt else 0
+        if newRowCount != self.rowCount:
+            self.beginRemoveRows(QModelIndex(), newRowCount, self.rowCount - 1)
+            self.rowCount = newRowCount
+            self.endRemoveRows()
 
     def rowCount(self, parent=QModelIndex(), **kwargs):
         return self.rowCount
@@ -163,24 +177,40 @@ class RequestWidget(QWidget):
         line.setFrameShadow(QFrame.Sunken)
         self.layout.addWidget(line)
 
-        self.model = DisambiguationTable()
+        self.tableView = QTableView()
+        self.tableView.setModel(DisambiguationTable())
 
-        self.table_view = QTableView()
-        self.table_view.setModel(self.model)
-
-        self.horizontal_header = self.table_view.horizontalHeader()
+        self.horizontal_header = self.tableView.horizontalHeader()
         self.horizontal_header.setSectionResizeMode(QHeaderView.ResizeToContents)
         self.horizontal_header.setStretchLastSection(True)
 
-        self.table_view.setVisible(False)
-        self.table_view.setMinimumHeight(300)
-        self.layout.addWidget(self.table_view)
+        self.tableView.setVisible(False)
+        self.tableView.setMinimumHeight(300)
+        self.layout.addWidget(self.tableView)
+
+        tableButtons = QWidget()
+        tableButtonsLayout = QHBoxLayout()
+        tableButtons.setLayout(tableButtonsLayout)
 
         buttonTable = QPushButton()
         buttonTable.setText("Update table")
         buttonTable.clicked.connect(self.showTable)
 
-        self.layout.addWidget(buttonTable)
+        tableButtonsLayout.addWidget(buttonTable)
+
+        buttonMore = QPushButton()
+        buttonMore.setText("Show more")
+        buttonMore.clicked.connect(self.showMore)
+
+        tableButtonsLayout.addWidget(buttonMore)
+
+        buttonLess = QPushButton()
+        buttonLess.setText("Show less")
+        buttonLess.clicked.connect(self.showLess)
+
+        tableButtonsLayout.addWidget(buttonLess)
+
+        self.layout.addWidget(tableButtons)
 
         self.setLayout(self.layout)
 
@@ -217,9 +247,14 @@ class RequestWidget(QWidget):
                     alt.append((i["tags"], 1))
         alt = sorted(alt, key=lambda x: x[1], reverse=True)
 
-        self.table_view.setModel(DisambiguationTable(alt))
-        self.table_view.setVisible(True)
+        self.tableView.setModel(DisambiguationTable(alt))
+        self.tableView.setVisible(True)
 
+    def showMore(self):
+        self.tableView.model().showMore()
+
+    def showLess(self):
+        self.tableView.model().showLess()
 
     def addFilter(self):
         self.filtersLayout.addWidget(FilterWidget(self.filtersWidget, self.keyValues))
