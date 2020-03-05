@@ -11,18 +11,65 @@ from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
+from Views.CollapsibleList import CheckableComboBox
 
 
 class DisambiguationTable(QAbstractTableModel):
 
-    def __init__(self, data=None):
+    def __init__(self, data):
         QAbstractTableModel.__init__(self)
 
-        self.headerItems = ["highway", "name", "maxspeed", "ref", "lanes", "oneway"]
-        self.columnCount = len(self.headerItems)
+        self.data = data
+        self.allKeys = frozenset([])
+        for i in data:
+            self.allKeys |= frozenset(i["tags"].keys())
 
-        self.alt = data
+        self.headerItems = list(frozenset(["highway", "name", "maxspeed", "ref", "lanes", "oneway"]) & self.allKeys)
+
+        self.updateAlt()
         self.rowCount = min(5, len(self.alt)) if self.alt else 0
+
+    def updateAlt(self):
+        self.alt = []
+        for i in self.data:
+            reducedData = {k:i["tags"].get(k) for k in self.headerItems}
+            coincidence = [i for i in range(len(self.alt)) if self.alt[i][0] == reducedData]
+            if len(coincidence) != 0:
+                self.alt[coincidence[0]] = (self.alt[coincidence[0]][0], self.alt[coincidence[0]][1] + 1)
+            else:
+                self.alt.append((reducedData, 1))
+
+        self.alt = sorted(self.alt, key=lambda x: x[1], reverse=True)
+
+    def updateColumns(self, keys):
+        keySet = frozenset(keys)
+        if keySet != frozenset(self.headerItems):
+            self.beginResetModel()
+            self.headerItems = list(keySet)
+            self.updateAlt()
+            self.rowCount = max(self.rowCount, len(self.alt)) if self.alt else 0
+            self.endResetModel()
+
+    '''
+    def addColumn(self, keys):
+        acceptedKeys = [k for k in keys if k in self.allKeys and k not in self.headerItems]
+        if len(acceptedKeys) > 0:
+            self.beginInsertColumns(QModelIndex(), len(self.headerItems), len(self.headerItems) + len(acceptedKeys) - 1)
+            self.headerItems += acceptedKeys
+            self.updateAlt()
+            self.endRemoveColumns()
+
+    def removeColumnByKey(self, key):
+        if key in self.headerItems:
+            self.removeColumn(self.headerItems.index(key))
+            self.updateAlt()
+    '''
+
+    def getAllColumns(self):
+        return self.allKeys
+
+    def getSelectedColumns(self):
+        return self.headerItems
 
     def getDictData(self, index):
         return {k: self.alt[index][0].get(k) for k in self.headerItems}
@@ -45,7 +92,7 @@ class DisambiguationTable(QAbstractTableModel):
         return self.rowCount
 
     def columnCount(self, parent=QModelIndex(), **kwargs):
-        return self.columnCount
+        return len(self.headerItems)
 
     def headerData(self, section, orientation, role):
         if role != Qt.DisplayRole:
@@ -189,9 +236,11 @@ class RequestWidget(QWidget):
         line.setFrameShadow(QFrame.Sunken)
         self.layout.addWidget(line)
 
+        self.columnSelection = CheckableComboBox("Keys")
+        self.layout.addWidget(self.columnSelection)
+
         self.tableView = QTableView()
         self.tableView.doubleClicked.connect(self.addFilterFromCell)
-        self.tableView.setModel(DisambiguationTable())
 
         self.horizontalHeader = self.tableView.horizontalHeader()
         self.horizontalHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -250,21 +299,15 @@ class RequestWidget(QWidget):
         writeXMLResponse(query.getQL(), tableDir)
 
         jsonResponse = ox.overpass_json_from_file(tableDir)
-        alt = []
-        for i in jsonResponse["elements"]:
-            if i["type"] == "way":
-                isIn = False
-                for j in range(len(alt)):
-                    if i["tags"] == alt[j][0]:
-                        alt[j] = (alt[j][0], alt[j][1] + 1)
-                        isIn = True
-                        break
-                if not isIn:
-                    alt.append((i["tags"], 1))
-        alt = sorted(alt, key=lambda x: x[1], reverse=True)
 
-        self.tableView.setModel(DisambiguationTable(alt))
+        tableData = [i for i in jsonResponse["elements"] if i["type"] == "way"]
+        self.tableView.setModel(DisambiguationTable(tableData))
         self.tableView.setVisible(True)
+
+        for key in self.tableView.model().getAllColumns():
+            self.columnSelection.addItem(key, key in self.tableView.model().getSelectedColumns())
+
+        self.columnSelection.setDropdownMenuSignal(lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
 
     def showMore(self):
         self.tableView.model().showMore()
