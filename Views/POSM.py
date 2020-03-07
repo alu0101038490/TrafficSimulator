@@ -1,12 +1,37 @@
 import sys
 
 from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QTextCursor, QColor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout
 
 from Utils.SumoUtils import buildNet, openNetedit, buildHTML, defaultTileMap
 from Views.QueryUI import QueryUI
+
+
+class InformationalConsole(QTextEdit):
+
+    def __init__(self):
+        super().__init__()
+        self.setReadOnly(True)
+
+    def writeMessage(self, message, color):
+        self.setTextColor(color)
+        self.insertPlainText("\n" + message + "\n")
+        self.moveCursor(QTextCursor.End)
+
+    def writeWarning(self, warning):
+        self.writeMessage(warning, Qt.darkYellow)
+
+    def writeInfo(self, warning):
+        self.writeMessage(warning, Qt.black)
+
+    def writeError(self, warning):
+        self.writeMessage(warning, Qt.darkRed)
+
+    def writeSuccess(self, warning):
+        self.writeMessage(warning, Qt.darkGreen)
 
 
 class POSM(QMainWindow):
@@ -33,7 +58,14 @@ class POSM(QMainWindow):
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
         self.mapRenderer.load(QUrl.fromLocalFile(defaultTileMap))
-        self.horSplitter.addWidget(self.mapRenderer)
+
+        self.consoleSplitter = QSplitter(Qt.Vertical)
+        self.consoleSplitter.addWidget(self.mapRenderer)
+
+        self.console = InformationalConsole()
+        self.consoleSplitter.addWidget(self.console)
+
+        self.horSplitter.addWidget(self.consoleSplitter)
 
         self.layout.addWidget(self.horSplitter)
 
