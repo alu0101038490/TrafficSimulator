@@ -125,6 +125,7 @@ class FilterWidget(QWidget):
 
     def initUI(self):
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         topWidget = QWidget()
         topLayout = QHBoxLayout()
@@ -200,6 +201,9 @@ class RequestWidget(QWidget):
 
     def initUI(self):
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0,0,0,0)
+
+        self.layout.addWidget(QLabel("Filters:"))
 
         self.filtersWidget = QWidget(self)
         self.filtersLayout = QVBoxLayout()
@@ -236,7 +240,10 @@ class RequestWidget(QWidget):
         line.setFrameShadow(QFrame.Sunken)
         self.layout.addWidget(line)
 
+        self.layout.addWidget(QLabel("Disambiguation table:"))
+
         self.columnSelection = CheckableComboBox("Keys")
+        self.columnSelection.setVisible(False)
         self.layout.addWidget(self.columnSelection)
 
         self.tableView = QTableView()
@@ -303,6 +310,7 @@ class RequestWidget(QWidget):
         tableData = [i for i in jsonResponse["elements"] if i["type"] == "way"]
         self.tableView.setModel(DisambiguationTable(tableData))
         self.tableView.setVisible(True)
+        self.columnSelection.setVisible(True)
 
         for key in self.tableView.model().getAllColumns():
             self.columnSelection.addItem(key, key in self.tableView.model().getSelectedColumns())
@@ -360,6 +368,7 @@ class QueryUI(QWidget):
         self.addRequest()
         requestsArea.setWidget(self.requestTabs)
 
+        requestsArea.setMinimumWidth(self.requestTabs.minimumWidth())
         self.layout.addWidget(requestsArea)
 
         self.setLayout(self.layout)
