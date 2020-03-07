@@ -12,16 +12,20 @@ from Utils.GenericUtils import nextString
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
+import networkx as nx
 
 
 class DisambiguationTable(QAbstractTableModel):
 
-    def __init__(self, data):
+    def __init__(self, jsonData):
         QAbstractTableModel.__init__(self)
 
-        self.data = data
+        self.onlyDisconnected = False
+
+        self.json = jsonData
+        self.data = [i for i in jsonData["elements"] if i["type"] == "way"]
         self.allKeys = frozenset([])
-        for i in data:
+        for i in self.data:
             self.allKeys |= frozenset(i["tags"].keys())
 
         self.headerItems = list(frozenset(["highway", "name", "maxspeed", "ref", "lanes", "oneway"]) & self.allKeys)
@@ -29,17 +33,44 @@ class DisambiguationTable(QAbstractTableModel):
         self.updateAlt()
         self.rowCount = min(5, len(self.alt)) if self.alt else 0
 
+    def setOnlyDisconnected(self, bool, header=None):
+        if bool != self.onlyDisconnected:
+            self.onlyDisconnected = bool
+            self.beginResetModel()
+            self.headerItems = header if header else ["highway", "name", "maxspeed", "ref", "lanes", "oneway"]
+            self.updateAlt()
+            self.rowCount = min(self.rowCount, len(self.alt)) if self.alt else 0
+            self.endResetModel()
+
+
     def updateAlt(self):
         self.alt = []
-        for i in self.data:
-            reducedData = {k:i["tags"].get(k) for k in self.headerItems}
-            coincidence = [i for i in range(len(self.alt)) if self.alt[i][0] == reducedData]
-            if len(coincidence) != 0:
-                self.alt[coincidence[0]] = (self.alt[coincidence[0]][0], self.alt[coincidence[0]][1] + 1)
-            else:
-                self.alt.append((reducedData, 1))
 
-        self.alt = sorted(self.alt, key=lambda x: x[1], reverse=True)
+        if not self.onlyDisconnected:
+            for i in self.data:
+                reducedData = {k: i["tags"].get(k) for k in self.headerItems}
+                coincidence = [i for i in range(len(self.alt)) if self.alt[i][0] == reducedData]
+                if len(coincidence) != 0:
+                    self.alt[coincidence[0]] = (self.alt[coincidence[0]][0], self.alt[coincidence[0]][1] + 1)
+                else:
+                    self.alt.append((reducedData, 1))
+            self.alt = sorted(self.alt, key=lambda x: x[1], reverse=True)
+        else:
+            G = ox.create_graph([self.json], retain_all=True)
+            updatedHeader = frozenset([])
+            for nodes in nx.weakly_connected_components(G):
+                subgraph = nx.induced_subgraph(G, nodes)
+                edgesKeys = [frozenset(e[2].keys()) for e in G.edges(data=True)]
+                edgeAttr = edgesKeys[0].intersection(*edgesKeys[1:]) - frozenset(["osmid", "length"])
+                altAppend = {}
+                for attr in edgeAttr:
+                    valuesSet = frozenset(nx.get_edge_attributes(subgraph, attr).values())
+                    if len(valuesSet) == 1:
+                        altAppend[attr] = list(valuesSet)[0]
+                self.alt.append((altAppend, 1))
+                updatedHeader |= altAppend.keys()
+            self.headerItems = list(updatedHeader)
+
 
     def updateColumns(self, keys):
         keySet = frozenset(keys)
@@ -47,7 +78,7 @@ class DisambiguationTable(QAbstractTableModel):
             self.beginResetModel()
             self.headerItems = list(keySet)
             self.updateAlt()
-            self.rowCount = max(self.rowCount, len(self.alt)) if self.alt else 0
+            self.rowCount = min(self.rowCount, len(self.alt)) if self.alt else 0
             self.endResetModel()
 
     '''
@@ -236,8 +267,18 @@ class RequestWidget(QWidget):
         line.setFrameShadow(QFrame.Sunken)
         self.layout.addWidget(line)
 
+        self.tableOptions = QWidget()
+        self.tableOptions.setVisible(False)
+        tableOptionsLayout = QHBoxLayout()
+        self.tableOptions.setLayout(tableOptionsLayout)
+        self.layout.addWidget(self.tableOptions)
+
+        self.onlyDisconnectedCB = QCheckBox()
+        self.onlyDisconnectedCB.setText("Only disconnected ways")
+        tableOptionsLayout.addWidget(self.onlyDisconnectedCB)
+
         self.columnSelection = CheckableComboBox("Keys")
-        self.layout.addWidget(self.columnSelection)
+        tableOptionsLayout.addWidget(self.columnSelection)
 
         self.tableView = QTableView()
         self.tableView.doubleClicked.connect(self.addFilterFromCell)
@@ -300,14 +341,21 @@ class RequestWidget(QWidget):
 
         jsonResponse = ox.overpass_json_from_file(tableDir)
 
-        tableData = [i for i in jsonResponse["elements"] if i["type"] == "way"]
-        self.tableView.setModel(DisambiguationTable(tableData))
+        self.tableView.setModel(DisambiguationTable(jsonResponse))
         self.tableView.setVisible(True)
+        self.tableOptions.setVisible(True)
 
         for key in self.tableView.model().getAllColumns():
             self.columnSelection.addItem(key, key in self.tableView.model().getSelectedColumns())
 
-        self.columnSelection.setDropdownMenuSignal(lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
+        self.columnSelection.setDropdownMenuSignal(
+            lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
+
+        self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+
+    def showHideOnlyDisconnected(self):
+        self.tableView.model().setOnlyDisconnected(self.onlyDisconnectedCB.isChecked())
+        self.columnSelection.setEnabled(not self.onlyDisconnectedCB.isChecked())
 
     def showMore(self):
         self.tableView.model().showMore()
