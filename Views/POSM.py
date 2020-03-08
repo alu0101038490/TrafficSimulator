@@ -1,3 +1,4 @@
+import datetime
 import sys
 
 from PyQt5.QtCore import Qt, QUrl
@@ -17,8 +18,10 @@ class InformationalConsole(QTextEdit):
         self.setReadOnly(True)
 
     def writeMessage(self, message, color):
+        self.setTextColor(Qt.black)
+        self.insertPlainText("%s:  " % datetime.datetime.now().strftime("%H:%M:%S"))
         self.setTextColor(color)
-        self.insertPlainText("\n" + message + "\n")
+        self.insertPlainText(message + "\n")
         self.moveCursor(QTextCursor.End)
 
     def writeWarning(self, warning):
