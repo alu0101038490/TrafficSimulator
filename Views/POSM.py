@@ -5,7 +5,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout
 
-from Utils.SumoUtils import buildNet, openNetedit, buildHTML, defaultTileMap
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx
 from Views.QueryUI import QueryUI
 
 
@@ -89,9 +89,16 @@ class POSM(QMainWindow):
         removeFilterAct.setShortcut('Ctrl+D')
         requestMenu.addAction(removeFilterAct)
 
+        disambiguationMenu = menubar.addMenu('Disambiguation')
+
+        showSelectionAct = QAction('Show selected option', self)
+        showSelectionAct.triggered.connect(self.showTableSelection)
+        showSelectionAct.setShortcut('Ctrl+N')
+        disambiguationMenu.addAction(showSelectionAct)
+
     def playQuery(self):
         self.queryText.setText(self.queryUI.getQuery().getQL())
-        self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
+        self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
@@ -100,6 +107,9 @@ class POSM(QMainWindow):
 
     def openNet(self):
         openNetedit(self.saveNet() + ".net.xml")
+
+    def showTableSelection(self):
+        self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
 
 
 if __name__ == '__main__':
