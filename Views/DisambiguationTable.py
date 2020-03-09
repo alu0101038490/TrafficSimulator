@@ -163,7 +163,7 @@ class SimilarWaysTable(DisambiguationTable):
     def getRowJson(self, indexes):
         if len(indexes) > 0:
             result = copy.deepcopy(self.json)
-            result["elements"] = self.nodes
+            result["elements"] = copy.deepcopy(self.nodes)
             for i in indexes:
                 result["elements"] += self.alt[i.row()][2]
             return ox.create_graph([result], retain_all=True)
