@@ -1,12 +1,55 @@
+import logging
 import sys
 
 from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QTextEdit, QFileDialog, QSplitter, QHBoxLayout
+    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
 
 from Utils.SumoUtils import buildNet, openNetedit, buildHTML, defaultTileMap
 from Views.QueryUI import QueryUI
+
+
+class InformationalConsole(QTextEdit):
+
+    def __init__(self):
+        super().__init__()
+        self.setReadOnly(True)
+
+        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s', datefmt="%H:%M:%S")
+
+    def write(self, text):
+        if text[0] == "W":
+            self.writeWarning(text[7:])
+        elif text[0] == "I":
+            self.writeInfo(text[4:])
+        elif text[0] == "E":
+            self.writeError(text[5:])
+        elif text[0] == "C":
+            self.writeError(text[8:])
+
+    def flush(self):
+        pass
+
+    def writeMessage(self, message, color):
+        self.setTextColor(Qt.black)
+        self.insertPlainText(message[:10])
+        self.setTextColor(color)
+        self.insertPlainText(message[10:] + "\n")
+        self.moveCursor(QTextCursor.End)
+
+    def writeWarning(self, warning):
+        self.writeMessage(warning, Qt.darkYellow)
+
+    def writeInfo(self, warning):
+        self.writeMessage(warning, Qt.black)
+
+    def writeError(self, warning):
+        self.writeMessage(warning, Qt.darkRed)
+
+    def writeSuccess(self, warning):
+        self.writeMessage(warning, Qt.darkGreen)
 
 
 class POSM(QMainWindow):
@@ -25,7 +68,7 @@ class POSM(QMainWindow):
         self.editionSplitter.addWidget(self.queryUI)
 
         self.queryText = QTextEdit()
-        self.queryText.setText("out meta;")
+        self.queryText.setReadOnly(True)
         self.editionSplitter.addWidget(self.queryText)
 
         self.horSplitter.addWidget(self.editionSplitter)
@@ -33,7 +76,14 @@ class POSM(QMainWindow):
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
         self.mapRenderer.load(QUrl.fromLocalFile(defaultTileMap))
-        self.horSplitter.addWidget(self.mapRenderer)
+
+        self.consoleSplitter = QSplitter(Qt.Vertical)
+        self.consoleSplitter.addWidget(self.mapRenderer)
+
+        self.console = InformationalConsole()
+        self.consoleSplitter.addWidget(self.console)
+
+        self.horSplitter.addWidget(self.consoleSplitter)
 
         self.layout.addWidget(self.horSplitter)
 
@@ -67,30 +117,45 @@ class POSM(QMainWindow):
         playAct.setShortcut('Ctrl+P')
         runMenu.addAction(playAct)
 
-        requestMenu = menubar.addMenu('Request')
+        self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
         addRequestAct.triggered.connect(self.queryUI.addRequest)
         addRequestAct.setShortcut('Ctrl+A')
-        requestMenu.addAction(addRequestAct)
+        self.requestMenu.addAction(addRequestAct)
 
         removeRequestAct = QAction('Remove current request', self)
         removeRequestAct.triggered.connect(self.queryUI.removeRequest)
         removeRequestAct.setShortcut('Ctrl+R')
-        requestMenu.addAction(removeRequestAct)
+        self.requestMenu.addAction(removeRequestAct)
 
         addFilterAct = QAction('Add filter', self)
         addFilterAct.triggered.connect(self.queryUI.addFilter)
         addFilterAct.setShortcut('Ctrl+T')
-        requestMenu.addAction(addFilterAct)
+        self.requestMenu.addAction(addFilterAct)
 
         removeFilterAct = QAction('Remove selected filters', self)
         removeFilterAct.triggered.connect(self.queryUI.removeFilter)
         removeFilterAct.setShortcut('Ctrl+D')
-        requestMenu.addAction(removeFilterAct)
+        self.requestMenu.addAction(removeFilterAct)
+
+        manualModeAct = QAction('Manual editing of the query', self)
+        manualModeAct.triggered.connect(self.setManualMode)
+        self.requestMenu.addAction(manualModeAct)
+
+    def setManualMode(self):
+        reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nYou will not be able to return to "
+                                                          "interactive mode")
+        if reply == QMessageBox.Yes:
+            self.queryText.setReadOnly(False)
+            self.queryUI.hide()
+            self.requestMenu.setEnabled(False)
+
+
 
     def playQuery(self):
-        self.queryText.setText(self.queryUI.getQuery().getQL())
+        if self.queryText.isReadOnly():
+            self.queryText.setText(self.queryUI.getQuery().getQL())
         self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
 
     def saveNet(self):
