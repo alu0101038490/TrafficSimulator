@@ -1,4 +1,5 @@
 import datetime
+import logging
 import sys
 
 from PyQt5.QtCore import Qt, QUrl
@@ -7,7 +8,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout
 
-from Utils.SumoUtils import buildNet, openNetedit, buildHTML, defaultTileMap
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap
 from Views.QueryUI import QueryUI
 
 
@@ -17,11 +18,26 @@ class InformationalConsole(QTextEdit):
         super().__init__()
         self.setReadOnly(True)
 
+        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s', datefmt="%H:%M:%S")
+
+    def write(self, text):
+        if text[0] == "W":
+            self.writeWarning(text[7:])
+        elif text[0] == "I":
+            self.writeInfo(text[4:])
+        elif text[0] == "E":
+            self.writeError(text[5:])
+        elif text[0] == "C":
+            self.writeError(text[8:])
+
+    def flush(self):
+        pass
+
     def writeMessage(self, message, color):
         self.setTextColor(Qt.black)
-        self.insertPlainText("%s:  " % datetime.datetime.now().strftime("%H:%M:%S"))
+        self.insertPlainText(message[:10])
         self.setTextColor(color)
-        self.insertPlainText(message + "\n")
+        self.insertPlainText(message[10:] + "\n")
         self.moveCursor(QTextCursor.End)
 
     def writeWarning(self, warning):
@@ -126,7 +142,7 @@ class POSM(QMainWindow):
 
     def playQuery(self):
         self.queryText.setText(self.queryUI.getQuery().getQL())
-        self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
+        self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
