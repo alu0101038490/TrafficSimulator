@@ -17,7 +17,8 @@ class InformationalConsole(QTextEdit):
         super().__init__()
         self.setReadOnly(True)
 
-        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s', datefmt="%H:%M:%S")
+        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s',
+                            datefmt="%H:%M:%S")
 
     def write(self, text):
         if text[0] == "W":
@@ -65,6 +66,9 @@ class POSM(QMainWindow):
         self.editionSplitter = QSplitter(Qt.Vertical)
 
         self.queryUI = QueryUI()
+        self.queryUI.onClearPolygon(self.clearCurrentPolygon)
+        self.queryUI.onPolygonEnabled(self.enablePolygon, self.disablePolygon)
+        self.queryUI.onTabChanged(self.changeCurrentPolygon)
         self.editionSplitter.addWidget(self.queryUI)
 
         self.queryText = QTextEdit()
@@ -76,6 +80,10 @@ class POSM(QMainWindow):
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
         self.mapRenderer.load(QUrl.fromLocalFile(defaultTileMap))
+        self.mapRenderer.loadFinished.connect(
+            lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
+
+        self.addRequest()
 
         self.consoleSplitter = QSplitter(Qt.Vertical)
         self.consoleSplitter.addWidget(self.mapRenderer)
@@ -120,7 +128,7 @@ class POSM(QMainWindow):
         self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
-        addRequestAct.triggered.connect(self.queryUI.addRequest)
+        addRequestAct.triggered.connect(self.addRequest)
         addRequestAct.setShortcut('Ctrl+A')
         self.requestMenu.addAction(addRequestAct)
 
@@ -151,12 +159,65 @@ class POSM(QMainWindow):
             self.queryUI.hide()
             self.requestMenu.setEnabled(False)
 
-
-
     def playQuery(self):
         if self.queryText.isReadOnly():
             self.queryText.setText(self.queryUI.getQuery().getQL())
         self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
+        self.mapRenderer.loadFinished.connect(
+            lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
+
+    def addRequest(self):
+        self.mapRenderer.page().runJavaScript("polygon.push([]);")
+        self.queryUI.addRequest()
+
+    def removeRequest(self):
+        index = self.queryUI.currentRequest()
+        self.mapRenderer.page().runJavaScript("polygon.splice(%i, 1);" %index)
+        self.queryUI.removeRequest()
+
+    def modifyHtml(self, id):
+        code = """
+            var isClickActivated = false;
+            var currentPolygon = 0;
+            var polygon = [];
+            var latlngs = [];
+
+            %s.on('click', function(e) { 
+                if(isClickActivated && currentPolygon >= 0) {
+                    if(latlngs[currentPolygon].length > 0) {
+                        polygon[currentPolygon].removeFrom(%s);  
+                    }
+                    latlngs[currentPolygon].push(e.latlng);
+                    polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);
+                }
+            });
+            """ % (id, id, id)
+        self.mapRenderer.page().runJavaScript(code)
+
+    def disablePolygon(self):
+        self.mapRenderer.page().runJavaScript("document.body.children[0].id;",
+                                              lambda id: self.mapRenderer.page().runJavaScript(
+                                                  "polygon.removeFrom(%s);polygon = [];isClickActivated = false;" % id))
+
+    def enablePolygon(self):
+        self.mapRenderer.page().runJavaScript("isClickActivated = true;")
+
+    def clearCurrentPolygon(self):
+        self.mapRenderer.page().runJavaScript("document.body.children[0].id;",
+                                              lambda id: self.mapRenderer.page().runJavaScript(
+                                                  """
+                                                  polygon[currentPolygon].removeFrom(%s);
+                                                  polygon = [];""" % id))
+
+    def changeCurrentPolygon(self, i):
+        self.mapRenderer.page().runJavaScript("document.body.children[0].id;",
+                                              lambda id: self.mapRenderer.page().runJavaScript(
+                                                            """currentPolygon = %i;
+                                                            polygon[currentPolygon].removeFrom(%s);
+                                                            polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);""" % (i,id,id)))
+
+    def getPolygon(self):
+        self.mapRenderer.page().runJavaScript("latlngs;")
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')

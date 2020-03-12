@@ -5,7 +5,7 @@ from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton
+    QPushButton, QListView, QListWidget
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
@@ -212,6 +212,29 @@ class RequestWidget(QWidget):
 
         self.addFilter()
 
+        self.layout.addWidget(QLabel("Polygon:"))
+
+        polygonButtons = QWidget()
+        polygonButtonsLayout = QHBoxLayout()
+        polygonButtons.setLayout(polygonButtonsLayout)
+
+        self.polygonCB = QCheckBox()
+        self.polygonCB.setText("Use a polygon")
+
+        polygonButtonsLayout.addWidget(self.polygonCB)
+
+        self.buttonClearPol = QPushButton()
+        self.buttonClearPol.setText("Clear")
+
+        polygonButtonsLayout.addWidget(self.buttonClearPol)
+
+        self.layout.addWidget(polygonButtons)
+
+        line = QFrame(self)
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        self.layout.addWidget(line)
+
         self.layout.addWidget(QLabel("Surroundings:"))
 
         surroundGB = QGroupBox()
@@ -286,6 +309,12 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
+    def onClearPolygon(self, f):
+        self.buttonClearPol.clicked.connect(f)
+
+    def onPolygonEnabled(self, fTrue, fFalse):
+        self.polygonCB.stateChanged.connect(lambda: fTrue() if self.polygonCB.isChecked() else fFalse())
+
     def showTable(self):
         query = OverpassQuery()
 
@@ -356,6 +385,9 @@ class QueryUI(QWidget):
         super().__init__()
         self.keyValues = getOfficialKeys()
         self.lastRequestName = "a"
+        self.onClearPolygonF = lambda: None
+        self.onPolygonEnabledF = lambda: None
+        self.onPolygonDisabledF = lambda: None
         self.initUI()
 
     def initUI(self):
@@ -365,7 +397,6 @@ class QueryUI(QWidget):
         requestsArea.setWidgetResizable(True)
 
         self.requestTabs = QTabWidget()
-        self.addRequest()
         requestsArea.setWidget(self.requestTabs)
 
         requestsArea.setMinimumWidth(self.requestTabs.minimumWidth())
@@ -373,11 +404,31 @@ class QueryUI(QWidget):
 
         self.setLayout(self.layout)
 
+    def currentRequest(self):
+        return self.requestTabs.currentIndex()
+
+    def onTabChanged(self, f):
+        self.requestTabs.currentChanged.connect(f)
+
+    def onClearPolygon(self, f):
+        self.onClearPolygonF = f
+        for tab in self.requestTabs.findChildren(RequestWidget):
+            tab.onClearPolygon(f)
+
+
+    def onPolygonEnabled(self, fTrue, fFalse):
+        self.onPolygonEnabledF = fTrue
+        self.onPolygonDisabledF = fFalse
+        for tab in self.requestTabs.findChildren(RequestWidget):
+            tab.onPolygonEnabled(fTrue, fFalse)
+
     def addRequest(self):
         requestWidget = RequestWidget(self, self.keyValues)
         requestWidget.setObjectName(self.lastRequestName)
         self.requestTabs.addTab(requestWidget, self.lastRequestName)
         self.lastRequestName = nextString(self.lastRequestName)
+        requestWidget.onPolygonEnabled(self.onPolygonEnabledF, self.onPolygonDisabledF)
+        requestWidget.onClearPolygon(self.onClearPolygonF)
 
     def removeRequest(self):
         self.requestTabs.currentWidget().deleteLater()
