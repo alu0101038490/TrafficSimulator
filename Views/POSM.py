@@ -7,7 +7,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
 
-from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx
 from Views.QueryUI import QueryUI
 
 
@@ -143,6 +143,14 @@ class POSM(QMainWindow):
         manualModeAct.triggered.connect(self.setManualMode)
         self.requestMenu.addAction(manualModeAct)
 
+        disambiguationMenu = menubar.addMenu('Disambiguation')
+
+        showSelectionAct = QAction('Show selected option', self)
+        showSelectionAct.triggered.connect(self.showTableSelection)
+        showSelectionAct.setShortcut('Ctrl+N')
+        disambiguationMenu.addAction(showSelectionAct)
+
+
     def setManualMode(self):
         reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nYou will not be able to return to "
                                                           "interactive mode")
@@ -150,8 +158,6 @@ class POSM(QMainWindow):
             self.queryText.setReadOnly(False)
             self.queryUI.hide()
             self.requestMenu.setEnabled(False)
-
-
 
     def playQuery(self):
         if self.queryText.isReadOnly():
@@ -165,6 +171,9 @@ class POSM(QMainWindow):
 
     def openNet(self):
         openNetedit(self.saveNet() + ".net.xml")
+
+    def showTableSelection(self):
+        self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
 
 
 if __name__ == '__main__':

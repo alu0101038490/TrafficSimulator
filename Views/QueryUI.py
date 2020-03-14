@@ -1,3 +1,4 @@
+import copy
 import os
 
 import osmnx as ox
@@ -12,108 +13,9 @@ from Utils.GenericUtils import nextString
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
+import networkx as nx
 
-
-class DisambiguationTable(QAbstractTableModel):
-
-    def __init__(self, data):
-        QAbstractTableModel.__init__(self)
-
-        self.data = data
-        self.allKeys = frozenset([])
-        for i in data:
-            self.allKeys |= frozenset(i["tags"].keys())
-
-        self.headerItems = list(frozenset(["highway", "name", "maxspeed", "ref", "lanes", "oneway"]) & self.allKeys)
-
-        self.updateAlt()
-        self.rowCount = min(5, len(self.alt)) if self.alt else 0
-
-    def updateAlt(self):
-        self.alt = []
-        for i in self.data:
-            reducedData = {k:i["tags"].get(k) for k in self.headerItems}
-            coincidence = [i for i in range(len(self.alt)) if self.alt[i][0] == reducedData]
-            if len(coincidence) != 0:
-                self.alt[coincidence[0]] = (self.alt[coincidence[0]][0], self.alt[coincidence[0]][1] + 1)
-            else:
-                self.alt.append((reducedData, 1))
-
-        self.alt = sorted(self.alt, key=lambda x: x[1], reverse=True)
-
-    def updateColumns(self, keys):
-        keySet = frozenset(keys)
-        if keySet != frozenset(self.headerItems):
-            self.beginResetModel()
-            self.headerItems = list(keySet)
-            self.updateAlt()
-            self.rowCount = max(self.rowCount, len(self.alt)) if self.alt else 0
-            self.endResetModel()
-
-    '''
-    def addColumn(self, keys):
-        acceptedKeys = [k for k in keys if k in self.allKeys and k not in self.headerItems]
-        if len(acceptedKeys) > 0:
-            self.beginInsertColumns(QModelIndex(), len(self.headerItems), len(self.headerItems) + len(acceptedKeys) - 1)
-            self.headerItems += acceptedKeys
-            self.updateAlt()
-            self.endRemoveColumns()
-
-    def removeColumnByKey(self, key):
-        if key in self.headerItems:
-            self.removeColumn(self.headerItems.index(key))
-            self.updateAlt()
-    '''
-
-    def getAllColumns(self):
-        return self.allKeys
-
-    def getSelectedColumns(self):
-        return self.headerItems
-
-    def getDictData(self, index):
-        return {k: self.alt[index][0].get(k) for k in self.headerItems}
-
-    def showMore(self):
-        newRowCount = min(self.rowCount + 5, len(self.alt)) if self.alt else 0
-        if newRowCount != self.rowCount:
-            self.beginInsertRows(QModelIndex(), self.rowCount, newRowCount - 1)
-            self.rowCount = newRowCount
-            self.endInsertRows()
-
-    def showLess(self):
-        newRowCount = max(self.rowCount - 5, 2) if self.alt else 0
-        if newRowCount != self.rowCount:
-            self.beginRemoveRows(QModelIndex(), newRowCount, self.rowCount - 1)
-            self.rowCount = newRowCount
-            self.endRemoveRows()
-
-    def rowCount(self, parent=QModelIndex(), **kwargs):
-        return self.rowCount
-
-    def columnCount(self, parent=QModelIndex(), **kwargs):
-        return len(self.headerItems)
-
-    def headerData(self, section, orientation, role):
-        if role != Qt.DisplayRole:
-            return None
-        if orientation == Qt.Horizontal:
-            return self.headerItems[section]
-        else:
-            return "{}".format(section)
-
-    def data(self, index, role=Qt.DisplayRole):
-        column = index.column()
-        row = index.row()
-
-        if role == Qt.DisplayRole:
-            return self.alt[row][0].get(self.headerItems[column])
-        elif role == Qt.BackgroundRole:
-            return QColor(Qt.white)
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignRight
-
-        return None
+from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
 
 class FilterWidget(QWidget):
@@ -240,11 +142,21 @@ class RequestWidget(QWidget):
         line.setFrameShadow(QFrame.Sunken)
         self.layout.addWidget(line)
 
+        self.tableOptions = QWidget()
+        self.tableOptions.setVisible(False)
+        tableOptionsLayout = QHBoxLayout()
+        self.tableOptions.setLayout(tableOptionsLayout)
+        self.layout.addWidget(self.tableOptions)
+
+        self.onlyDisconnectedCB = QCheckBox()
+        self.onlyDisconnectedCB.setText("Only disconnected ways")
+        tableOptionsLayout.addWidget(self.onlyDisconnectedCB)
+
         self.layout.addWidget(QLabel("Disambiguation table:"))
 
         self.columnSelection = CheckableComboBox("Keys")
         self.columnSelection.setVisible(False)
-        self.layout.addWidget(self.columnSelection)
+        tableOptionsLayout.addWidget(self.columnSelection)
 
         self.tableView = QTableView()
         self.tableView.doubleClicked.connect(self.addFilterFromCell)
@@ -307,15 +219,27 @@ class RequestWidget(QWidget):
 
         jsonResponse = ox.overpass_json_from_file(tableDir)
 
-        tableData = [i for i in jsonResponse["elements"] if i["type"] == "way"]
-        self.tableView.setModel(DisambiguationTable(tableData))
+        self.disconnectedWaysTable = DisconnectedWaysTable(jsonResponse)
+        self.similarWaysTable = SimilarWaysTable(jsonResponse)
+        self.tableView.setModel(self.similarWaysTable)
         self.tableView.setVisible(True)
-        self.columnSelection.setVisible(True)
+        self.tableOptions.setVisible(True)
 
         for key in self.tableView.model().getAllColumns():
             self.columnSelection.addItem(key, key in self.tableView.model().getSelectedColumns())
 
-        self.columnSelection.setDropdownMenuSignal(lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
+        self.columnSelection.setDropdownMenuSignal(
+            lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
+
+        self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+
+    def showHideOnlyDisconnected(self):
+        if self.onlyDisconnectedCB.isChecked():
+            self.tableView.setModel(self.disconnectedWaysTable)
+            self.columnSelection.setEnabled(False)
+        else:
+            self.tableView.setModel(self.similarWaysTable)
+            self.columnSelection.setEnabled(True)
 
     def showMore(self):
         self.tableView.model().showMore()
@@ -349,6 +273,10 @@ class RequestWidget(QWidget):
             if (widget.isSelectedToDelete()):
                 widget.deleteLater()
 
+    def getSelectedRowNetworkx(self):
+        indexes = self.tableView.selectionModel().selectedRows()
+        return self.tableView.model().getRowJson(indexes)
+
 
 class QueryUI(QWidget):
 
@@ -368,7 +296,6 @@ class QueryUI(QWidget):
         self.addRequest()
         requestsArea.setWidget(self.requestTabs)
 
-        requestsArea.setMinimumWidth(self.requestTabs.minimumWidth())
         self.layout.addWidget(requestsArea)
 
         self.setLayout(self.layout)
@@ -406,3 +333,6 @@ class QueryUI(QWidget):
             query.addRequest(requestWidget.objectName(), request)
 
         return query
+
+    def getSelectedRowNetworkx(self):
+        return self.requestTabs.currentWidget().getSelectedRowNetworkx()
