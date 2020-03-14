@@ -1,10 +1,11 @@
 import os
 
 import osmnx as ox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QVariant, QModelIndex
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton
+    QPushButton, QListView, QListWidget
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
@@ -13,6 +14,105 @@ from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
+
+class RequestsOperations(QWidget):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.initUI()
+
+    def initUI(self):
+        self.layout = QVBoxLayout()
+
+        self.requestList = QListView()
+        self.model = QStandardItemModel()
+        self.requestList.setModel(self.model)
+
+        self.layout.addWidget(self.requestList)
+
+        self.operationButtons = QWidget()
+        self.operationButtons.setLayout(QHBoxLayout())
+
+        self.buttonIntersection = QPushButton("Intersection")
+        self.operationButtons.layout().addWidget(self.buttonIntersection)
+        self.buttonIntersection.clicked.connect(self.setsIntersection)
+
+        self.buttonUnion = QPushButton("Union")
+        self.operationButtons.layout().addWidget(self.buttonUnion)
+        self.buttonUnion.clicked.connect(self.setsUnion)
+
+        self.layout.addWidget(self.operationButtons)
+
+        self.resultingSetsLabel = QLabel("Resulting sets")
+        self.layout.addWidget(self.resultingSetsLabel)
+
+        self.resultingSets = QListWidget()
+        self.layout.addWidget(self.resultingSets)
+
+        self.setLayout(self.layout)
+
+    def setsUnion(self):
+        sets = [self.model.item(i).text() for i in range(self.model.rowCount()) if
+                self.model.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
+        if len(sets) > 1:
+            setName = "union_%s" % "_".join(sets)
+            self.resultingSets.addItem(setName)
+            self.cleanRequestList()
+            self.addRequest(setName)
+
+    def setsIntersection(self):
+        sets = [self.model.item(i).text() for i in range(self.model.rowCount()) if
+                self.model.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
+        if len(sets) > 1:
+            setName = "intersection_%s" % "_".join(sets)
+            self.resultingSets.addItem(setName)
+            self.cleanRequestList()
+            self.addRequest(setName)
+
+    def setRequestList(self, list):
+        self.model.beginResetModel()
+        self.model.removeRows(0, self.model.rowCount())
+        for r in list:
+            item = QStandardItem(r)
+            item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            item.setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+            self.model.appendRow(item)
+        self.model.endResetModel()
+
+    def addRequest(self, name):
+        self.model.beginInsertRows(QModelIndex(), self.model.rowCount(), self.model.rowCount())
+        item = QStandardItem(name)
+        item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+        item.setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+        self.model.appendRow(item)
+        self.model.endInsertRows()
+
+    def removeRequest(self, i):
+        self.model.beginRemoveRows(QModelIndex(), i, i)
+        self.model.removeRow(i)
+        self.model.endInsertRows()
+
+    def removeRequestByName(self, name):
+        request = -1
+        for i in range(self.model.rowCount()):
+            if self.model.item(i).text() == name:
+                request = i
+                break
+        if request >= 0:
+            self.removeRequest(request)
+
+    def cleanRequestList(self):
+        for i in range(self.model.rowCount()):
+            self.model.item(i).setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Backspace and self.resultingSets.hasFocus():
+            for i in range(self.resultingSets.count()):
+                if self.resultingSets.item(i).isSelected():
+                    self.removeRequestByName(self.resultingSets.item(i).text())
+                    self.resultingSets.takeItem(i)
+                    break
+        event.accept()
 
 class FilterWidget(QWidget):
 
