@@ -1,10 +1,8 @@
 import logging
-import datetime
-import logging
 import sys
 
 from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtGui import QTextCursor, QColor
+from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
