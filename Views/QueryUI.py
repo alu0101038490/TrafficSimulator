@@ -14,6 +14,7 @@ from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
+#TODO: diff, write in query, change sets name
 
 class RequestsOperations(QWidget):
 
@@ -49,6 +50,11 @@ class RequestsOperations(QWidget):
         self.resultingSets = QListWidget()
         self.layout.addWidget(self.resultingSets)
 
+        self.layout.addWidget(QLabel("Output set"))
+
+        self.outputSetSelection = QComboBox()
+        self.layout.addWidget(self.outputSetSelection)
+
         self.setLayout(self.layout)
 
     def setsUnion(self):
@@ -79,6 +85,8 @@ class RequestsOperations(QWidget):
             self.model.appendRow(item)
         self.model.endResetModel()
 
+        self.outputSetSelection.addItems(list)
+
     def addRequest(self, name):
         self.model.beginInsertRows(QModelIndex(), self.model.rowCount(), self.model.rowCount())
         item = QStandardItem(name)
@@ -87,10 +95,14 @@ class RequestsOperations(QWidget):
         self.model.appendRow(item)
         self.model.endInsertRows()
 
+        self.outputSetSelection.addItem(name)
+
     def removeRequest(self, i):
         self.model.beginRemoveRows(QModelIndex(), i, i)
         self.model.removeRow(i)
         self.model.endInsertRows()
+
+        self.outputSetSelection.removeItem(i)
 
     def removeRequestByName(self, name):
         request = -1
