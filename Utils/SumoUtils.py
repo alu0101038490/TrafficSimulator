@@ -53,11 +53,14 @@ def writeXMLResponse(query, outputFilename=responsePath):
     f.write(response.text)
     f.close()
 
-def buildHTML(query):
-    writeXMLResponse(query)
-
-    G = ox.graph_from_file(responsePath, retain_all=True)
+def buildHTMLWithNetworkx(G):
     graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
     graphMap.save(tilePath)
 
     return QUrl.fromLocalFile(tilePath)
+
+def buildHTMLWithQuery(query):
+    writeXMLResponse(query)
+    G = ox.graph_from_file(responsePath, retain_all=True)
+
+    return buildHTMLWithNetworkx(G)

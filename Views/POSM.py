@@ -1,13 +1,15 @@
 import logging
+import datetime
+import logging
 import sys
 
 from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor, QColor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
 
-from Utils.SumoUtils import buildNet, openNetedit, buildHTML, defaultTileMap
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap
 from Views.QueryUI import QueryUI
 
 
@@ -156,7 +158,7 @@ class POSM(QMainWindow):
     def playQuery(self):
         if self.queryText.isReadOnly():
             self.queryText.setText(self.queryUI.getQuery().getQL())
-        self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
+        self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
