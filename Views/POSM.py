@@ -66,7 +66,7 @@ class POSM(QMainWindow):
         self.editionSplitter = QSplitter(Qt.Vertical)
 
         self.queryUI = QueryUI()
-        self.queryUI.onClearPolygon(self.clearCurrentPolygon)
+        self.queryUI.onClearPolygon(self.cleanCurrentPolygon)
         self.queryUI.onPolygonEnabled(self.enablePolygon, self.disablePolygon)
         self.queryUI.onTabChanged(self.changeCurrentPolygon)
         self.editionSplitter.addWidget(self.queryUI)
@@ -133,7 +133,7 @@ class POSM(QMainWindow):
         self.requestMenu.addAction(addRequestAct)
 
         removeRequestAct = QAction('Remove current request', self)
-        removeRequestAct.triggered.connect(self.queryUI.removeRequest)
+        removeRequestAct.triggered.connect(self.removeRequest)
         removeRequestAct.setShortcut('Ctrl+R')
         self.requestMenu.addAction(removeRequestAct)
 
@@ -167,57 +167,91 @@ class POSM(QMainWindow):
             lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
 
     def addRequest(self):
-        self.mapRenderer.page().runJavaScript("polygon.push([]);")
+        self.mapRenderer.page().runJavaScript("addPolygon();")
         self.queryUI.addRequest()
 
     def removeRequest(self):
-        index = self.queryUI.currentRequest()
-        self.mapRenderer.page().runJavaScript("polygon.splice(%i, 1);" %index)
+        self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
         self.queryUI.removeRequest()
 
     def modifyHtml(self, id):
         code = """
-            var isClickActivated = false;
             var currentPolygon = 0;
-            var polygon = [];
-            var latlngs = [];
+            var isClickActivated = [false];
+            var polygon = [[]];
+            var latlngs = [[]];
+            
+            function draw() {
+                if(latlngs[currentPolygon].length > 1) {
+                    polygon[currentPolygon].removeFrom(%s);  
+                }
+                polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);
+            }
 
             %s.on('click', function(e) { 
-                if(isClickActivated && currentPolygon >= 0) {
-                    if(latlngs[currentPolygon].length > 0) {
-                        polygon[currentPolygon].removeFrom(%s);  
-                    }
+                if(isClickActivated[currentPolygon] && currentPolygon >= 0) {
                     latlngs[currentPolygon].push(e.latlng);
-                    polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);
+                    draw();
                 }
             });
-            """ % (id, id, id)
+            
+            function addPolygon() {
+                latlngs.push([]);
+                isClickActivated.push(false)
+                polygon.push(null);
+            }
+            
+            function cleanPolygon() {
+				polygon[currentPolygon].removeFrom(%s);
+                latlngs[currentPolygon] = [];
+			}
+			
+			function disablePolygon() {
+			    cleanPolygon();
+			    isClickActivated[currentPolygon] = false;
+			}
+			
+			function enablePolygon() {
+			    isClickActivated[currentPolygon] = true;
+			}
+			
+			function changeCurrentPolygon(i) {
+			    polygon[currentPolygon].removeFrom(%s);
+			    currentPolygon = i;
+			    draw();
+			}
+			
+			function getPolygon() {
+			    return latlngs;
+			}
+			
+			function removeCurrentPolygon() {
+			    cleanPolygon();
+			    isClickActivated.splice(currentPolygon, 1);
+			    latlngs.splice(currentPolygon, 1);
+			    polygon.splice(currentPolygon, 1);
+			    if(currentPolygon == polygon.length) {
+			        currentPolygon = currentPolygon - 1;
+			    }
+			    draw();
+			}
+            """ % (id, id, id, id, id)
         self.mapRenderer.page().runJavaScript(code)
 
     def disablePolygon(self):
-        self.mapRenderer.page().runJavaScript("document.body.children[0].id;",
-                                              lambda id: self.mapRenderer.page().runJavaScript(
-                                                  "polygon.removeFrom(%s);polygon = [];isClickActivated = false;" % id))
+        self.mapRenderer.page().runJavaScript("disablePolygon();")
 
     def enablePolygon(self):
-        self.mapRenderer.page().runJavaScript("isClickActivated = true;")
+        self.mapRenderer.page().runJavaScript("enablePolygon();")
 
-    def clearCurrentPolygon(self):
-        self.mapRenderer.page().runJavaScript("document.body.children[0].id;",
-                                              lambda id: self.mapRenderer.page().runJavaScript(
-                                                  """
-                                                  polygon[currentPolygon].removeFrom(%s);
-                                                  polygon = [];""" % id))
+    def cleanCurrentPolygon(self):
+        self.mapRenderer.page().runJavaScript("cleanPolygon();")
 
     def changeCurrentPolygon(self, i):
-        self.mapRenderer.page().runJavaScript("document.body.children[0].id;",
-                                              lambda id: self.mapRenderer.page().runJavaScript(
-                                                            """currentPolygon = %i;
-                                                            polygon[currentPolygon].removeFrom(%s);
-                                                            polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);""" % (i,id,id)))
+        self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
 
     def getPolygon(self):
-        self.mapRenderer.page().runJavaScript("latlngs;")
+        self.mapRenderer.page().runJavaScript("getPolygons();")
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
