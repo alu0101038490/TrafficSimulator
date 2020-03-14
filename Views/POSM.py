@@ -17,7 +17,8 @@ class InformationalConsole(QTextEdit):
         super().__init__()
         self.setReadOnly(True)
 
-        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s', datefmt="%H:%M:%S")
+        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s',
+                            datefmt="%H:%M:%S")
 
     def write(self, text):
         if text[0] == "W":
@@ -149,7 +150,6 @@ class POSM(QMainWindow):
         showSelectionAct.triggered.connect(self.showTableSelection)
         showSelectionAct.setShortcut('Ctrl+N')
         disambiguationMenu.addAction(showSelectionAct)
-
 
     def setManualMode(self):
         reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nYou will not be able to return to "

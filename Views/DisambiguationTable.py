@@ -1,10 +1,10 @@
 import copy
+from abc import abstractmethod
 
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
-from PyQt5.QtGui import QColor
-from abc import ABC, abstractmethod
 import networkx as nx
 import osmnx as ox
+from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PyQt5.QtGui import QColor
 
 
 class DisambiguationTable(QAbstractTableModel):
@@ -189,7 +189,7 @@ class SimilarWaysTable(DisambiguationTable):
             coincidence = [i for i in range(len(self.alt)) if self.alt[i][0] == reducedData]
             if len(coincidence) != 0:
                 self.alt[coincidence[0]] = (
-                self.alt[coincidence[0]][0], self.alt[coincidence[0]][1] + 1, self.alt[coincidence[0]][2] + [i])
+                    self.alt[coincidence[0]][0], self.alt[coincidence[0]][1] + 1, self.alt[coincidence[0]][2] + [i])
             else:
                 self.alt.append((reducedData, 1, [i]))
         self.alt = sorted(self.alt, key=lambda x: x[1], reverse=True)

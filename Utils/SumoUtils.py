@@ -1,8 +1,8 @@
 import os
 import pathlib
 import subprocess
-import osmnx as ox
 
+import osmnx as ox
 import requests
 from PyQt5.QtCore import QUrl
 
@@ -43,6 +43,7 @@ def openNetedit(inputName):
     netedit = sumolib.checkBinary("netedit")
     subprocess.Popen([netedit, inputName])
 
+
 def writeXMLResponse(query, outputFilename=responsePath):
     overpassUrl = "http://overpass-api.de/api/interpreter"
     response = requests.get(overpassUrl, params={'data': query})
@@ -53,11 +54,13 @@ def writeXMLResponse(query, outputFilename=responsePath):
     f.write(response.text)
     f.close()
 
+
 def buildHTMLWithNetworkx(G):
     graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
     graphMap.save(tilePath)
 
     return QUrl.fromLocalFile(tilePath)
+
 
 def buildHTMLWithQuery(query):
     writeXMLResponse(query)

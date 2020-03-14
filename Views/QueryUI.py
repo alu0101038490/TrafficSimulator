@@ -1,9 +1,7 @@
-import copy
 import os
 
 import osmnx as ox
-from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
     QPushButton
@@ -13,8 +11,6 @@ from Utils.GenericUtils import nextString
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
-import networkx as nx
-
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
 
@@ -103,7 +99,7 @@ class RequestWidget(QWidget):
 
     def initUI(self):
         self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0,0,0,0)
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.layout.addWidget(QLabel("Filters:"))
 
