@@ -151,6 +151,16 @@ class POSM(QMainWindow):
         showSelectionAct.setShortcut('Ctrl+N')
         disambiguationMenu.addAction(showSelectionAct)
 
+        windowsMenu = menubar.addMenu('Windows')
+
+        showHideRequests = QAction('Show/hide requests', self)
+        showHideRequests.triggered.connect(self.queryUI.showHideRequests)
+        windowsMenu.addAction(showHideRequests)
+
+        showHideRequestOperation = QAction('Show/hide request operations', self)
+        showHideRequestOperation.triggered.connect(self.queryUI.showHideRequestOperation)
+        windowsMenu.addAction(showHideRequestOperation)
+
     def setManualMode(self):
         reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nYou will not be able to return to "
                                                           "interactive mode")

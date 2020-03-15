@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
     QPushButton, QListView, QListWidget
 
-from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
+from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
+    OverpassDiff
 from Utils.GenericUtils import nextString
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
@@ -22,6 +23,7 @@ class RequestsOperations(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.initUI()
+        self.ops = {}
 
     def initUI(self):
         self.layout = QVBoxLayout()
@@ -82,30 +84,38 @@ class RequestsOperations(QWidget):
 
         self.setLayout(self.layout)
 
+    def getOps(self):
+        return self.ops
+
     def __applyOp(self):
         sets = [self.model.item(i).text() for i in range(self.model.rowCount()) if
                 self.model.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
         if self.buttonUnion.isChecked():
             if len(sets) > 1:
                 setName = "union_%s" % "_".join(sets)
+                self.ops[setName] = OverpassUnion()
+                self.ops[setName].addSets(sets)
                 self.resultingSets.addItem(setName)
-                self.cleanRequestList()
                 self.addRequest(setName)
+                self.cleanRequestList()
         elif self.buttonIntersection.isChecked():
             if len(sets) > 1:
                 setName = "intersection_%s" % "_".join(sets)
+                self.ops[setName] = OverpassIntersection()
+                self.ops[setName].addSets(sets)
                 self.resultingSets.addItem(setName)
-                self.cleanRequestList()
                 self.addRequest(setName)
+                self.cleanRequestList()
         elif self.buttonDiff.isChecked():
             sets2 = [self.model2.item(i).text() for i in range(self.model2.rowCount()) if
                      self.model2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
             if len(sets) == 1 and len(sets2) > 0:
                 setName = "diff_%s" % "_".join(sets)
+                self.ops[setName] = OverpassDiff(sets[0])
+                self.ops[setName].addSets(sets)
                 self.resultingSets.addItem(setName)
-                self.cleanRequestList()
                 self.addRequest(setName)
-
+                self.cleanRequestList()
 
     def __setsDiff(self):
         self.requestList2.setEnabled(True)
@@ -115,26 +125,6 @@ class RequestsOperations(QWidget):
 
     def __setsIntersection(self):
         self.requestList2.setEnabled(False)
-
-    def setRequestList(self, list):
-        self.model.beginResetModel()
-        self.model2.beginResetModel()
-        self.model.removeRows(0, self.model.rowCount())
-        self.model2.removeRows(0, self.model2.rowCount())
-        for r in list:
-            item = QStandardItem(r)
-            item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-            item.setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
-            self.model.appendRow(item)
-
-            item = QStandardItem(r)
-            item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-            item.setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
-            self.model2.appendRow(item)
-        self.model.endResetModel()
-        self.model2.endResetModel()
-
-        self.outputSetSelection.addItems(list)
 
     def addRequest(self, name):
         self.model.beginInsertRows(QModelIndex(), self.model.rowCount(), self.model.rowCount())
@@ -183,6 +173,7 @@ class RequestsOperations(QWidget):
             for i in range(self.resultingSets.count()):
                 if self.resultingSets.item(i).isSelected():
                     self.removeRequestByName(self.resultingSets.item(i).text())
+                    del self.ops[self.resultingSets.item(i).text()]
                     self.resultingSets.takeItem(i)
                     break
         event.accept()
@@ -458,14 +449,23 @@ class QueryUI(QWidget):
     def initUI(self):
         self.layout = QVBoxLayout()
 
-        requestsArea = QScrollArea()
-        requestsArea.setWidgetResizable(True)
+        self.requestsArea = QScrollArea()
+        self.requestsArea.setWidgetResizable(True)
+
+        self.requestAreaWidget = QWidget()
+        self.requestAreaWidget.setLayout(QVBoxLayout())
 
         self.requestTabs = QTabWidget()
-        self.addRequest()
-        requestsArea.setWidget(self.requestTabs)
+        self.requestAreaWidget.layout().addWidget(self.requestTabs)
 
-        self.layout.addWidget(requestsArea)
+        self.requestOps = RequestsOperations(self)
+        self.requestOps.hide()
+        self.requestAreaWidget.layout().addWidget(self.requestOps)
+
+        self.addRequest()
+
+        self.requestsArea.setWidget(self.requestAreaWidget)
+        self.layout.addWidget(self.requestsArea)
 
         self.setLayout(self.layout)
 
@@ -473,9 +473,23 @@ class QueryUI(QWidget):
         requestWidget = RequestWidget(self, self.keyValues)
         requestWidget.setObjectName(self.lastRequestName)
         self.requestTabs.addTab(requestWidget, self.lastRequestName)
+        self.requestOps.addRequest(self.lastRequestName)
         self.lastRequestName = nextString(self.lastRequestName)
 
+    def showHideRequestOperation(self):
+        if self.requestOps.isHidden():
+            self.requestOps.show()
+        else:
+            self.requestOps.hide()
+
+    def showHideRequests(self):
+        if self.requestTabs.isHidden():
+            self.requestTabs.show()
+        else:
+            self.requestTabs.hide()
+
     def removeRequest(self):
+        self.requestOps.removeRequestByName(self.requestTabs.currentWidget().getObjectName())
         self.requestTabs.currentWidget().deleteLater()
 
     def addFilter(self):
@@ -500,6 +514,9 @@ class QueryUI(QWidget):
                 request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected())
 
             query.addRequest(requestWidget.objectName(), request)
+
+        for name, op in self.requestOps.getOps():
+            query.addSetsOp(name, op)
 
         return query
 
