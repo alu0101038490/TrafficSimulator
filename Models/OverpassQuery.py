@@ -24,6 +24,10 @@ class OverpassSetOp(ABC):
             self.sets.remove(set)
 
     @abstractmethod
+    def getType(self):
+        pass
+
+    @abstractmethod
     def getQL(self):
         pass
 
@@ -36,6 +40,9 @@ class OverpassUnion(OverpassSetOp):
     def __init__(self):
         super().__init__()
 
+    def getType(self):
+        return "Union"
+
     def getQL(self):
         return "(.%s;)" % ";.".join(self.sets)
 
@@ -46,6 +53,9 @@ class OverpassIntersection(OverpassSetOp):
 
     def __init__(self):
         super().__init__()
+
+    def getType(self):
+        return "Intersection"
 
     def getQL(self):
         return "way.%s" % ".".join(self.sets)
@@ -58,6 +68,9 @@ class OverpassDiff(OverpassSetOp):
     def __init__(self, includedSet):
         super().__init__()
         self.includedSet = includedSet
+
+    def getType(self):
+        return "Difference"
 
     def changeIncludedSet(self, set):
         self.includedSet = set
