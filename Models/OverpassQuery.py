@@ -18,8 +18,16 @@ class OverpassSetOp(ABC):
     def addSets(self, sets):
         self.sets.extend(sets)
 
+    def removeSet(self, set):
+        if set in self.sets:
+            self.sets.remove(set)
+
     @abstractmethod
     def getQL(self):
+        pass
+
+    @abstractmethod
+    def isValid(self):
         pass
 
 class OverpassUnion(OverpassSetOp):
@@ -30,6 +38,9 @@ class OverpassUnion(OverpassSetOp):
     def getQL(self):
         return "(.%s;)" % ";.".join(self.sets)
 
+    def isValid(self):
+        return len(self.sets) > 1
+
 class OverpassIntersection(OverpassSetOp):
 
     def __init__(self):
@@ -37,6 +48,9 @@ class OverpassIntersection(OverpassSetOp):
 
     def getQL(self):
         return "way.%s" % ".".join(self.sets)
+
+    def isValid(self):
+        return len(self.sets) > 1
 
 class OverpassDiff(OverpassSetOp):
 
@@ -47,8 +61,17 @@ class OverpassDiff(OverpassSetOp):
     def changeIncludedSet(self, set):
         self.includedSet = set
 
+    def removeSet(self, set):
+        if set == self.includedSet:
+            self.includedSet = ""
+        else:
+            super().removeSet(set)
+
     def getQL(self):
         return "(%s;-.%s;)" % (self.includedSet, ";-.".join(self.sets))
+
+    def isValid(self):
+        return len(self.sets) > 0 and self.includedSet != ""
 
 class OverpassRequest(object):
 

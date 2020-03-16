@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt, QVariant, QModelIndex
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QListWidget
+    QPushButton, QListView, QListWidget, QMessageBox
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff
@@ -15,8 +15,6 @@ from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
-
-#TODO: write in query, change sets name
 
 class RequestsOperations(QWidget):
 
@@ -154,14 +152,32 @@ class RequestsOperations(QWidget):
 
         self.outputSetSelection.removeItem(i)
 
-    def removeRequestByName(self, name):
-        request = -1
+    def removeByName(self, setName):
+        removeList = [setName]
+
+        for set in removeList:
+            removeList.extend([i for i in self.removeRecursively(set) if i not in removeList])
+
+    def removeRecursively(self, setName):
+        result = []
+        for opName in self.ops.keys():
+            self.ops[opName].removeSet(setName)
+            if not self.ops[opName].isValid():
+                result.append(opName)
+
         for i in range(self.model.rowCount()):
-            if self.model.item(i).text() == name:
-                request = i
+            if self.model.item(i).text() == setName:
+                self.removeRequest(i)
                 break
-        if request >= 0:
-            self.removeRequest(request)
+
+        if setName in self.ops.keys():
+            for i in range(self.resultingSets.count()):
+                if self.resultingSets.item(i).text() == setName:
+                    self.resultingSets.takeItem(i)
+                    break
+            del self.ops[setName]
+
+        return result
 
     def cleanRequestList(self):
         for i in range(self.model.rowCount()):
@@ -170,13 +186,16 @@ class RequestsOperations(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Backspace and self.resultingSets.hasFocus():
-            for i in range(self.resultingSets.count()):
-                if self.resultingSets.item(i).isSelected():
-                    self.removeRequestByName(self.resultingSets.item(i).text())
-                    del self.ops[self.resultingSets.item(i).text()]
-                    self.resultingSets.takeItem(i)
-                    break
+
+            reply = QMessageBox.question(self, "Remove request operation",
+                                         "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid")
+            if reply == QMessageBox.Yes:
+                for i in range(self.resultingSets.count()):
+                    if self.resultingSets.item(i).isSelected():
+                        self.removeRecursively(self.resultingSets.item(i).text())
+                        break
         event.accept()
+
 
 class FilterWidget(QWidget):
 
@@ -489,8 +508,11 @@ class QueryUI(QWidget):
             self.requestTabs.hide()
 
     def removeRequest(self):
-        self.requestOps.removeRequestByName(self.requestTabs.currentWidget().getObjectName())
-        self.requestTabs.currentWidget().deleteLater()
+        reply = QMessageBox.question(self, "Remove request",
+                                     "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid")
+        if reply == QMessageBox.Yes:
+            self.requestOps.removeByName(self.requestTabs.currentWidget().objectName())
+            self.requestTabs.currentWidget().deleteLater()
 
     def addFilter(self):
         self.requestTabs.currentWidget().addFilter()
