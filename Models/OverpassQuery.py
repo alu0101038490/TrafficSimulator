@@ -14,7 +14,11 @@ class OverpassSetOp(ABC):
 
     def __init__(self):
         super().__init__()
-        self.sets = []
+        self.__sets = []
+
+    @property
+    def sets(self):
+        return self.__sets
 
     def addSet(self, set):
         self.sets.append(set)
@@ -73,22 +77,26 @@ class OverpassDiff(OverpassSetOp):
 
     def __init__(self, includedSet):
         super().__init__()
-        self.includedSet = includedSet
+        self.__includedSet = includedSet
+
+    @property
+    def includedSet(self):
+        return self.__includedSet
 
     def getType(self):
         return "Difference"
 
     def changeIncludedSet(self, set):
-        self.includedSet = set
+        self.__includedSet = set
 
     def removeSet(self, set):
         if set == self.includedSet:
-            self.includedSet = ""
+            self.__includedSet = ""
         else:
             super().removeSet(set)
 
     def getQL(self):
-        return "(%s;-.%s;)" % (self.includedSet, ";-.".join(self.sets))
+        return "(.%s;- .%s;)" % (self.includedSet, ";- .".join(self.sets))
 
     def isValid(self):
         return len(self.sets) > 0 and self.includedSet != ""
@@ -148,4 +156,4 @@ class OverpassQuery(object):
         for name, op in self.ops.items():
             statement += op.getQL() + "->." + name + ";\n"
 
-        return "%s(%s;>;);\nout meta;" % (statement, self.outputSet)
+        return "%s(.%s;>;);\nout meta;" % (statement, self.outputSet)

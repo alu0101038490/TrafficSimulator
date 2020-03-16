@@ -63,7 +63,10 @@ class OperationsTableModel(QAbstractTableModel):
             elif column == 1:
                 return self.ops[row][1].getType()
             elif column == 2:
-                return ",".join(self.ops[row][1].sets)
+                if self.ops[row][1].getType() == "Difference":
+                    return "%s - %s" % (self.ops[row][1].includedSet, ",".join(self.ops[row][1].sets))
+                else:
+                    return ",".join(self.ops[row][1].sets)
         elif role == Qt.BackgroundRole:
             return QColor(Qt.white)
         elif role == Qt.TextAlignmentRole:
@@ -141,6 +144,9 @@ class RequestsOperations(QWidget):
 
         self.setLayout(self.layout)
 
+    def outputSet(self):
+        return self.outputSetSelection.currentText()
+
     @property
     def ops(self):
         return self.__ops
@@ -160,7 +166,7 @@ class RequestsOperations(QWidget):
                             self.requestsModel2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
 
             if len(includedSets) == 1 and len(excludedSets) > 0:
-                self.__addOp(OverpassDiff(includedSets[0]), includedSets)
+                self.__addOp(OverpassDiff(includedSets[0]), excludedSets)
 
     def __addOp(self, op, sets):
         setName = OverpassQuery.getSetName()
@@ -203,7 +209,7 @@ class RequestsOperations(QWidget):
     def __removeSet(self, setName):
         dependencies = []
         for opName in self.__ops.keys():
-            self.__ops[opName].__removeSet(setName)
+            self.__ops[opName].removeSet(setName)
             if not self.__ops[opName].isValid():
                 dependencies.append(opName)
 
@@ -581,7 +587,7 @@ class QueryUI(QWidget):
         self.requestTabs.currentWidget().removeFilters()
 
     def getQuery(self):
-        query = OverpassQuery()
+        query = OverpassQuery(self.requestOps.outputSet())
 
         switcher = {
             "Adjacent": Surround.ADJACENT,
@@ -597,7 +603,7 @@ class QueryUI(QWidget):
 
             query.addRequest(requestWidget.objectName(), request)
 
-        for name, op in self.requestOps.__ops():
+        for name, op in self.requestOps.ops.items():
             query.addSetsOp(name, op)
 
         return query
