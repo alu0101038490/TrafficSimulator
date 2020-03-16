@@ -1,11 +1,14 @@
-from enum import Enum
 from abc import ABC, abstractmethod
+from enum import Enum
+
 from Utils.GenericUtils import nextString
+
 
 class Surround(Enum):
     AROUND = 1
     ADJACENT = 2
     NONE = 3
+
 
 class OverpassSetOp(ABC):
 
@@ -35,6 +38,7 @@ class OverpassSetOp(ABC):
     def isValid(self):
         pass
 
+
 class OverpassUnion(OverpassSetOp):
 
     def __init__(self):
@@ -49,6 +53,7 @@ class OverpassUnion(OverpassSetOp):
     def isValid(self):
         return len(self.sets) > 1
 
+
 class OverpassIntersection(OverpassSetOp):
 
     def __init__(self):
@@ -62,6 +67,7 @@ class OverpassIntersection(OverpassSetOp):
 
     def isValid(self):
         return len(self.sets) > 1
+
 
 class OverpassDiff(OverpassSetOp):
 
@@ -87,6 +93,7 @@ class OverpassDiff(OverpassSetOp):
     def isValid(self):
         return len(self.sets) > 0 and self.includedSet != ""
 
+
 class OverpassRequest(object):
 
     def __init__(self, surrounding, aroundRadius=100):
@@ -110,7 +117,6 @@ class OverpassRequest(object):
 
 
 class OverpassQuery(object):
-
     setName = "a"
 
     def __init__(self, outputSet):
@@ -142,4 +148,4 @@ class OverpassQuery(object):
         for name, op in self.ops.items():
             statement += op.getQL() + "->." + name + ";\n"
 
-        return "%s(%s;>;);\nout meta;" %(statement, self.outputSet)
+        return "%s(%s;>;);\nout meta;" % (statement, self.outputSet)

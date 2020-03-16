@@ -153,13 +153,33 @@ class POSM(QMainWindow):
 
         windowsMenu = menubar.addMenu('Windows')
 
-        showHideRequests = QAction('Show/hide requests', self)
+        showHideRequests = QAction('Requests', self)
         showHideRequests.triggered.connect(self.queryUI.showHideRequests)
         windowsMenu.addAction(showHideRequests)
 
-        showHideRequestOperation = QAction('Show/hide request operations', self)
+        showHideRequestOperation = QAction('Operations', self)
         showHideRequestOperation.triggered.connect(self.queryUI.showHideRequestOperation)
         windowsMenu.addAction(showHideRequestOperation)
+
+        showHideConsole = QAction('Console', self)
+        showHideConsole.triggered.connect(self.showHideConsole)
+        windowsMenu.addAction(showHideConsole)
+
+        showHideQuery = QAction('Query', self)
+        showHideQuery.triggered.connect(self.showHideQuery)
+        windowsMenu.addAction(showHideQuery)
+
+    def showHideConsole(self):
+        if self.console.isHidden():
+            self.console.show()
+        else:
+            self.console.hide()
+
+    def showHideQuery(self):
+        if self.queryText.isHidden():
+            self.queryText.show()
+        else:
+            self.queryText.hide()
 
     def setManualMode(self):
         reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nYou will not be able to return to "
