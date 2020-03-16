@@ -1,5 +1,6 @@
 from enum import Enum
 from abc import ABC, abstractmethod
+from Utils.GenericUtils import nextString
 
 class Surround(Enum):
     AROUND = 1
@@ -97,11 +98,19 @@ class OverpassRequest(object):
 
 class OverpassQuery(object):
 
+    setName = "a"
+
     def __init__(self, outputSet):
         super().__init__()
         self.requests = {}
         self.outputSet = outputSet
         self.ops = {}
+
+    @classmethod
+    def getSetName(self):
+        lastSetName = self.setName
+        self.setName = nextString(lastSetName)
+        return lastSetName
 
     def addRequest(self, name, request):
         self.requests[name] = request

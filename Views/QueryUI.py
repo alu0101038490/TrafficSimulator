@@ -90,7 +90,7 @@ class RequestsOperations(QWidget):
                 self.model.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
         if self.buttonUnion.isChecked():
             if len(sets) > 1:
-                setName = "union_%s" % "_".join(sets)
+                setName = OverpassQuery.getSetName()
                 self.ops[setName] = OverpassUnion()
                 self.ops[setName].addSets(sets)
                 self.resultingSets.addItem(setName)
@@ -98,7 +98,7 @@ class RequestsOperations(QWidget):
                 self.cleanRequestList()
         elif self.buttonIntersection.isChecked():
             if len(sets) > 1:
-                setName = "intersection_%s" % "_".join(sets)
+                setName = OverpassQuery.getSetName()
                 self.ops[setName] = OverpassIntersection()
                 self.ops[setName].addSets(sets)
                 self.resultingSets.addItem(setName)
@@ -108,7 +108,7 @@ class RequestsOperations(QWidget):
             sets2 = [self.model2.item(i).text() for i in range(self.model2.rowCount()) if
                      self.model2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
             if len(sets) == 1 and len(sets2) > 0:
-                setName = "diff_%s" % "_".join(sets)
+                setName = OverpassQuery.getSetName()
                 self.ops[setName] = OverpassDiff(sets[0])
                 self.ops[setName].addSets(sets)
                 self.resultingSets.addItem(setName)
@@ -462,7 +462,6 @@ class QueryUI(QWidget):
     def __init__(self):
         super().__init__()
         self.keyValues = getOfficialKeys()
-        self.lastRequestName = "a"
         self.initUI()
 
     def initUI(self):
@@ -490,10 +489,10 @@ class QueryUI(QWidget):
 
     def addRequest(self):
         requestWidget = RequestWidget(self, self.keyValues)
-        requestWidget.setObjectName(self.lastRequestName)
-        self.requestTabs.addTab(requestWidget, self.lastRequestName)
-        self.requestOps.addRequest(self.lastRequestName)
-        self.lastRequestName = nextString(self.lastRequestName)
+        setName = OverpassQuery.getSetName()
+        requestWidget.setObjectName(setName)
+        self.requestTabs.addTab(requestWidget, setName)
+        self.requestOps.addRequest(setName)
 
     def showHideRequestOperation(self):
         if self.requestOps.isHidden():
