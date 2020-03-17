@@ -1,6 +1,7 @@
 import os
 import pathlib
 import subprocess
+import xml.etree.ElementTree as ET
 
 import osmnx as ox
 import requests
@@ -53,6 +54,36 @@ def writeXMLResponse(query, outputFilename=responsePath):
     f.truncate()
     f.write(response.text)
     f.close()
+
+
+def getXML():
+    return ET.parse(responsePath).getroot()
+
+
+def getIntersections():
+    root = getXML()
+    nodes = [child for child in root if child.tag == "node"]
+    ways = [child for child in root if child.tag == "way"]
+
+    intersections = []
+    for n in nodes:
+        id = n.attrib["id"]
+        appearances = []
+        for w in ways:
+            if id in [child.attrib["ref"] for child in list(w) if child.tag == "nd"]:
+                appearances.append(w)
+
+        if len(appearances) > 2:
+            intersections.append(id)
+        elif len(appearances) > 1:
+            way1firstNode = appearances[0].find("./nd[1]").attrib["ref"]
+            way2firstNode = appearances[1].find("./nd[1]").attrib["ref"]
+            way1lastNode = appearances[0].find("./nd[last()]").attrib["ref"]
+            way2lastNode = appearances[1].find("./nd[last()]").attrib["ref"]
+            if len({way1firstNode, way2firstNode, way1lastNode, way2lastNode}) == 4:
+                intersections.append(id)
+
+    return intersections
 
 
 def buildHTMLWithNetworkx(G):
