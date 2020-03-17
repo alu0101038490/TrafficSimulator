@@ -1,10 +1,105 @@
+from abc import ABC, abstractmethod
 from enum import Enum
+
+from Utils.GenericUtils import nextString
 
 
 class Surround(Enum):
     AROUND = 1
     ADJACENT = 2
     NONE = 3
+
+
+class OverpassSetOp(ABC):
+
+    def __init__(self):
+        super().__init__()
+        self.__sets = []
+
+    @property
+    def sets(self):
+        return self.__sets
+
+    def addSet(self, set):
+        self.sets.append(set)
+
+    def addSets(self, sets):
+        self.sets.extend(sets)
+
+    def removeSet(self, set):
+        if set in self.sets:
+            self.sets.remove(set)
+
+    @abstractmethod
+    def getType(self):
+        pass
+
+    @abstractmethod
+    def getQL(self):
+        pass
+
+    @abstractmethod
+    def isValid(self):
+        pass
+
+
+class OverpassUnion(OverpassSetOp):
+
+    def __init__(self):
+        super().__init__()
+
+    def getType(self):
+        return "Union"
+
+    def getQL(self):
+        return "(.%s;)" % ";.".join(self.sets)
+
+    def isValid(self):
+        return len(self.sets) > 1
+
+
+class OverpassIntersection(OverpassSetOp):
+
+    def __init__(self):
+        super().__init__()
+
+    def getType(self):
+        return "Intersection"
+
+    def getQL(self):
+        return "way.%s" % ".".join(self.sets)
+
+    def isValid(self):
+        return len(self.sets) > 1
+
+
+class OverpassDiff(OverpassSetOp):
+
+    def __init__(self, includedSet):
+        super().__init__()
+        self.__includedSet = includedSet
+
+    @property
+    def includedSet(self):
+        return self.__includedSet
+
+    def getType(self):
+        return "Difference"
+
+    def changeIncludedSet(self, set):
+        self.__includedSet = set
+
+    def removeSet(self, set):
+        if set == self.includedSet:
+            self.__includedSet = ""
+        else:
+            super().removeSet(set)
+
+    def getQL(self):
+        return "(.%s;- .%s;)" % (self.includedSet, ";- .".join(self.sets))
+
+    def isValid(self):
+        return len(self.sets) > 0 and self.includedSet != ""
 
 
 class OverpassRequest(object):
@@ -30,19 +125,35 @@ class OverpassRequest(object):
 
 
 class OverpassQuery(object):
+    setName = "a"
 
-    def __init__(self):
+    def __init__(self, outputSet):
         super().__init__()
         self.requests = {}
+        self.outputSet = outputSet
+        self.ops = {}
+
+    @classmethod
+    def getSetName(self):
+        lastSetName = self.setName
+        self.setName = nextString(lastSetName)
+        return lastSetName
 
     def addRequest(self, name, request):
         self.requests[name] = request
 
+    def changeOutputSet(self, name):
+        self.outputSet = name
+
+    def addSetsOp(self, name, op):
+        self.ops[name] = op
+
     def getQL(self):
         statement = ""
-        combination = "(\n"
         for name, request in self.requests.items():
             statement += request.getQL() + "->." + name + ";\n"
-            combination += "\t." + name + ";\n"
 
-        return statement + combination + "\t>;\n);\nout meta;"
+        for name, op in self.ops.items():
+            statement += op.getQL() + "->." + name + ";\n"
+
+        return "%s(.%s;>;);\nout meta;" % (statement, self.outputSet)

@@ -1,17 +1,255 @@
 import os
 
 import osmnx as ox
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton
+    QPushButton, QListView, QMessageBox
 
-from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
-from Utils.GenericUtils import nextString
+from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
+    OverpassDiff
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
+
+
+class OperationsTableModel(QAbstractTableModel):
+
+    def __init__(self):
+        QAbstractTableModel.__init__(self)
+
+        self.headerItems = ["Name", "Type", "Components"]
+        self.ops = []
+
+    def addOp(self, name, op):
+        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
+        self.ops.append((name, op))
+        self.endInsertRows()
+
+    def removeOp(self, opToRemove):
+        for i in range(len(self.ops)):
+            if self.ops[i][0] == opToRemove:
+                self.beginRemoveRows(QModelIndex(), i, i)
+                self.ops.pop(i)
+                self.endRemoveRows()
+                break
+
+    def getOpByIndex(self, i):
+        return self.ops[i][0]
+
+    def rowCount(self, parent=QModelIndex(), **kwargs):
+        return len(self.ops)
+
+    def columnCount(self, parent=QModelIndex(), **kwargs):
+        return len(self.headerItems)
+
+    def headerData(self, section, orientation, role):
+        if role != Qt.DisplayRole:
+            return None
+        if orientation == Qt.Horizontal:
+            return self.headerItems[section]
+        else:
+            return "{}".format(section)
+
+    def data(self, index, role=Qt.DisplayRole):
+        column = index.column()
+        row = index.row()
+
+        if role == Qt.DisplayRole:
+            if column == 0:
+                return self.ops[row][0]
+            elif column == 1:
+                return self.ops[row][1].getType()
+            elif column == 2:
+                if self.ops[row][1].getType() == "Difference":
+                    return "%s - %s" % (self.ops[row][1].includedSet, ",".join(self.ops[row][1].sets))
+                else:
+                    return ",".join(self.ops[row][1].sets)
+        elif role == Qt.BackgroundRole:
+            return QColor(Qt.white)
+        elif role == Qt.TextAlignmentRole:
+            return Qt.AlignRight
+
+        return None
+
+
+class RequestsOperations(QWidget):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.initUI()
+        self.__ops = {}
+
+    def initUI(self):
+        self.layout = QVBoxLayout()
+
+        self.layout.addWidget(QLabel("Sets"))
+
+        twoListsOfSets = QWidget()
+        twoListsOfSets.setLayout(QHBoxLayout())
+        twoListsOfSets.layout().setSpacing(0)
+
+        self.requestList = QListView()
+        self.requestsModel = QStandardItemModel()
+        self.requestList.setModel(self.requestsModel)
+
+        self.requestList2 = QListView()
+        self.requestsModel2 = QStandardItemModel()
+        self.requestList2.setModel(self.requestsModel2)
+
+        twoListsOfSets.layout().addWidget(self.requestList)
+        twoListsOfSets.layout().addWidget(self.requestList2)
+
+        self.layout.addWidget(twoListsOfSets)
+
+        self.layout.addWidget(QLabel("Operation"))
+
+        self.operationSelection = QGroupBox()
+        self.operationSelection.setLayout(QHBoxLayout())
+
+        self.buttonIntersection = QRadioButton("Intersection")
+        self.operationSelection.layout().addWidget(self.buttonIntersection)
+        self.buttonIntersection.clicked.connect(self.__disableSecondRequestList)
+        self.buttonIntersection.click()
+
+        self.buttonUnion = QRadioButton("Union")
+        self.operationSelection.layout().addWidget(self.buttonUnion)
+        self.buttonUnion.clicked.connect(self.__disableSecondRequestList)
+
+        self.buttonDiff = QRadioButton("Difference")
+        self.operationSelection.layout().addWidget(self.buttonDiff)
+        self.buttonDiff.clicked.connect(self.__enableSecondRequestList)
+
+        self.layout.addWidget(self.operationSelection)
+
+        self.buttonApply = QPushButton("Apply")
+        self.buttonApply.clicked.connect(self.__applyOp)
+        self.operationSelection.layout().addWidget(self.buttonApply)
+        self.layout.addWidget(self.buttonApply)
+
+        self.layout.addWidget(QLabel("Resulting sets"))
+
+        self.resultingSets = QTableView()
+        self.resultingSets.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.resultingSets.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        self.resultingSets.setModel(OperationsTableModel())
+        self.layout.addWidget(self.resultingSets)
+
+        self.layout.addWidget(QLabel("Output set"))
+
+        self.outputSetSelection = QComboBox()
+        self.layout.addWidget(self.outputSetSelection)
+
+        self.setLayout(self.layout)
+
+    def outputSet(self):
+        return self.outputSetSelection.currentText()
+
+    @property
+    def ops(self):
+        return self.__ops
+
+    def __applyOp(self):
+        includedSets = [self.requestsModel.item(i).text() for i in range(self.requestsModel.rowCount()) if
+                        self.requestsModel.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
+
+        if self.buttonUnion.isChecked():
+            if len(includedSets) > 1:
+                self.__addOp(OverpassUnion(), includedSets)
+        elif self.buttonIntersection.isChecked():
+            if len(includedSets) > 1:
+                self.__addOp(OverpassIntersection(), includedSets)
+        elif self.buttonDiff.isChecked():
+            excludedSets = [self.requestsModel2.item(i).text() for i in range(self.requestsModel2.rowCount()) if
+                            self.requestsModel2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
+
+            if len(includedSets) == 1 and len(excludedSets) > 0:
+                self.__addOp(OverpassDiff(includedSets[0]), excludedSets)
+
+    def __addOp(self, op, sets):
+        setName = OverpassQuery.getSetName()
+        self.__ops[setName] = op
+        self.__ops[setName].addSets(sets)
+        self.resultingSets.model().addOp(setName, self.__ops[setName])
+        self.addRequest(setName)
+        self.cleanRequestList()
+
+    def __enableSecondRequestList(self):
+        self.requestList2.setEnabled(True)
+
+    def __disableSecondRequestList(self):
+        self.requestList2.setEnabled(False)
+
+    def addRequest(self, name):
+        self.requestsModel.beginInsertRows(QModelIndex(), self.requestsModel.rowCount(), self.requestsModel.rowCount())
+        item = QStandardItem(name)
+        item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+        item.setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+        self.requestsModel.appendRow(item)
+        self.requestsModel.endInsertRows()
+
+        self.requestsModel2.beginInsertRows(QModelIndex(), self.requestsModel2.rowCount(),
+                                            self.requestsModel2.rowCount())
+        item = QStandardItem(name)
+        item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+        item.setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+        self.requestsModel2.appendRow(item)
+        self.requestsModel2.endInsertRows()
+
+        self.outputSetSelection.addItem(name)
+
+    def removeSetAndDependencies(self, setName):
+        removeList = [setName]
+
+        for set in removeList:
+            removeList.extend([i for i in self.__removeSet(set) if i not in removeList])
+
+    def __removeSet(self, setName):
+        dependencies = []
+        for opName in self.__ops.keys():
+            self.__ops[opName].removeSet(setName)
+            if not self.__ops[opName].isValid():
+                dependencies.append(opName)
+
+        for i in range(self.requestsModel.rowCount()):
+            if self.requestsModel.item(i).text() == setName:
+                self.requestsModel.beginRemoveRows(QModelIndex(), i, i)
+                self.requestsModel.removeRow(i)
+                self.requestsModel.endInsertRows()
+
+                self.requestsModel2.beginRemoveRows(QModelIndex(), i, i)
+                self.requestsModel2.removeRow(i)
+                self.requestsModel2.endInsertRows()
+
+                self.outputSetSelection.removeItem(i)
+                break
+
+        if setName in self.__ops.keys():
+            self.resultingSets.model().removeOp(setName)
+            del self.__ops[setName]
+
+        return dependencies
+
+    def cleanRequestList(self):
+        for i in range(self.requestsModel.rowCount()):
+            self.requestsModel.item(i).setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+            self.requestsModel2.item(i).setData(QVariant(Qt.Unchecked), Qt.CheckStateRole)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Backspace and self.resultingSets.hasFocus():
+
+            advice = "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid"
+            reply = QMessageBox.question(self, "Remove request operation", advice)
+
+            if reply == QMessageBox.Yes:
+                select = self.resultingSets.selectionModel()
+                while len(select.selectedRows()) > 0:
+                    self.removeSetAndDependencies(
+                        self.resultingSets.model().getOpByIndex(select.selectedRows()[0].row()))
+
+        event.accept()
 
 
 class FilterWidget(QWidget):
@@ -279,31 +517,68 @@ class QueryUI(QWidget):
     def __init__(self):
         super().__init__()
         self.keyValues = getOfficialKeys()
-        self.lastRequestName = "a"
         self.initUI()
 
     def initUI(self):
         self.layout = QVBoxLayout()
 
-        requestsArea = QScrollArea()
-        requestsArea.setWidgetResizable(True)
+        self.requestsArea = QScrollArea()
+        self.requestsArea.setWidgetResizable(True)
+
+        self.requestAreaWidget = QWidget()
+        self.requestAreaWidget.setLayout(QVBoxLayout())
 
         self.requestTabs = QTabWidget()
-        self.addRequest()
-        requestsArea.setWidget(self.requestTabs)
+        self.requestAreaWidget.layout().addWidget(self.requestTabs)
 
-        self.layout.addWidget(requestsArea)
+        self.requestOps = RequestsOperations(self)
+        self.requestOps.hide()
+        self.requestAreaWidget.layout().addWidget(self.requestOps)
+
+        self.addRequest()
+
+        self.requestsArea.setWidget(self.requestAreaWidget)
+        self.layout.addWidget(self.requestsArea)
 
         self.setLayout(self.layout)
 
     def addRequest(self):
         requestWidget = RequestWidget(self, self.keyValues)
-        requestWidget.setObjectName(self.lastRequestName)
-        self.requestTabs.addTab(requestWidget, self.lastRequestName)
-        self.lastRequestName = nextString(self.lastRequestName)
+        setName = OverpassQuery.getSetName()
+        requestWidget.setObjectName(setName)
+        self.requestTabs.addTab(requestWidget, setName)
+        self.requestOps.addRequest(setName)
+
+    def showHideRequestOperation(self):
+        if self.requestOps.isHidden():
+            self.requestOps.show()
+            if self.isHidden():
+                self.show()
+            elif not self.requestTabs.isHidden():
+                self.requestTabs.hide()
+        else:
+            self.requestOps.hide()
+            if self.requestTabs.isHidden():
+                self.hide()
+
+    def showHideRequests(self):
+        if self.requestTabs.isHidden():
+            self.requestTabs.show()
+            if self.isHidden():
+                self.show()
+            elif not self.requestOps.isHidden():
+                self.requestOps.hide()
+        else:
+            self.requestTabs.hide()
+            if self.requestOps.isHidden():
+                self.hide()
 
     def removeRequest(self):
-        self.requestTabs.currentWidget().deleteLater()
+        reply = QMessageBox.question(self, "Remove request",
+                                     "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid")
+        if reply == QMessageBox.Yes:
+            self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
+            self.requestTabs.currentWidget().deleteLater()
 
     def addFilter(self):
         self.requestTabs.currentWidget().addFilter()
@@ -312,7 +587,7 @@ class QueryUI(QWidget):
         self.requestTabs.currentWidget().removeFilters()
 
     def getQuery(self):
-        query = OverpassQuery()
+        query = OverpassQuery(self.requestOps.outputSet())
 
         switcher = {
             "Adjacent": Surround.ADJACENT,
@@ -327,6 +602,9 @@ class QueryUI(QWidget):
                 request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected())
 
             query.addRequest(requestWidget.objectName(), request)
+
+        for name, op in self.requestOps.ops.items():
+            query.addSetsOp(name, op)
 
         return query
 
