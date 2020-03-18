@@ -57,6 +57,7 @@ class POSM(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.htmlSettings = []
         self.initUI()
 
     def initUI(self):
@@ -162,6 +163,9 @@ class POSM(QMainWindow):
     def playQuery(self):
         if self.queryText.isReadOnly():
             self.queryText.setText(self.queryUI.getQuery().getQL())
+        self.updateHtml()
+
+    def loadMap(self):
         self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
         self.mapRenderer.loadFinished.connect(
             lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
@@ -178,11 +182,11 @@ class POSM(QMainWindow):
         code = """
             var currentPolygon = 0;
             var isClickActivated = [false];
-            var polygon = [[]];
+            var polygon = [null];
             var latlngs = [[]];
             
             function draw() {
-                if(latlngs[currentPolygon].length > 1) {
+                if(polygon[currentPolygon] != null) {
                     polygon[currentPolygon].removeFrom(%s);  
                 }
                 polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);
@@ -233,10 +237,47 @@ class POSM(QMainWindow):
 			    if(currentPolygon == polygon.length) {
 			        currentPolygon = currentPolygon - 1;
 			    }
+			}
+			
+			function getPolygons() {
+			    result = []
+			    for(i in latlngs){
+			        aux = []
+			        for (j in latlngs[i]) {
+			            aux.push([latlngs[i][j].lat, latlngs[i][j].lng])
+			        }
+			        result.push(aux)
+			    }
+			    return [currentPolygon, result, "[" + isClickActivated.toString() + "]"];
+			}
+			
+			function setPolygons(current, coors, clicksActivated) {
+                latlngs = [];
+                polygons = [];
+                isClickActivated = clicksActivated;
+                for (i in coors){
+                    latlngs.push([]);
+                    for (j in coors[i]) { 
+                        latlngs[i].push(L.latLng(coors[i][j][0], coors[i][j][1]));
+                    }
+                    polygons.push(null);
+                }
+                currentPolygon = i;
 			    draw();
 			}
             """ % (id, id, id, id, id)
-        self.mapRenderer.page().runJavaScript(code)
+        self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
+
+    def updateHtml(self):
+        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettingsAndLoad)
+
+    def setHtmlSettingsAndLoad(self, settings):
+        self.htmlSettings = settings
+        self.loadMap()
+
+    def setPolygons(self):
+        if len(self.htmlSettings) > 0:
+            self.mapRenderer.page().runJavaScript("setPolygons(%s, %s, %s);" % (self.htmlSettings[0], str(self.htmlSettings[1]), self.htmlSettings[2]))
 
     def disablePolygon(self):
         self.mapRenderer.page().runJavaScript("disablePolygon();")
