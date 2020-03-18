@@ -160,11 +160,6 @@ class POSM(QMainWindow):
             self.queryUI.hide()
             self.requestMenu.setEnabled(False)
 
-    def playQuery(self):
-        if self.queryText.isReadOnly():
-            self.queryText.setText(self.queryUI.getQuery().getQL())
-        self.updateHtml()
-
     def loadMap(self):
         self.mapRenderer.load(buildHTML(self.queryText.toPlainText()))
         self.mapRenderer.loadFinished.connect(
@@ -268,11 +263,22 @@ class POSM(QMainWindow):
             """ % (id, id, id, id, id)
         self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
 
-    def updateHtml(self):
+    def getPolygons(self):
+        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettings)
+
+    def setHtmlSettings(self, settings):
+        self.htmlSettings = settings
+
+    def playQuery(self):
         self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettingsAndLoad)
 
     def setHtmlSettingsAndLoad(self, settings):
         self.htmlSettings = settings
+        if self.queryText.isReadOnly():
+            query = self.queryUI.getQuery()
+            for i in range(len(self.htmlSettings[1])):
+                query.addPolygon(i, self.htmlSettings[1][i])
+            self.queryText.setText(query.getQL())
         self.loadMap()
 
     def setPolygons(self):
