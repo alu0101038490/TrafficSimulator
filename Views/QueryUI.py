@@ -1,3 +1,4 @@
+import logging
 import os
 
 import osmnx as ox
@@ -6,6 +7,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
     QPushButton, QListView, QMessageBox
+from requests import RequestException
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff
@@ -169,7 +171,7 @@ class RequestsOperations(QWidget):
                 self.__addOp(OverpassDiff(includedSets[0]), excludedSets)
 
     def __addOp(self, op, sets):
-        setName = OverpassQuery.getSetName()
+        setName = OverpassQuery.getUniqueSetName()
         self.__ops[setName] = op
         self.__ops[setName].addSets(sets)
         self.resultingSets.model().addOp(setName, self.__ops[setName])
@@ -449,7 +451,12 @@ class RequestWidget(QWidget):
         query.addRequest(self.objectName(), request)
 
         tableDir = os.path.join(tempDir, "table.osm.xml")
-        writeXMLResponse(query.getQL(), tableDir)
+        try:
+            writeXMLResponse(query.getQL(), tableDir)
+        except RequestException:
+            logging.error("There was a problem with the internet connection.")
+        except OSError:
+            logging.error("There was a problem creating the file with the request response.")
 
         jsonResponse = ox.overpass_json_from_file(tableDir)
 
@@ -516,7 +523,11 @@ class QueryUI(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.keyValues = getOfficialKeys()
+        try:
+            self.keyValues = getOfficialKeys()
+        except RequestException:
+            logging.warning(
+                "There was a problem with the internet connection. You will not be able to see the existing keys.")
         self.initUI()
 
     def initUI(self):
@@ -544,7 +555,7 @@ class QueryUI(QWidget):
 
     def addRequest(self):
         requestWidget = RequestWidget(self, self.keyValues)
-        setName = OverpassQuery.getSetName()
+        setName = OverpassQuery.getUniqueSetName()
         requestWidget.setObjectName(setName)
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)

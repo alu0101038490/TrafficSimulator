@@ -1,13 +1,16 @@
 import logging
+import os
 import sys
 
+import osmnx as ox
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
+from requests import RequestException
 
-from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
 from Views.QueryUI import QueryUI
 
 
@@ -34,6 +37,7 @@ class InformationalConsole(QTextEdit):
         pass
 
     def writeMessage(self, message, color):
+        self.moveCursor(QTextCursor.End)
         self.setTextColor(Qt.black)
         self.insertPlainText(message[:10])
         self.setTextColor(color)
@@ -191,8 +195,21 @@ class POSM(QMainWindow):
 
     def playQuery(self):
         if self.queryText.isReadOnly():
-            self.queryText.setText(self.queryUI.getQuery().getQL())
-        self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
+            try:
+                self.queryText.setText(self.queryUI.getQuery().getQL())
+            except RuntimeError as e:
+                logging.error(str(e))
+                return
+
+        try:
+            self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
+            logging.info("Query drawn.")
+        except ox.EmptyOverpassResponse:
+            logging.error("There are no elements with the given query.")
+        except RequestException:
+            logging.error("There was a problem with the internet connection.")
+        except OSError:
+            logging.error("There was a problem creating the file with the request response.")
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
@@ -200,10 +217,19 @@ class POSM(QMainWindow):
         return filename
 
     def openNet(self):
-        openNetedit(self.saveNet() + ".net.xml")
+        try:
+            openNetedit(self.saveNet() + ".net.xml")
+            logging.info("Opening NETEDIT.")
+        except OSError:
+            logging.error("Can't find NETEDIT.")
 
     def showTableSelection(self):
         self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
+
+    def closeEvent(self, event):
+        for f in os.listdir(tempDir):
+            os.remove(os.path.join(tempDir, f))
+        QMainWindow.closeEvent(self, event)
 
 
 if __name__ == '__main__':

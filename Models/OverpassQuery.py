@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 
@@ -52,6 +53,10 @@ class OverpassUnion(OverpassSetOp):
         return "Union"
 
     def getQL(self):
+        if len(self.sets) == 0:
+            raise RuntimeError("Union without sets")
+        if len(self.sets) == 1:
+            logging.warning("Getting query with invalid union.")
         return "(.%s;)" % ";.".join(self.sets)
 
     def isValid(self):
@@ -67,6 +72,10 @@ class OverpassIntersection(OverpassSetOp):
         return "Intersection"
 
     def getQL(self):
+        if len(self.sets) == 0:
+            raise RuntimeError("Intersection without sets")
+        if len(self.sets) == 1:
+            logging.warning("Getting query with invalid intersection.")
         return "way.%s" % ".".join(self.sets)
 
     def isValid(self):
@@ -96,6 +105,8 @@ class OverpassDiff(OverpassSetOp):
             super().removeSet(set)
 
     def getQL(self):
+        if not self.isValid():
+            raise RuntimeError("Difference without excluded sets nor included set.")
         return "(.%s;- .%s;)" % (self.includedSet, ";- .".join(self.sets))
 
     def isValid(self):
@@ -114,6 +125,8 @@ class OverpassRequest(object):
         self.filters[key] = (value, exactValue)
 
     def getQL(self):
+        if len(self.filters) == 0:
+            raise RuntimeError("Request without filters.")
         ql = "(way" if self.surrounding == Surround.AROUND else "way"
         for key, (value, exact) in self.filters.items():
             ql += '["' + key + '"'
@@ -134,7 +147,7 @@ class OverpassQuery(object):
         self.ops = {}
 
     @classmethod
-    def getSetName(self):
+    def getUniqueSetName(self):
         lastSetName = self.setName
         self.setName = nextString(lastSetName)
         return lastSetName
@@ -149,6 +162,8 @@ class OverpassQuery(object):
         self.ops[name] = op
 
     def getQL(self):
+        if len(self.requests) == 0:
+            raise RuntimeError("Query without requests.")
         statement = ""
         for name, request in self.requests.items():
             statement += request.getQL() + "->." + name + ";\n"
