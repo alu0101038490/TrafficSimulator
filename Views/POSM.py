@@ -260,6 +260,16 @@ class POSM(QMainWindow):
                 currentPolygon = i;
 			    draw();
 			}
+			
+			function KeyPress(e) {
+                var evtobj = window.event? event : e
+                if (evtobj.keyCode == 90 && (event.ctrlKey || event.metaKey)) {
+                    latlngs[currentPolygon].pop();
+                    draw();
+                }
+            }
+            
+            document.onkeydown = KeyPress;
             """ % (id, id, id, id, id)
         self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
 
