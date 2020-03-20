@@ -206,7 +206,6 @@ class POSM(QMainWindow):
 			}
 			
 			function disablePolygon() {
-			    cleanPolygon();
 			    isClickActivated[currentPolygon] = false;
 			}
 			
@@ -293,7 +292,8 @@ class POSM(QMainWindow):
 
     def setPolygons(self):
         if len(self.htmlSettings) > 0:
-            self.mapRenderer.page().runJavaScript("setPolygons(%s, %s, %s);" % (self.htmlSettings[0], str(self.htmlSettings[1]), self.htmlSettings[2]))
+            self.mapRenderer.page().runJavaScript(
+                "setPolygons(%s, %s, %s);" % (self.htmlSettings[0], str(self.htmlSettings[1]), self.htmlSettings[2]))
 
     def disablePolygon(self):
         self.mapRenderer.page().runJavaScript("disablePolygon();")

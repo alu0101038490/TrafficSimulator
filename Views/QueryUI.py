@@ -1,17 +1,21 @@
 import os
+import pathlib
 
 import osmnx as ox
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QListWidget
+    QPushButton, QLayout
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest
 from Utils.GenericUtils import nextString
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
+
+resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
+picturesDir = os.path.join(resDir, "pictures")
 
 
 class DisambiguationTable(QAbstractTableModel):
@@ -212,19 +216,24 @@ class RequestWidget(QWidget):
 
         self.addFilter()
 
-        self.layout.addWidget(QLabel("Polygon:"))
-
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
+        polygonButtonsLayout.setSpacing(0)
+        polygonButtonsLayout.setContentsMargins(0,0,0,0)
         polygonButtons.setLayout(polygonButtonsLayout)
 
-        self.polygonCB = QCheckBox()
-        self.polygonCB.setText("Use a polygon")
+        polygonLabel = QLabel("Polygon:")
+        polygonLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        polygonButtonsLayout.addWidget(polygonLabel)
 
-        polygonButtonsLayout.addWidget(self.polygonCB)
+        self.drawPolButton = QPushButton(QIcon(os.path.join(picturesDir, "polygon.png")), "")
+        self.drawPolButton.setFlat(True)
+        self.drawPolButton.setCheckable(True)
 
-        self.buttonClearPol = QPushButton()
-        self.buttonClearPol.setText("Clear")
+        polygonButtonsLayout.addWidget(self.drawPolButton)
+
+        self.buttonClearPol = QPushButton(QIcon(os.path.join(picturesDir, "reset.png")), "")
+        self.buttonClearPol.setFlat(True)
 
         polygonButtonsLayout.addWidget(self.buttonClearPol)
 
@@ -313,7 +322,7 @@ class RequestWidget(QWidget):
         self.buttonClearPol.clicked.connect(f)
 
     def onPolygonEnabled(self, fTrue, fFalse):
-        self.polygonCB.stateChanged.connect(lambda: fTrue() if self.polygonCB.isChecked() else fFalse())
+        self.drawPolButton.toggled.connect(lambda: fTrue() if self.drawPolButton.isChecked() else fFalse())
 
     def showTable(self):
         query = OverpassQuery()
