@@ -144,9 +144,9 @@ class POSM(QMainWindow):
         removeFilterAct.setShortcut('Ctrl+D')
         self.requestMenu.addAction(removeFilterAct)
 
-        manualModeAct = QAction('Manual editing of the query', self)
-        manualModeAct.triggered.connect(self.setManualMode)
-        self.requestMenu.addAction(manualModeAct)
+        self.manualModeAct = QAction('Switch between interactive and manual mode', self)
+        self.manualModeAct.triggered.connect(self.setManualMode)
+        self.requestMenu.addAction(self.manualModeAct)
 
         disambiguationMenu = menubar.addMenu('Disambiguation')
 
@@ -157,13 +157,13 @@ class POSM(QMainWindow):
 
         windowsMenu = menubar.addMenu('Windows')
 
-        showHideRequests = QAction('Requests', self)
-        showHideRequests.triggered.connect(self.queryUI.showHideRequests)
-        windowsMenu.addAction(showHideRequests)
+        self.showHideRequests = QAction('Requests', self)
+        self.showHideRequests.triggered.connect(self.queryUI.showHideRequests)
+        windowsMenu.addAction(self.showHideRequests)
 
-        showHideRequestOperation = QAction('Operations', self)
-        showHideRequestOperation.triggered.connect(self.queryUI.showHideRequestOperation)
-        windowsMenu.addAction(showHideRequestOperation)
+        self.showHideRequestOperation = QAction('Operations', self)
+        self.showHideRequestOperation.triggered.connect(self.queryUI.showHideRequestOperation)
+        windowsMenu.addAction(self.showHideRequestOperation)
 
         showHideConsole = QAction('Console', self)
         showHideConsole.triggered.connect(self.showHideConsole)
@@ -186,12 +186,41 @@ class POSM(QMainWindow):
             self.queryText.hide()
 
     def setManualMode(self):
-        reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nYou will not be able to return to "
-                                                          "interactive mode")
-        if reply == QMessageBox.Yes:
-            self.queryText.setReadOnly(False)
-            self.queryUI.hide()
-            self.requestMenu.setEnabled(False)
+        if self.queryText.isReadOnly():
+            reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nThe interactive mode will remain as it is now.")
+
+            if reply == QMessageBox.Yes:
+                self.queryText.setReadOnly(False)
+
+                if self.queryUI.isHidden():
+                    self.queryUI.showHideRequests()
+                self.queryUI.hide()
+                for action in self.requestMenu.actions():
+                    action.setEnabled(False)
+                self.manualModeAct.setEnabled(True)
+                self.showHideRequests.setEnabled(False)
+                self.showHideRequestOperation.setEnabled(False)
+
+                logging.info("Switching to manual mode.")
+        else:
+            reply = QMessageBox.question(self, "Interactive mode", "Are you sure?\nThe current query will be removed.")
+
+            if reply == QMessageBox.Yes:
+                try:
+                    self.queryText.setText(self.queryUI.getQuery().getQL())
+                except RuntimeError:
+                    logging.warning("Failed to write query.")
+                    self.queryText.setText("")
+
+                self.queryText.setReadOnly(True)
+
+                self.queryUI.show()
+                for action in self.requestMenu.actions():
+                    action.setEnabled(True)
+                self.showHideRequests.setEnabled(True)
+                self.showHideRequestOperation.setEnabled(True)
+
+                logging.info("Switching to interactive mode.")
 
     def playQuery(self):
         if self.queryText.isReadOnly():
