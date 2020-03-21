@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+from os.path import expanduser
 
 import osmnx as ox
 from PyQt5.QtCore import Qt, QUrl
@@ -107,13 +108,22 @@ class POSM(QMainWindow):
 
         openAct = QAction('Open netedit', self)
         openAct.triggered.connect(self.openNet)
-        openAct.setShortcut('Ctrl+O')
         fileMenu.addAction(openAct)
 
         saveAct = QAction('Save output', self)
         saveAct.triggered.connect(self.saveNet)
         saveAct.setShortcut('Ctrl+S')
         fileMenu.addAction(saveAct)
+
+        saveQuery = QAction('Save query', self)
+        saveQuery.triggered.connect(self.saveQuery)
+        saveQuery.setShortcut('Ctrl+Shift+S')
+        fileMenu.addAction(saveQuery)
+
+        openQuery = QAction('Open query', self)
+        openQuery.triggered.connect(self.openQuery)
+        openQuery.setShortcut('Ctrl+O')
+        fileMenu.addAction(openQuery)
 
         runMenu = menubar.addMenu('Run')
 
@@ -145,7 +155,7 @@ class POSM(QMainWindow):
         self.requestMenu.addAction(removeFilterAct)
 
         self.manualModeAct = QAction('Switch between interactive and manual mode', self)
-        self.manualModeAct.triggered.connect(self.setManualMode)
+        self.manualModeAct.triggered.connect(self.switchManualMode)
         self.requestMenu.addAction(self.manualModeAct)
 
         disambiguationMenu = menubar.addMenu('Disambiguation')
@@ -185,7 +195,7 @@ class POSM(QMainWindow):
         else:
             self.queryText.hide()
 
-    def setManualMode(self):
+    def switchManualMode(self):
         if self.queryText.isReadOnly():
             reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nThe interactive mode will remain as it is now.")
 
@@ -240,15 +250,69 @@ class POSM(QMainWindow):
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
 
+    def saveQuery(self):
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save query', expanduser("~/filename.txt"), "Text files (*.txt)")
+
+        if filename != "":
+            if self.queryText.isReadOnly():
+                try:
+                    query = self.queryUI.getQuery().getQL()
+                    f = open(filename, "w+")
+                    f.seek(0)
+                    f.truncate()
+                    f.write(query)
+                    f.close()
+
+                    logging.info("Query saved successfully.")
+                except RuntimeError as e:
+                    logging.error(str(e))
+                except OSError:
+                    logging.error("There was a problem creating the file with the query.")
+            else:
+                try:
+                    f = open(filename, "w+")
+                    f.seek(0)
+                    f.truncate()
+                    f.write(self.queryText.toPlainText())
+                    f.close()
+
+                    logging.info("Query saved successfully.")
+                except OSError:
+                    logging.error("There was a problem creating the file with the query.")
+        else:
+            logging.info("\"Save query\" canceled.")
+
+    def openQuery(self):
+        filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.txt"), "Text files (*.txt)")
+
+        if filename != "":
+            try:
+                f = open(filename, "w+")
+                self.queryText.setText(f.read())
+                f.close()
+                if self.queryText.isReadOnly():
+                    self.switchManualMode()
+            except OSError:
+                logging.error("There was a problem opening the query file.")
+        else:
+            logging.info("\"Open query\" canceled.")
+
     def saveNet(self):
-        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File')
-        buildNet(filename)
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File', expanduser("~/filename.net.xml"), "NET files (*.net.xml)")
+        if filename != "":
+            buildNet(filename)
+        else:
+            logging.info("\"Save File\" canceled.")
         return filename
 
     def openNet(self):
         try:
-            openNetedit(self.saveNet() + ".net.xml")
-            logging.info("Opening NETEDIT.")
+            filename = self.saveNet()
+            if filename == "":
+                logging.error("Can't open NETEDIT without a file.")
+            else:
+                openNetedit(filename + ".net.xml")
+                logging.info("Opening NETEDIT.")
         except OSError:
             logging.error("Can't find NETEDIT.")
 
