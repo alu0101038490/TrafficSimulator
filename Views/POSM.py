@@ -13,6 +13,7 @@ from requests import RequestException
 
 from Utils.OverpassUtils import OverpassQLHighlighter
 from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
+from Views.NumberedTextEdit import CodeEditor
 from Views.QueryUI import QueryUI
 
 
@@ -74,8 +75,8 @@ class POSM(QMainWindow):
         self.queryUI = QueryUI()
         self.editionSplitter.addWidget(self.queryUI)
 
-        self.queryText = QTextEdit()
-        self.highlighter = OverpassQLHighlighter(self.queryText.document())
+        self.queryText = CodeEditor()
+        self.qlHighlighter = OverpassQLHighlighter(self.queryText.document())
         self.queryText.setReadOnly(True)
         self.editionSplitter.addWidget(self.queryText)
 
@@ -219,10 +220,10 @@ class POSM(QMainWindow):
 
             if reply == QMessageBox.Yes:
                 try:
-                    self.queryText.setText(self.queryUI.getQuery().getQL())
+                    self.queryText.setPlainText(self.queryUI.getQuery().getQL())
                 except RuntimeError:
                     logging.warning("Failed to write query.")
-                    self.queryText.setText("")
+                    self.queryText.setPlainText("")
 
                 self.queryText.setReadOnly(True)
 
@@ -237,7 +238,7 @@ class POSM(QMainWindow):
     def playQuery(self):
         if self.queryText.isReadOnly():
             try:
-                self.queryText.setText(self.queryUI.getQuery().getQL())
+                self.queryText.setPlainText(self.queryUI.getQuery().getQL())
             except RuntimeError as e:
                 logging.error(str(e))
                 return
@@ -290,7 +291,7 @@ class POSM(QMainWindow):
         if filename != "":
             try:
                 f = open(filename, "w+")
-                self.queryText.setText(f.read())
+                self.queryText.setPlainText(f.read())
                 f.close()
                 if self.queryText.isReadOnly():
                     self.switchManualMode()
