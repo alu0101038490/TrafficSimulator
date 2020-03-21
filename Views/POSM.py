@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
 from requests import RequestException
 
+from Utils.OverpassUtils import OverpassQLHighlighter
 from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
 from Views.QueryUI import QueryUI
 
@@ -74,6 +75,7 @@ class POSM(QMainWindow):
         self.editionSplitter.addWidget(self.queryUI)
 
         self.queryText = QTextEdit()
+        self.highlighter = OverpassQLHighlighter(self.queryText.document())
         self.queryText.setReadOnly(True)
         self.editionSplitter.addWidget(self.queryText)
 
