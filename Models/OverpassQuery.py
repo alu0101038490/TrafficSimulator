@@ -120,14 +120,24 @@ class OverpassRequest(object):
         self.filters = {}
         self.surrounding = surrounding
         self.aroundRadius = aroundRadius
+        self.polygon = []
 
     def addFilter(self, key, value, exactValue):
         self.filters[key] = (value, exactValue)
+
+    def addPolygon(self, coords):
+        self.polygon = coords
 
     def getQL(self):
         if len(self.filters) == 0:
             raise RuntimeError("Request without filters.")
         ql = "(way" if self.surrounding != Surround.NONE else "way"
+        if len(self.polygon) > 0:
+            coords = ""
+            for point in self.polygon:
+                for c in point:
+                    coords += " {}".format(c)
+            ql += "(poly:\"%s\")" % coords
         for key, (value, exact) in self.filters.items():
             ql += '["{}"{}"{}"]'.format(key, '=' if exact else '~', value)
         if self.surrounding == Surround.AROUND:
@@ -160,6 +170,9 @@ class OverpassQuery(object):
 
     def addSetsOp(self, name, op):
         self.ops[name] = op
+
+    def addPolygon(self, i, polygon):
+        self.requests[list(self.requests.keys())[i]].addPolygon(polygon)
 
     def getQL(self):
         if len(self.requests) == 0:

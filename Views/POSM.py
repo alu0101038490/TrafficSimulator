@@ -64,6 +64,7 @@ class POSM(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.htmlSettings = []
         self.initUI()
 
     def initUI(self):
@@ -73,6 +74,9 @@ class POSM(QMainWindow):
         self.editionSplitter = QSplitter(Qt.Vertical)
 
         self.queryUI = QueryUI()
+        self.queryUI.onClearPolygon(self.cleanCurrentPolygon)
+        self.queryUI.onPolygonEnabled(self.enablePolygon, self.disablePolygon)
+        self.queryUI.onTabChanged(self.changeCurrentPolygon)
         self.editionSplitter.addWidget(self.queryUI)
 
         self.queryText = CodeEditor()
@@ -85,6 +89,10 @@ class POSM(QMainWindow):
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
         self.mapRenderer.load(QUrl.fromLocalFile(defaultTileMap))
+        self.mapRenderer.loadFinished.connect(
+            lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
+
+        self.addRequest()
 
         self.consoleSplitter = QSplitter(Qt.Vertical)
         self.consoleSplitter.addWidget(self.mapRenderer)
@@ -138,12 +146,12 @@ class POSM(QMainWindow):
         self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
-        addRequestAct.triggered.connect(self.queryUI.addRequest)
+        addRequestAct.triggered.connect(self.addRequest)
         addRequestAct.setShortcut('Ctrl+A')
         self.requestMenu.addAction(addRequestAct)
 
         removeRequestAct = QAction('Remove current request', self)
-        removeRequestAct.triggered.connect(self.queryUI.removeRequest)
+        removeRequestAct.triggered.connect(self.removeRequest)
         removeRequestAct.setShortcut('Ctrl+R')
         self.requestMenu.addAction(removeRequestAct)
 
@@ -235,23 +243,168 @@ class POSM(QMainWindow):
 
                 logging.info("Switching to interactive mode.")
 
-    def playQuery(self):
-        if self.queryText.isReadOnly():
-            try:
-                self.queryText.setPlainText(self.queryUI.getQuery().getQL())
-            except RuntimeError as e:
-                logging.error(str(e))
-                return
-
+    def loadMap(self):
         try:
             self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
             logging.info("Query drawn.")
+            self.mapRenderer.loadFinished.connect(
+                lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
         except ox.EmptyOverpassResponse:
             logging.error("There are no elements with the given query.")
         except RequestException:
             logging.error("There was a problem with the internet connection.")
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
+
+    def addRequest(self):
+        self.mapRenderer.page().runJavaScript("addPolygon();")
+        self.queryUI.addRequest()
+
+    def removeRequest(self):
+        self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
+        self.queryUI.removeRequest()
+
+    def modifyHtml(self, id):
+        code = """
+            var currentPolygon = 0;
+            var isClickActivated = [false];
+            var polygon = [null];
+            var latlngs = [[]];
+
+            function draw() {
+                if(polygon[currentPolygon] != null) {
+                    polygon[currentPolygon].removeFrom(%s);  
+                }
+                polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);
+            }
+
+            %s.on('click', function(e) { 
+                if(isClickActivated[currentPolygon] && currentPolygon >= 0) {
+                    latlngs[currentPolygon].push(e.latlng);
+                    draw();
+                }
+            });
+
+            function addPolygon() {
+                latlngs.push([]);
+                isClickActivated.push(false)
+                polygon.push(null);
+            }
+
+            function cleanPolygon() {
+                polygon[currentPolygon].removeFrom(%s);
+                latlngs[currentPolygon] = [];
+            }
+
+            function disablePolygon() {
+                isClickActivated[currentPolygon] = false;
+            }
+
+            function enablePolygon() {
+                isClickActivated[currentPolygon] = true;
+            }
+
+            function changeCurrentPolygon(i) {
+                polygon[currentPolygon].removeFrom(%s);
+                currentPolygon = i;
+                draw();
+            }
+
+            function getPolygon() {
+                return latlngs;
+            }
+
+            function removeCurrentPolygon() {
+                cleanPolygon();
+                isClickActivated.splice(currentPolygon, 1);
+                latlngs.splice(currentPolygon, 1);
+                polygon.splice(currentPolygon, 1);
+                if(currentPolygon == polygon.length) {
+                    currentPolygon = currentPolygon - 1;
+                }
+            }
+
+            function getPolygons() {
+                result = []
+                for(i in latlngs){
+                    aux = []
+                    for (j in latlngs[i]) {
+                        aux.push([latlngs[i][j].lat, latlngs[i][j].lng])
+                    }
+                    result.push(aux)
+                }
+                return [currentPolygon, result, "[" + isClickActivated.toString() + "]"];
+            }
+
+            function setPolygons(current, coors, clicksActivated) {
+                latlngs = [];
+                polygons = [];
+                isClickActivated = clicksActivated;
+                for (i in coors){
+                    latlngs.push([]);
+                    for (j in coors[i]) { 
+                        latlngs[i].push(L.latLng(coors[i][j][0], coors[i][j][1]));
+                    }
+                    polygons.push(null);
+                }
+                currentPolygon = i;
+                draw();
+            }
+
+            function KeyPress(e) {
+                var evtobj = window.event? event : e
+                if (evtobj.keyCode == 90 && (event.ctrlKey || event.metaKey)) {
+                    latlngs[currentPolygon].pop();
+                    draw();
+                }
+            }
+
+            document.onkeydown = KeyPress;
+            """ % (id, id, id, id, id)
+        self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
+
+    def getPolygons(self):
+        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettings)
+
+    def setHtmlSettings(self, settings):
+        self.htmlSettings = settings
+
+    def playQuery(self):
+        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettingsAndLoad)
+
+    def setHtmlSettingsAndLoad(self, settings):
+        self.htmlSettings = settings
+        if self.queryText.isReadOnly():
+            query = self.queryUI.getQuery()
+            for i in range(len(self.htmlSettings[1])):
+                query.addPolygon(i, self.htmlSettings[1][i])
+
+            try:
+                self.queryText.setText(query.getQL())
+            except RuntimeError as e:
+                logging.error(str(e))
+                return
+        self.loadMap()
+
+    def setPolygons(self):
+        if len(self.htmlSettings) > 0:
+            self.mapRenderer.page().runJavaScript(
+                "setPolygons(%s, %s, %s);" % (self.htmlSettings[0], str(self.htmlSettings[1]), self.htmlSettings[2]))
+
+    def disablePolygon(self):
+        self.mapRenderer.page().runJavaScript("disablePolygon();")
+
+    def enablePolygon(self):
+        self.mapRenderer.page().runJavaScript("enablePolygon();")
+
+    def cleanCurrentPolygon(self):
+        self.mapRenderer.page().runJavaScript("cleanPolygon();")
+
+    def changeCurrentPolygon(self, i):
+        self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
+
+    def getPolygon(self):
+        self.mapRenderer.page().runJavaScript("getPolygons();")
 
     def saveQuery(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save query', expanduser("~/filename.txt"), "Text files (*.txt)")

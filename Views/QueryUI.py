@@ -1,12 +1,13 @@
 import logging
 import os
+import pathlib
 
 import osmnx as ox
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox
+    QPushButton, QListView, QMessageBox, QLayout
 from requests import RequestException
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
@@ -15,6 +16,9 @@ from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
+
+resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
+picturesDir = os.path.join(resDir, "pictures")
 
 
 class OperationsTableModel(QAbstractTableModel):
@@ -350,6 +354,34 @@ class RequestWidget(QWidget):
 
         self.addFilter()
 
+        polygonButtons = QWidget()
+        polygonButtonsLayout = QHBoxLayout()
+        polygonButtonsLayout.setSpacing(0)
+        polygonButtonsLayout.setContentsMargins(0,0,0,0)
+        polygonButtons.setLayout(polygonButtonsLayout)
+
+        polygonLabel = QLabel("Polygon:")
+        polygonLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        polygonButtonsLayout.addWidget(polygonLabel)
+
+        self.drawPolButton = QPushButton(QIcon(os.path.join(picturesDir, "polygon.png")), "")
+        self.drawPolButton.setFlat(True)
+        self.drawPolButton.setCheckable(True)
+
+        polygonButtonsLayout.addWidget(self.drawPolButton)
+
+        self.buttonClearPol = QPushButton(QIcon(os.path.join(picturesDir, "reset.png")), "")
+        self.buttonClearPol.setFlat(True)
+
+        polygonButtonsLayout.addWidget(self.buttonClearPol)
+
+        self.layout.addWidget(polygonButtons)
+
+        line = QFrame(self)
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        self.layout.addWidget(line)
+
         self.layout.addWidget(QLabel("Surroundings:"))
 
         surroundGB = QGroupBox()
@@ -433,6 +465,12 @@ class RequestWidget(QWidget):
         self.layout.addWidget(tableButtons)
 
         self.setLayout(self.layout)
+
+    def onClearPolygon(self, f):
+        self.buttonClearPol.clicked.connect(f)
+
+    def onPolygonEnabled(self, fTrue, fFalse):
+        self.drawPolButton.toggled.connect(lambda: fTrue() if self.drawPolButton.isChecked() else fFalse())
 
     def showTable(self):
         query = OverpassQuery()
@@ -528,6 +566,9 @@ class QueryUI(QWidget):
         except RequestException:
             logging.warning(
                 "There was a problem with the internet connection. You will not be able to see the existing keys.")
+        self.onClearPolygonF = lambda: None
+        self.onPolygonEnabledF = lambda: None
+        self.onPolygonDisabledF = lambda: None
         self.initUI()
 
     def initUI(self):
@@ -553,10 +594,30 @@ class QueryUI(QWidget):
 
         self.setLayout(self.layout)
 
+    def currentRequest(self):
+        return self.requestTabs.currentIndex()
+
+    def onTabChanged(self, f):
+        self.requestTabs.currentChanged.connect(f)
+
+    def onClearPolygon(self, f):
+        self.onClearPolygonF = f
+        for tab in self.requestTabs.findChildren(RequestWidget):
+            tab.onClearPolygon(f)
+
+
+    def onPolygonEnabled(self, fTrue, fFalse):
+        self.onPolygonEnabledF = fTrue
+        self.onPolygonDisabledF = fFalse
+        for tab in self.requestTabs.findChildren(RequestWidget):
+            tab.onPolygonEnabled(fTrue, fFalse)
+
     def addRequest(self):
         requestWidget = RequestWidget(self, self.keyValues)
         setName = OverpassQuery.getUniqueSetName()
         requestWidget.setObjectName(setName)
+        requestWidget.onPolygonEnabled(self.onPolygonEnabledF, self.onPolygonDisabledF)
+        requestWidget.onClearPolygon(self.onClearPolygonF)
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
 
