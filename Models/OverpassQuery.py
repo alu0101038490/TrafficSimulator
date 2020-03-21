@@ -127,13 +127,13 @@ class OverpassRequest(object):
     def getQL(self):
         if len(self.filters) == 0:
             raise RuntimeError("Request without filters.")
-        ql = "(way" if self.surrounding == Surround.AROUND else "way"
+        ql = "(way" if self.surrounding != Surround.NONE else "way"
         for key, (value, exact) in self.filters.items():
-            ql += '["' + key + '"'
-            ql += '=' if exact else '~'
-            ql += '"' + value + '"]'
+            ql += '["{}"{}"{}"]'.format(key, '=' if exact else '~', value)
         if self.surrounding == Surround.AROUND:
             ql += ";way(around:" + str(self.aroundRadius) + ");)"
+        elif self.surrounding == Surround.ADJACENT:
+            ql += ";>;way(bn);>;)"
         return ql
 
 
