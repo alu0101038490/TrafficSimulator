@@ -380,7 +380,7 @@ class POSM(QMainWindow):
                 query.addPolygon(i, self.htmlSettings[1][i])
 
             try:
-                self.queryText.setText(query.getQL())
+                self.queryText.setPlainText(query.getQL())
             except RuntimeError as e:
                 logging.error(str(e))
                 return

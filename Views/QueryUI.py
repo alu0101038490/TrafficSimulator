@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QLayout
+    QPushButton, QListView, QMessageBox
 from requests import RequestException
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
@@ -295,12 +295,17 @@ class FilterWidget(QWidget):
         valueEdition.layout().setContentsMargins(0, 0, 0, 0)
 
         self.valueInput = QComboBox()
+        self.valueInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.valueInput.setEditable(True)
         valueEdition.layout().addWidget(self.valueInput)
 
         self.checkboxAccuracy = QCheckBox()
         self.checkboxAccuracy.setText("Exact Value")
         valueEdition.layout().addWidget(self.checkboxAccuracy)
+
+        self.checkboxNegate = QCheckBox()
+        self.checkboxNegate.setText("Negate")
+        valueEdition.layout().addWidget(self.checkboxNegate)
 
         self.layout.addWidget(QLabel("Value:"))
         self.layout.addWidget(valueEdition)
@@ -330,6 +335,12 @@ class FilterWidget(QWidget):
     def setExactValue(self, bool):
         self.checkboxAccuracy.setChecked(bool)
 
+    def isNegateSelected(self):
+        return self.checkboxNegate.isChecked()
+
+    def setNegate(self, bool):
+        self.checkboxNegate.setChecked(bool)
+
     def isSelectedToDelete(self):
         return self.removeCB.isChecked()
 
@@ -357,7 +368,7 @@ class RequestWidget(QWidget):
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
         polygonButtonsLayout.setSpacing(0)
-        polygonButtonsLayout.setContentsMargins(0,0,0,0)
+        polygonButtonsLayout.setContentsMargins(0, 0, 0, 0)
         polygonButtons.setLayout(polygonButtonsLayout)
 
         polygonLabel = QLabel("Polygon:")
@@ -484,7 +495,8 @@ class RequestWidget(QWidget):
         selectedSurrounding = [b for b in self.findChildren(QRadioButton) if b.isChecked()][0]
         request = OverpassRequest(switcher.get(selectedSurrounding.objectName()))
         for filterWidget in self.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected())
+            request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
+                              filterWidget.isNegateSelected())
 
         query.addRequest(self.objectName(), request)
 
@@ -531,6 +543,7 @@ class RequestWidget(QWidget):
         filter.setKey(key)
         filter.setValue(value)
         filter.setExactValue(accuracy)
+        filter.setNegate(True)
         self.filtersLayout.addWidget(filter)
 
     def addFilterFromCell(self, signal):
@@ -587,8 +600,6 @@ class QueryUI(QWidget):
         self.requestOps.hide()
         self.requestAreaWidget.layout().addWidget(self.requestOps)
 
-        self.addRequest()
-
         self.requestsArea.setWidget(self.requestAreaWidget)
         self.layout.addWidget(self.requestsArea)
 
@@ -604,7 +615,6 @@ class QueryUI(QWidget):
         self.onClearPolygonF = f
         for tab in self.requestTabs.findChildren(RequestWidget):
             tab.onClearPolygon(f)
-
 
     def onPolygonEnabled(self, fTrue, fFalse):
         self.onPolygonEnabledF = fTrue
@@ -671,7 +681,8 @@ class QueryUI(QWidget):
             selectedSurrounding = [b for b in requestWidget.findChildren(QRadioButton) if b.isChecked()][0]
             request = OverpassRequest(switcher.get(selectedSurrounding.objectName()))
             for filterWidget in requestWidget.findChildren(FilterWidget):
-                request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected())
+                request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
+                                  filterWidget.isNegateSelected())
 
             query.addRequest(requestWidget.objectName(), request)
 

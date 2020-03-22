@@ -122,24 +122,27 @@ class OverpassRequest(object):
         self.aroundRadius = aroundRadius
         self.polygon = []
 
-    def addFilter(self, key, value, exactValue):
-        self.filters[key] = (value, exactValue)
+    def addFilter(self, key, value, exactValue, negated):
+        self.filters[key] = (value, '=' if exactValue else '~', "!" if negated else '')
 
     def addPolygon(self, coords):
         self.polygon = coords
 
     def getQL(self):
-        if len(self.filters) == 0:
-            raise RuntimeError("Request without filters.")
+        if len(self.filters) == 0 and len(self.polygon) == 0:
+            raise RuntimeError("Empty request.")
+
         ql = "(way" if self.surrounding != Surround.NONE else "way"
+
         if len(self.polygon) > 0:
-            coords = ""
-            for point in self.polygon:
-                for c in point:
-                    coords += " {}".format(c)
-            ql += "(poly:\"%s\")" % coords
-        for key, (value, exact) in self.filters.items():
-            ql += '["{}"{}"{}"]'.format(key, '=' if exact else '~', value)
+            ql += "(poly:\"%s\")" % " ".join([str(c) for point in self.polygon for c in point])
+
+        for key, (value, exact, negated) in self.filters.items():
+            if value:
+                ql += '["{}"{}{}"{}"]'.format(key, negated, exact, value)
+            else:
+                ql += '[{}"{}"]'.format(negated, key)
+
         if self.surrounding == Surround.AROUND:
             ql += ";way(around:" + str(self.aroundRadius) + ");)"
         elif self.surrounding == Surround.ADJACENT:
