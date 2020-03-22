@@ -183,10 +183,10 @@ class RequestsOperations(QWidget):
         self.cleanRequestList()
 
     def __enableSecondRequestList(self):
-        self.requestList2.setEnabled(True)
+        self.requestList2.show()
 
     def __disableSecondRequestList(self):
-        self.requestList2.setEnabled(False)
+        self.requestList2.hide()
 
     def addRequest(self, name):
         self.requestsModel.beginInsertRows(QModelIndex(), self.requestsModel.rowCount(), self.requestsModel.rowCount())
