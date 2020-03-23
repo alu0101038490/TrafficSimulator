@@ -143,6 +143,11 @@ class POSM(QMainWindow):
         playAct.setShortcut('Ctrl+P')
         runMenu.addAction(playAct)
 
+        showSelectionAct = QAction('Run selected row of the disambiguation table', self)
+        showSelectionAct.triggered.connect(self.showTableSelection)
+        showSelectionAct.setShortcut('Ctrl+N')
+        runMenu.addAction(showSelectionAct)
+
         self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
@@ -169,17 +174,22 @@ class POSM(QMainWindow):
         self.manualModeAct.triggered.connect(self.switchManualMode)
         self.requestMenu.addAction(self.manualModeAct)
 
-        disambiguationMenu = menubar.addMenu('Disambiguation')
+        self.manualModeMenu = menubar.addMenu('Manual mode')
+        self.manualModeMenu.setEnabled(False)
 
-        showSelectionAct = QAction('Show selected option', self)
-        showSelectionAct.triggered.connect(self.showTableSelection)
-        showSelectionAct.setShortcut('Ctrl+N')
-        disambiguationMenu.addAction(showSelectionAct)
+        manualModeCleanPolygonAct = QAction('Clean polygon', self)
+        manualModeCleanPolygonAct.triggered.connect(self.cleanCurrentPolygon)
+        self.manualModeMenu.addAction(manualModeCleanPolygonAct)
+
+        manualModeGetPolygonAct = QAction('Polygon coordinates', self)
+        manualModeGetPolygonAct.triggered.connect(lambda: self.mapRenderer.page().runJavaScript("getManualPolygon();", self.logManualModePolygonCoords))
+        self.manualModeMenu.addAction(manualModeGetPolygonAct)
 
         windowsMenu = menubar.addMenu('Windows')
 
         self.showHideInteractiveMode = QAction('Interactive mode', self)
-        self.showHideInteractiveMode.triggered.connect(lambda: self.queryUI.show() if self.queryUI.isHidden() else self.queryUI.hide())
+        self.showHideInteractiveMode.triggered.connect(
+            lambda: self.queryUI.show() if self.queryUI.isHidden() else self.queryUI.hide())
         windowsMenu.addAction(self.showHideInteractiveMode)
 
         showHideConsole = QAction('Console', self)
@@ -189,6 +199,9 @@ class POSM(QMainWindow):
         showHideQuery = QAction('Query', self)
         showHideQuery.triggered.connect(self.showHideQuery)
         windowsMenu.addAction(showHideQuery)
+
+    def logManualModePolygonCoords(self, coords):
+        logging.info("Polygon coordinates:\"{}\"".format(" ".join([str(c) for point in coords for c in point])))
 
     def showHideConsole(self):
         if self.console.isHidden():
@@ -204,7 +217,8 @@ class POSM(QMainWindow):
 
     def switchManualMode(self):
         if self.queryText.isReadOnly():
-            reply = QMessageBox.question(self, "Manual mode", "Are you sure?\nThe interactive mode will remain as it is now.")
+            reply = QMessageBox.question(self, "Manual mode",
+                                         "Are you sure?\nThe interactive mode will remain as it is now.")
 
             if reply == QMessageBox.Yes:
                 self.queryText.setReadOnly(False)
@@ -213,6 +227,7 @@ class POSM(QMainWindow):
                 for action in self.requestMenu.actions():
                     action.setEnabled(False)
                 self.manualModeAct.setEnabled(True)
+                self.manualModeMenu.setEnabled(True)
                 self.showHideInteractiveMode.setEnabled(False)
 
                 logging.info("Switching to manual mode.")
@@ -231,9 +246,12 @@ class POSM(QMainWindow):
                 self.queryUI.show()
                 for action in self.requestMenu.actions():
                     action.setEnabled(True)
+                self.manualModeMenu.setEnabled(False)
                 self.showHideInteractiveMode.setEnabled(True)
 
                 logging.info("Switching to interactive mode.")
+
+        self.mapRenderer.page().runJavaScript("switchInteractiveManualMode();")
 
     def loadMap(self):
         try:
@@ -259,19 +277,33 @@ class POSM(QMainWindow):
     def modifyHtml(self, id):
         code = """
             var currentPolygon = 0;
+            var interactiveMode = true
             var isClickActivated = [false];
             var polygon = [null];
             var latlngs = [[]];
+            
+            var manualModePolygon = null
+            var manualModeLatlngs = []
 
             function draw() {
-                if(polygon[currentPolygon] != null) {
-                    polygon[currentPolygon].removeFrom(%s);  
+                if(interactiveMode) {
+                    if(polygon[currentPolygon] != null) {
+                        polygon[currentPolygon].removeFrom(%s);  
+                    }
+                    polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);  
+                } else {
+                    if(manualModePolygon != null) {
+                        manualModePolygon.removeFrom(%s);  
+                    }
+                    manualModePolygon = L.polygon(manualModeLatlngs, {color: 'red'}).addTo(%s);
                 }
-                polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);
             }
 
             %s.on('click', function(e) { 
-                if(isClickActivated[currentPolygon] && currentPolygon >= 0) {
+                if(!interactiveMode) {
+                    manualModeLatlngs.push(e.latlng);
+                    draw();
+                } else if(isClickActivated[currentPolygon] && currentPolygon >= 0) {
                     latlngs[currentPolygon].push(e.latlng);
                     draw();
                 }
@@ -284,8 +316,15 @@ class POSM(QMainWindow):
             }
 
             function cleanPolygon() {
-                polygon[currentPolygon].removeFrom(%s);
-                latlngs[currentPolygon] = [];
+                if(interactiveMode) {
+                    if(polygon[currentPolygon] != null)
+                        polygon[currentPolygon].removeFrom(%s);
+                    latlngs[currentPolygon] = [];
+                } else {
+                    if(manualModePolygon != null)
+                        manualModePolygon.removeFrom(%s);
+                    manualModeLatlngs = [];
+                }
             }
 
             function disablePolygon() {
@@ -297,13 +336,30 @@ class POSM(QMainWindow):
             }
 
             function changeCurrentPolygon(i) {
-                polygon[currentPolygon].removeFrom(%s);
+                if(polygon[currentPolygon] != null)
+                    polygon[currentPolygon].removeFrom(%s);
                 currentPolygon = i;
                 draw();
             }
-
-            function getPolygon() {
-                return latlngs;
+            
+            function switchInteractiveManualMode() {
+                if(interactiveMode) {
+                    if (polygon[currentPolygon] != null)
+                        polygon[currentPolygon].removeFrom(%s);
+                } else {
+                    if (manualModePolygon)
+                        manualModePolygon.removeFrom(%s);
+                }
+                interactiveMode = !interactiveMode;
+                draw();
+            }
+            
+            function getManualPolygon() {
+                result = []
+                for (i in manualModeLatlngs) {
+                    result.push([manualModeLatlngs[i].lat, manualModeLatlngs[i].lng])
+                }
+                return result;
             }
 
             function removeCurrentPolygon() {
@@ -346,13 +402,17 @@ class POSM(QMainWindow):
             function KeyPress(e) {
                 var evtobj = window.event? event : e
                 if (evtobj.keyCode == 90 && (event.ctrlKey || event.metaKey)) {
-                    latlngs[currentPolygon].pop();
+                    if(interactiveMode) {
+                        latlngs[currentPolygon].pop();
+                    } else {
+                        manualModeLatlngs.pop()
+                    }
                     draw();
                 }
             }
 
             document.onkeydown = KeyPress;
-            """ % (id, id, id, id, id)
+            """ % (id, id, id, id, id, id, id, id, id, id)
         self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
 
     def getPolygons(self):
@@ -395,11 +455,9 @@ class POSM(QMainWindow):
     def changeCurrentPolygon(self, i):
         self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
 
-    def getPolygon(self):
-        self.mapRenderer.page().runJavaScript("getPolygons();")
-
     def saveQuery(self):
-        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save query', expanduser("~/filename.txt"), "Text files (*.txt)")
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save query', expanduser("~/filename.txt"),
+                                                               "Text files (*.txt)")
 
         if filename != "":
             if self.queryText.isReadOnly():
@@ -431,7 +489,8 @@ class POSM(QMainWindow):
             logging.info("\"Save query\" canceled.")
 
     def openQuery(self):
-        filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.txt"), "Text files (*.txt)")
+        filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.txt"),
+                                                               "Text files (*.txt)")
 
         if filename != "":
             try:
@@ -446,7 +505,8 @@ class POSM(QMainWindow):
             logging.info("\"Open query\" canceled.")
 
     def saveNet(self):
-        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File', expanduser("~/filename.net.xml"), "NET files (*.net.xml)")
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File', expanduser("~/filename.net.xml"),
+                                                               "NET files (*.net.xml)")
         if filename != "":
             buildNet(filename)
         else:
