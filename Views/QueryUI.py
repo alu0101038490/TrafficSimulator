@@ -3,11 +3,11 @@ import os
 import pathlib
 
 import osmnx as ox
-from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel
+from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox
+    QPushButton, QListView, QMessageBox, QToolBox, QDateTimeEdit, QCalendarWidget
 from requests import RequestException
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
@@ -570,6 +570,25 @@ class RequestWidget(QWidget):
         return self.tableView.model().getRowJson(indexes)
 
 
+class GlobalOverpassSettingUI(QWidget):
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.layout.addWidget(QLabel("Date:"))
+
+        self.dateEdit = QCalendarWidget()
+        self.dateEdit.setMinimumDate(QDate(2012, 9, 13))
+        self.dateEdit.setMaximumDate(QDate.currentDate())
+
+        self.layout.addWidget(self.dateEdit)
+
+    def getDate(self):
+        return self.dateEdit.selectedDate().toPyDate()
+
+
 class QueryUI(QWidget):
 
     def __init__(self):
@@ -587,21 +606,18 @@ class QueryUI(QWidget):
     def initUI(self):
         self.layout = QVBoxLayout()
 
-        self.requestsArea = QScrollArea()
-        self.requestsArea.setWidgetResizable(True)
-
-        self.requestAreaWidget = QWidget()
-        self.requestAreaWidget.setLayout(QVBoxLayout())
+        self.requestAreaWidget = QToolBox()
 
         self.requestTabs = QTabWidget()
-        self.requestAreaWidget.layout().addWidget(self.requestTabs)
+        self.requestAreaWidget.addItem(self.requestTabs, "Requests")
 
         self.requestOps = RequestsOperations(self)
-        self.requestOps.hide()
-        self.requestAreaWidget.layout().addWidget(self.requestOps)
+        self.requestAreaWidget.addItem(self.requestOps, "Operations")
 
-        self.requestsArea.setWidget(self.requestAreaWidget)
-        self.layout.addWidget(self.requestsArea)
+        self.generalConfig = GlobalOverpassSettingUI(self)
+        self.requestAreaWidget.addItem(self.generalConfig, "General")
+
+        self.layout.addWidget(self.requestAreaWidget)
 
         self.setLayout(self.layout)
 
@@ -631,30 +647,6 @@ class QueryUI(QWidget):
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
 
-    def showHideRequestOperation(self):
-        if self.requestOps.isHidden():
-            self.requestOps.show()
-            if self.isHidden():
-                self.show()
-            elif not self.requestTabs.isHidden():
-                self.requestTabs.hide()
-        else:
-            self.requestOps.hide()
-            if self.requestTabs.isHidden():
-                self.hide()
-
-    def showHideRequests(self):
-        if self.requestTabs.isHidden():
-            self.requestTabs.show()
-            if self.isHidden():
-                self.show()
-            elif not self.requestOps.isHidden():
-                self.requestOps.hide()
-        else:
-            self.requestTabs.hide()
-            if self.requestOps.isHidden():
-                self.hide()
-
     def removeRequest(self):
         reply = QMessageBox.question(self, "Remove request",
                                      "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid")
@@ -670,6 +662,8 @@ class QueryUI(QWidget):
 
     def getQuery(self):
         query = OverpassQuery(self.requestOps.outputSet())
+
+        query.addDate(self.generalConfig.getDate())
 
         switcher = {
             "Adjacent": Surround.ADJACENT,

@@ -158,6 +158,10 @@ class OverpassQuery(object):
         self.requests = {}
         self.outputSet = outputSet
         self.ops = {}
+        self.config = {}
+
+    def addDate(self, date):
+        self.config["date"] = date.strftime("%Y-%m-%dT00:00:00Z")
 
     @classmethod
     def getUniqueSetName(self):
@@ -180,7 +184,14 @@ class OverpassQuery(object):
     def getQL(self):
         if len(self.requests) == 0:
             raise RuntimeError("Query without requests.")
+
         statement = ""
+
+        if len(self.config) > 0:
+            for key, value in self.config.items():
+                statement += "[{}:\"{}\"]".format(key, value)
+            statement += ";\n"
+
         for name, request in self.requests.items():
             statement += request.getQL() + "->." + name + ";\n"
 

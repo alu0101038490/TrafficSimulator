@@ -178,13 +178,9 @@ class POSM(QMainWindow):
 
         windowsMenu = menubar.addMenu('Windows')
 
-        self.showHideRequests = QAction('Requests', self)
-        self.showHideRequests.triggered.connect(self.queryUI.showHideRequests)
-        windowsMenu.addAction(self.showHideRequests)
-
-        self.showHideRequestOperation = QAction('Operations', self)
-        self.showHideRequestOperation.triggered.connect(self.queryUI.showHideRequestOperation)
-        windowsMenu.addAction(self.showHideRequestOperation)
+        self.showHideInteractiveMode = QAction('Interactive mode', self)
+        self.showHideInteractiveMode.triggered.connect(lambda: self.queryUI.show() if self.queryUI.isHidden() else self.queryUI.hide())
+        windowsMenu.addAction(self.showHideInteractiveMode)
 
         showHideConsole = QAction('Console', self)
         showHideConsole.triggered.connect(self.showHideConsole)
@@ -213,14 +209,11 @@ class POSM(QMainWindow):
             if reply == QMessageBox.Yes:
                 self.queryText.setReadOnly(False)
 
-                if self.queryUI.isHidden():
-                    self.queryUI.showHideRequests()
                 self.queryUI.hide()
                 for action in self.requestMenu.actions():
                     action.setEnabled(False)
                 self.manualModeAct.setEnabled(True)
-                self.showHideRequests.setEnabled(False)
-                self.showHideRequestOperation.setEnabled(False)
+                self.showHideInteractiveMode.setEnabled(False)
 
                 logging.info("Switching to manual mode.")
         else:
@@ -238,8 +231,7 @@ class POSM(QMainWindow):
                 self.queryUI.show()
                 for action in self.requestMenu.actions():
                     action.setEnabled(True)
-                self.showHideRequests.setEnabled(True)
-                self.showHideRequestOperation.setEnabled(True)
+                self.showHideInteractiveMode.setEnabled(True)
 
                 logging.info("Switching to interactive mode.")
 
