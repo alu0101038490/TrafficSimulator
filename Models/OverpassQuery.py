@@ -10,6 +10,28 @@ class Surround(Enum):
     ADJACENT = 2
     NONE = 3
 
+class OsmType(Enum):
+    NODES = "node"
+    WAYS = "way"
+    RELATIONS = "rel"
+    AREA = "area"
+    NW = "nw"
+    NR = "nr"
+    WR = "wr"
+    NWR = "nwr"
+
+    @classmethod
+    def getType(self, node, way, rel, area):
+        type = (1 * node) | (2 * way) | (4 * rel)
+
+        switchCase = [0, OsmType.NODES, OsmType.WAYS, OsmType.NW, OsmType.RELATIONS, OsmType.NR, OsmType.WR, OsmType.NWR]
+
+        if area:
+            return OsmType.AREA
+        elif type == 0:
+            raise RuntimeError("No type selected.")
+        else:
+            return switchCase[type]
 
 class OverpassSetOp(ABC):
 
@@ -115,8 +137,9 @@ class OverpassDiff(OverpassSetOp):
 
 class OverpassRequest(object):
 
-    def __init__(self, surrounding, aroundRadius=100):
+    def __init__(self, type, surrounding, aroundRadius=100):
         super().__init__()
+        self.type = type
         self.filters = {}
         self.surrounding = surrounding
         self.aroundRadius = aroundRadius
@@ -131,8 +154,10 @@ class OverpassRequest(object):
     def getQL(self):
         if len(self.filters) == 0 and len(self.polygon) == 0:
             raise RuntimeError("Empty request.")
+        if not isinstance(self.type, OsmType):
+            raise RuntimeError("Invalid osm type.")
 
-        ql = "(way" if self.surrounding != Surround.NONE else "way"
+        ql = "({}".format(self.type.value) if self.surrounding != Surround.NONE else self.type.value
 
         if len(self.polygon) > 0:
             ql += "(poly:\"%s\")" % " ".join([str(c) for point in self.polygon for c in point])
@@ -144,7 +169,7 @@ class OverpassRequest(object):
                 ql += '[{}"{}"]'.format(negated, key)
 
         if self.surrounding == Surround.AROUND:
-            ql += ";way(around:" + str(self.aroundRadius) + ");)"
+            ql += ";{}(around:{});)".format(self.type.value, str(self.aroundRadius))
         elif self.surrounding == Surround.ADJACENT:
             ql += ";>;way(bn);>;)"
         return ql

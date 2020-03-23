@@ -5,13 +5,13 @@ import pathlib
 import osmnx as ox
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QHBoxLayout, \
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QToolBox, QDateTimeEdit, QCalendarWidget
+    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget
 from requests import RequestException
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
-    OverpassDiff
+    OverpassDiff, OsmType
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys
 from Views.CollapsibleList import CheckableComboBox
@@ -113,6 +113,7 @@ class RequestsOperations(QWidget):
         self.layout.addWidget(QLabel("Operation"))
 
         self.operationSelection = QGroupBox()
+        self.operationSelection.setFlat(True)
         self.operationSelection.setLayout(QHBoxLayout())
 
         self.buttonIntersection = QRadioButton("Intersection")
@@ -352,9 +353,41 @@ class RequestWidget(QWidget):
         self.keyValues = keyValues
         self.initUI()
 
+    def __onAreaSelected(self):
+        self.nodesCB.setChecked(False)
+        self.waysCB.setChecked(False)
+        self.relCB.setChecked(False)
+
     def initUI(self):
         self.layout = QVBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
+
+        self.layout.addWidget(QLabel("Elements type:"))
+
+        elementsTypeGB = QWidget()
+        elementsTypeLayout = QHBoxLayout()
+        elementsTypeGB.setLayout(elementsTypeLayout)
+        elementsTypeLayout.setContentsMargins(0, 0, 0, 0)
+
+        self.nodesCB = QCheckBox(self.tr("&Nodes"))
+        elementsTypeLayout.addWidget(self.nodesCB)
+
+        self.waysCB = QCheckBox(self.tr("&Ways"))
+        self.waysCB.setChecked(True)
+        elementsTypeLayout.addWidget(self.waysCB)
+
+        self.relCB = QCheckBox(self.tr("&Relations"))
+        elementsTypeLayout.addWidget(self.relCB)
+
+        self.areasCB = QCheckBox(self.tr("&Areas"))
+        self.areasCB.stateChanged.connect(self.__onAreaSelected)
+        elementsTypeLayout.addWidget(self.areasCB)
+
+        self.nodesCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
+        self.waysCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
+        self.relCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
+
+        self.layout.addWidget(elementsTypeGB)
 
         self.layout.addWidget(QLabel("Filters:"))
 
@@ -476,6 +509,10 @@ class RequestWidget(QWidget):
         self.layout.addWidget(tableButtons)
 
         self.setLayout(self.layout)
+
+    def getType(self):
+        return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),
+                               self.relCB.isChecked(), self.areasCB.isChecked())
 
     def onClearPolygon(self, f):
         self.buttonClearPol.clicked.connect(f)
@@ -673,7 +710,7 @@ class QueryUI(QWidget):
 
         for requestWidget in self.findChildren(RequestWidget):
             selectedSurrounding = [b for b in requestWidget.findChildren(QRadioButton) if b.isChecked()][0]
-            request = OverpassRequest(switcher.get(selectedSurrounding.objectName()))
+            request = OverpassRequest(requestWidget.getType(), switcher.get(selectedSurrounding.objectName()))
             for filterWidget in requestWidget.findChildren(FilterWidget):
                 request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
                                   filterWidget.isNegateSelected())
