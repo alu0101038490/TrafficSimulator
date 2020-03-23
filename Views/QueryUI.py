@@ -363,8 +363,6 @@ class RequestWidget(QWidget):
         self.filtersWidget.setLayout(self.filtersLayout)
         self.layout.addWidget(self.filtersWidget)
 
-        self.addFilter()
-
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
         polygonButtonsLayout.setSpacing(0)
@@ -538,12 +536,12 @@ class RequestWidget(QWidget):
     def showLess(self):
         self.tableView.model().showLess()
 
-    def addFilter(self, key="", value="", accuracy=False):
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
         filter = FilterWidget(self.filtersWidget, self.keyValues)
         filter.setKey(key)
         filter.setValue(value)
         filter.setExactValue(accuracy)
-        filter.setNegate(True)
+        filter.setNegate(negate)
         self.filtersLayout.addWidget(filter)
 
     def addFilterFromCell(self, signal):
@@ -638,7 +636,7 @@ class QueryUI(QWidget):
         for tab in self.requestTabs.findChildren(RequestWidget):
             tab.onPolygonEnabled(fTrue, fFalse)
 
-    def addRequest(self):
+    def addRequest(self, filters=None):
         requestWidget = RequestWidget(self, self.keyValues)
         setName = OverpassQuery.getUniqueSetName()
         requestWidget.setObjectName(setName)
@@ -646,6 +644,12 @@ class QueryUI(QWidget):
         requestWidget.onClearPolygon(self.onClearPolygonF)
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
+
+        if filters is not None:
+            for key, value, accuracy, negate in filters:
+                requestWidget.addFilter(key, value, accuracy, negate)
+        else:
+            requestWidget.addFilter()
 
     def removeRequest(self):
         reply = QMessageBox.question(self, "Remove request",

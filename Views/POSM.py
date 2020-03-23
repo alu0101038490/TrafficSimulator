@@ -145,10 +145,32 @@ class POSM(QMainWindow):
 
         self.requestMenu = menubar.addMenu('Request')
 
-        addRequestAct = QAction('Add request', self)
+        templatesMenu = self.requestMenu.addMenu("Add request")
+
+        addRequestAct = QAction('Empty', self)
         addRequestAct.triggered.connect(self.addRequest)
         addRequestAct.setShortcut('Ctrl+A')
-        self.requestMenu.addAction(addRequestAct)
+        templatesMenu.addAction(addRequestAct)
+
+        addRoadAct = QAction('Roads', self)
+        addRoadAct.triggered.connect(lambda: self.addRequest([("highway", "", False, False)]))
+        templatesMenu.addAction(addRoadAct)
+
+        addMainRoadAct = QAction('Main roads', self)
+        addMainRoadAct.triggered.connect(lambda: self.addRequest([("highway", "^(motorway|trunk|primary)$", False, False)]))
+        templatesMenu.addAction(addMainRoadAct)
+
+        addDelimitedPlaceAct = QAction('Delimited place roads', self)
+        addDelimitedPlaceAct.triggered.connect(lambda: self.addRequest([("highway", "^(motorway|trunk|primary)$", False, False)]))
+        templatesMenu.addAction(addDelimitedPlaceAct)
+
+        addParkingAct = QAction('Parking', self)
+        addParkingAct.triggered.connect(lambda: self.addRequest([("highway", "^(motorway|trunk|primary)$", False, False)]))
+        templatesMenu.addAction(addParkingAct)
+
+        addPedestriansAct = QAction('Pedestrians', self)
+        addPedestriansAct.triggered.connect(lambda: self.addRequest([("highway", "", False, False), ("sidewalk", "no", True, True)]))
+        templatesMenu.addAction(addPedestriansAct)
 
         removeRequestAct = QAction('Remove current request', self)
         removeRequestAct.triggered.connect(self.removeRequest)
@@ -248,9 +270,9 @@ class POSM(QMainWindow):
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
 
-    def addRequest(self):
+    def addRequest(self, filters = None):
         self.mapRenderer.page().runJavaScript("addPolygon();")
-        self.queryUI.addRequest()
+        self.queryUI.addRequest(filters)
 
     def removeRequest(self):
         self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
