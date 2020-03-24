@@ -3,6 +3,7 @@ import os
 import pathlib
 
 import osmnx as ox
+import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
@@ -13,7 +14,7 @@ from requests import RequestException
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff, OsmType
 from Utils.SumoUtils import tempDir, writeXMLResponse
-from Utils.TaginfoUtils import getOfficialKeys
+from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
@@ -272,6 +273,7 @@ class FilterWidget(QWidget):
 
         topWidget = QWidget()
         topLayout = QHBoxLayout()
+        topLayout.setSpacing(0)
         topLayout.setContentsMargins(0, 0, 0, 0)
         topWidget.setLayout(topLayout)
 
@@ -279,8 +281,15 @@ class FilterWidget(QWidget):
         keyLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         topLayout.addWidget(keyLabel)
 
-        self.removeCB = QCheckBox()
-        topLayout.addWidget(self.removeCB)
+        self.deleteButton = QPushButton(QIcon(os.path.join(picturesDir, "remove.png")), "")
+        self.deleteButton.setFlat(True)
+        self.deleteButton.clicked.connect(self.deleteLater)
+        topLayout.addWidget(self.deleteButton)
+
+        self.keyInfoButton = QPushButton(QIcon(os.path.join(picturesDir, "info.png")), "")
+        self.keyInfoButton.setFlat(True)
+        self.keyInfoButton.clicked.connect(self.getInfo)
+        topLayout.addWidget(self.keyInfoButton)
 
         self.layout.addWidget(topWidget)
 
@@ -300,6 +309,8 @@ class FilterWidget(QWidget):
         self.valueInput.setEditable(True)
         valueEdition.layout().addWidget(self.valueInput)
 
+        self.keyInput.currentTextChanged.connect(self.valueInput.clear)
+
         self.checkboxAccuracy = QCheckBox()
         self.checkboxAccuracy.setText("Exact Value")
         valueEdition.layout().addWidget(self.checkboxAccuracy)
@@ -317,6 +328,30 @@ class FilterWidget(QWidget):
         self.layout.addWidget(line)
 
         self.setLayout(self.layout)
+
+    def getInfo(self):
+        keyName = self.keyInput.currentText()
+        try:
+            descriptions = getKeyDescription(keyName)
+            if len(descriptions) == 0:
+                logging.warning("'{}' is an unofficial or unused key. No available description.".format(keyName))
+            else:
+                englishDescription = next((d["description"] for d in descriptions if d["language_en"] == "English"),
+                                          "English description not available.")
+                logging.info(keyName + ": " + englishDescription)
+        except RequestException:
+            logging.error("There was a problem with the internet connection. Can't get the key description.")
+            return
+
+        self.valueInput.clear()
+
+        try:
+            self.valueInput.addItems(getValuesByKey(keyName))
+        except requests.exceptions.Timeout:
+            logging.warning("Too many available values for the given key.")
+        except RequestException:
+            logging.error("There was a problem with the internet connection. Can't get the possible values for the "
+                          "given key.")
 
     def getKey(self):
         return self.keyInput.currentText()
@@ -597,11 +632,6 @@ class RequestWidget(QWidget):
             else:
                 self.addFilter(k, v, True)
 
-    def removeFilters(self):
-        for widget in self.filtersWidget.findChildren(FilterWidget):
-            if (widget.isSelectedToDelete()):
-                widget.deleteLater()
-
     def getSelectedRowNetworkx(self):
         indexes = self.tableView.selectionModel().selectedRows()
         return self.tableView.model().getRowJson(indexes)
@@ -693,9 +723,6 @@ class QueryUI(QWidget):
 
     def addFilter(self):
         self.requestTabs.currentWidget().addFilter()
-
-    def removeFilter(self):
-        self.requestTabs.currentWidget().removeFilters()
 
     def getQuery(self):
         query = OverpassQuery(self.requestOps.outputSet())

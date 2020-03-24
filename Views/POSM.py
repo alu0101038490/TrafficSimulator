@@ -165,11 +165,6 @@ class POSM(QMainWindow):
         addFilterAct.setShortcut('Ctrl+T')
         self.requestMenu.addAction(addFilterAct)
 
-        removeFilterAct = QAction('Remove selected filters', self)
-        removeFilterAct.triggered.connect(self.queryUI.removeFilter)
-        removeFilterAct.setShortcut('Ctrl+D')
-        self.requestMenu.addAction(removeFilterAct)
-
         self.manualModeAct = QAction('Switch between interactive and manual mode', self)
         self.manualModeAct.triggered.connect(self.switchManualMode)
         self.requestMenu.addAction(self.manualModeAct)
