@@ -1,5 +1,6 @@
 import logging
 from abc import ABC, abstractmethod
+from datetime import datetime
 from enum import Enum
 
 from Utils.GenericUtils import nextString
@@ -9,6 +10,7 @@ class Surround(Enum):
     AROUND = 1
     ADJACENT = 2
     NONE = 3
+
 
 class OsmType(Enum):
     NODES = "node"
@@ -24,7 +26,8 @@ class OsmType(Enum):
     def getType(self, node, way, rel, area):
         type = (1 * node) | (2 * way) | (4 * rel)
 
-        switchCase = [0, OsmType.NODES, OsmType.WAYS, OsmType.NW, OsmType.RELATIONS, OsmType.NR, OsmType.WR, OsmType.NWR]
+        switchCase = [0, OsmType.NODES, OsmType.WAYS, OsmType.NW, OsmType.RELATIONS, OsmType.NR, OsmType.WR,
+                      OsmType.NWR]
 
         if area:
             return OsmType.AREA
@@ -32,6 +35,7 @@ class OsmType(Enum):
             raise RuntimeError("No type selected.")
         else:
             return switchCase[type]
+
 
 class OverpassSetOp(ABC):
 
@@ -193,7 +197,8 @@ class OverpassQuery(object):
         self.config = {}
 
     def addDate(self, date):
-        self.config["date"] = date.strftime("%Y-%m-%dT00:00:00Z")
+        if date != datetime.today().date():
+            self.config["date"] = date.strftime("%Y-%m-%dT00:00:00Z")
 
     @classmethod
     def getUniqueSetName(self):
