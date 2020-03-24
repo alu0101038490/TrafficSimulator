@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget
+    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit
 from requests import RequestException
 
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
@@ -424,6 +424,12 @@ class RequestWidget(QWidget):
 
         self.layout.addWidget(elementsTypeGB)
 
+        self.layout.addWidget(QLabel("Location:"))
+
+        self.locationNameWidget = QLineEdit()
+        self.locationNameWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.layout.addWidget(self.locationNameWidget)
+
         self.layout.addWidget(QLabel("Filters:"))
 
         self.filtersWidget = QWidget(self)
@@ -544,6 +550,21 @@ class RequestWidget(QWidget):
         self.layout.addWidget(tableButtons)
 
         self.setLayout(self.layout)
+
+    def getLocationId(self):
+        if self.locationNameWidget.text() == "":
+            return None
+        item = next((x for x in ox.nominatim_request({"q": self.locationNameWidget.text(), 'format': 'json'})
+                     if x['osm_type'] != 'node'), None)
+        if item is None:
+            return item
+        id = item['osm_id']
+        if item['osm_type'] == 'relation':
+            id += 3600000000
+        elif item['osm_type'] == 'node':
+            id += 2400000000
+        return id
+
 
     def getType(self):
         return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),
@@ -738,6 +759,7 @@ class QueryUI(QWidget):
         for requestWidget in self.findChildren(RequestWidget):
             selectedSurrounding = [b for b in requestWidget.findChildren(QRadioButton) if b.isChecked()][0]
             request = OverpassRequest(requestWidget.getType(), switcher.get(selectedSurrounding.objectName()))
+            request.setLocationId(requestWidget.getLocationId())
             for filterWidget in requestWidget.findChildren(FilterWidget):
                 request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
                                   filterWidget.isNegateSelected())

@@ -144,6 +144,10 @@ class OverpassRequest(object):
         self.surrounding = surrounding
         self.aroundRadius = aroundRadius
         self.polygon = []
+        self.locationId = None
+
+    def setLocationId(self, id):
+        self.locationId = id
 
     def addFilter(self, key, value, exactValue, negated):
         self.filters[key] = (value, '=' if exactValue else '~', "!" if negated else '')
@@ -152,12 +156,15 @@ class OverpassRequest(object):
         self.polygon = coords
 
     def getQL(self):
-        if len(self.filters) == 0 and len(self.polygon) == 0:
+        if len(self.filters) == 0 and len(self.polygon) == 0 and self.locationId is None:
             raise RuntimeError("Empty request.")
         if not isinstance(self.type, OsmType):
             raise RuntimeError("Invalid osm type.")
 
         ql = "({}".format(self.type.value) if self.surrounding != Surround.NONE else self.type.value
+
+        if self.locationId is not None:
+            ql += "(area:{})".format(self.locationId)
 
         if len(self.polygon) > 0:
             ql += "(poly:\"%s\")" % " ".join([str(c) for point in self.polygon for c in point])
