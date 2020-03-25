@@ -600,10 +600,10 @@ class RequestWidget(QWidget):
             writeXMLResponse(query.getQL(), tableDir)
         except OverpassRequestException as e:
             logging.error(str(e))
-        except RequestException:
-            logging.error(traceback.format_exc())
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
+        except Exception:
+            logging.error(traceback.format_exc())
 
         jsonResponse = ox.overpass_json_from_file(tableDir)
 

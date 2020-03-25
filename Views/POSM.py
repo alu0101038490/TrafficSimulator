@@ -10,9 +10,8 @@ from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
-from requests import RequestException
 
-from Exceptions.OverpassExceptions import OverpassRequestException
+from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
 from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
 from Views.NumberedTextEdit import CodeEditor
@@ -179,7 +178,8 @@ class POSM(QMainWindow):
         self.manualModeMenu.addAction(manualModeCleanPolygonAct)
 
         manualModeGetPolygonAct = QAction('Polygon coordinates', self)
-        manualModeGetPolygonAct.triggered.connect(lambda: self.mapRenderer.page().runJavaScript("getManualPolygon();", self.logManualModePolygonCoords))
+        manualModeGetPolygonAct.triggered.connect(
+            lambda: self.mapRenderer.page().runJavaScript("getManualPolygon();", self.logManualModePolygonCoords))
         self.manualModeMenu.addAction(manualModeGetPolygonAct)
 
         windowsMenu = menubar.addMenu('Windows')
@@ -256,14 +256,14 @@ class POSM(QMainWindow):
             logging.info("Query drawn.")
             self.mapRenderer.loadFinished.connect(
                 lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
-        except OverpassRequestException as e:
+        except (OverpassRequestException, OsmnxException) as e:
             logging.error(str(e))
         except ox.EmptyOverpassResponse:
             logging.error("There are no elements with the given query.")
-        except RequestException:
-            logging.error(traceback.format_exc())
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
+        except Exception:
+            logging.error(traceback.format_exc())
 
     def addRequest(self):
         self.mapRenderer.page().runJavaScript("addPolygon();")
@@ -504,8 +504,8 @@ class POSM(QMainWindow):
             logging.info("\"Open query\" canceled.")
 
     def saveNet(self):
-        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File', expanduser("~/filename.net.xml"),
-                                                               "NET files (*.net.xml)")
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File',
+                                                               expanduser("~/filenameWithoutExtension"))
         if filename != "":
             buildNet(filename)
         else:
@@ -522,6 +522,8 @@ class POSM(QMainWindow):
                 logging.info("Opening NETEDIT.")
         except OSError:
             logging.error("Can't find NETEDIT.")
+        except Exception:
+            logging.error(traceback.format_exc())
 
     def showTableSelection(self):
         self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))

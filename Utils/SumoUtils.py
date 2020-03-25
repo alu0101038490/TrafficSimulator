@@ -9,7 +9,7 @@ import requests
 from PyQt5.QtCore import QUrl
 
 from Exceptions.OverpassExceptions import RequestSyntaxException, TimeoutException, TooManyRequestsException, \
-    UnknownException
+    UnknownException, OsmnxException
 from Views import osmBuild, sumolib
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
@@ -142,7 +142,14 @@ def buildHTMLWithNetworkx(G):
 
 def buildHTMLWithQuery(query):
     writeXMLResponse(query)
-    G = ox.graph_from_file(responsePath, retain_all=True)
+    try:
+        if os.stat(responsePath).st_size >= 2097152:
+            logging.warning("Response is too big. Maybe the map will not work properly but you can use the option "
+                            "'Open netedit'.")
+        G = ox.graph_from_file(responsePath, retain_all=True)
+    except (ValueError, KeyError):
+        raise OsmnxException("Probably there are elements without all its nodes. It is not possible to show the "
+                             "results but you can use the option 'Open netedit'.")
     logging.info("Network built.")
 
     return buildHTMLWithNetworkx(G)
