@@ -36,6 +36,7 @@ class InformationalConsole(QTextEdit):
             self.writeError(text[5:])
         elif text[0] == "C":
             self.writeError(text[8:])
+        app.processEvents()
 
     def flush(self):
         pass
@@ -87,9 +88,12 @@ class POSM(QMainWindow):
 
         self.horSplitter.addWidget(self.editionSplitter)
 
+        self.emptyMapUrl = QUrl.fromLocalFile(defaultTileMap)
+        self.lastMapUrl = None
+
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
-        self.mapRenderer.load(QUrl.fromLocalFile(defaultTileMap))
+        self.mapRenderer.load(self.emptyMapUrl)
         self.mapRenderer.loadFinished.connect(
             lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
 
@@ -184,6 +188,16 @@ class POSM(QMainWindow):
 
         windowsMenu = menubar.addMenu('Windows')
 
+        templatesMenu = windowsMenu.addMenu("Map")
+
+        showEmptyMapAct = QAction('Empty', self)
+        showEmptyMapAct.triggered.connect(self.changeToEmptyMap)
+        templatesMenu.addAction(showEmptyMapAct)
+
+        showLastMapAct = QAction('Last response', self)
+        showLastMapAct.triggered.connect(self.changeToLastMap)
+        templatesMenu.addAction(showLastMapAct)
+
         self.showHideInteractiveMode = QAction('Interactive mode', self)
         self.showHideInteractiveMode.triggered.connect(
             lambda: self.queryUI.show() if self.queryUI.isHidden() else self.queryUI.hide())
@@ -196,6 +210,18 @@ class POSM(QMainWindow):
         showHideQuery = QAction('Query', self)
         showHideQuery.triggered.connect(self.showHideQuery)
         windowsMenu.addAction(showHideQuery)
+
+    def changeToEmptyMap(self):
+        if self.mapRenderer.url() != self.emptyMapUrl:
+            self.getPolygons(lambda polygons: self.changeMap(polygons, self.emptyMapUrl))
+
+    def changeToLastMap(self):
+        if self.mapRenderer.url() == self.emptyMapUrl and self.lastMapUrl is not None:
+            self.getPolygons(lambda polygons: self.changeMap(polygons, self.lastMapUrl))
+
+    def changeMap(self, settings, url):
+        self.htmlSettings = settings
+        self.mapRenderer.load(url)
 
     def logManualModePolygonCoords(self, coords):
         logging.info("Polygon coordinates:\"{}\"".format(" ".join([str(c) for point in coords for c in point])))
@@ -252,10 +278,9 @@ class POSM(QMainWindow):
 
     def loadMap(self):
         try:
-            self.mapRenderer.load(buildHTMLWithQuery(self.queryText.toPlainText()))
+            self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
+            self.mapRenderer.load(self.lastMapUrl)
             logging.info("Query drawn.")
-            self.mapRenderer.loadFinished.connect(
-                lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
         except (OverpassRequestException, OsmnxException) as e:
             logging.error(str(e))
         except ox.EmptyOverpassResponse:
@@ -414,8 +439,10 @@ class POSM(QMainWindow):
             """ % (id, id, id, id, id, id, id, id, id, id)
         self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
 
-    def getPolygons(self):
-        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettings)
+    def getPolygons(self, f=None):
+        if f is None:
+            f = self.setHtmlSettings
+        self.mapRenderer.page().runJavaScript("getPolygons();", f)
 
     def setHtmlSettings(self, settings):
         self.htmlSettings = settings
