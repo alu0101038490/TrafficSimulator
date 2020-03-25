@@ -1,6 +1,7 @@
 import logging
 import os
 import pathlib
+import traceback
 
 import osmnx as ox
 import requests
@@ -11,6 +12,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit
 from requests import RequestException
 
+from Exceptions.OverpassExceptions import OverpassRequestException
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff, OsmType
 from Utils.SumoUtils import tempDir, writeXMLResponse
@@ -596,8 +598,10 @@ class RequestWidget(QWidget):
         tableDir = os.path.join(tempDir, "table.osm.xml")
         try:
             writeXMLResponse(query.getQL(), tableDir)
+        except OverpassRequestException as e:
+            logging.error(str(e))
         except RequestException:
-            logging.error("There was a problem with the internet connection.")
+            logging.error(traceback.format_exc())
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
 

@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import traceback
 from os.path import expanduser
 
 import osmnx as ox
@@ -11,6 +12,7 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
 from requests import RequestException
 
+from Exceptions.OverpassExceptions import OverpassRequestException
 from Utils.OverpassUtils import OverpassQLHighlighter
 from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
 from Views.NumberedTextEdit import CodeEditor
@@ -254,10 +256,12 @@ class POSM(QMainWindow):
             logging.info("Query drawn.")
             self.mapRenderer.loadFinished.connect(
                 lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
+        except OverpassRequestException as e:
+            logging.error(str(e))
         except ox.EmptyOverpassResponse:
             logging.error("There are no elements with the given query.")
         except RequestException:
-            logging.error("There was a problem with the internet connection.")
+            logging.error(traceback.format_exc())
         except OSError:
             logging.error("There was a problem creating the file with the request response.")
 
