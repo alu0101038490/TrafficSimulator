@@ -537,12 +537,17 @@ class RequestWidget(QWidget):
         self.tableView.model().showLess()
 
     def addFilter(self, key="", value="", accuracy=False, negate=False):
-        filter = FilterWidget(self.filtersWidget, self.keyValues)
+        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
+        if key in currentKeys.keys():
+            filter = currentKeys[key]
+            logging.warning("Some filters have been modified.")
+        else:
+            filter = FilterWidget(self.filtersWidget, self.keyValues)
+            self.filtersLayout.addWidget(filter)
         filter.setKey(key)
         filter.setValue(value)
         filter.setExactValue(accuracy)
         filter.setNegate(negate)
-        self.filtersLayout.addWidget(filter)
 
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
@@ -551,12 +556,8 @@ class RequestWidget(QWidget):
 
     def addFiltersFromRow(self, index):
         row = self.tableView.model().getDictData(index)
-        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
         for k, v in row.items():
-            if k in currentKeys.keys():
-                currentKeys[k].setValue(v)
-            else:
-                self.addFilter(k, v, True)
+            self.addFilter(k, v, True)
 
     def removeFilters(self):
         for widget in self.filtersWidget.findChildren(FilterWidget):
@@ -658,8 +659,11 @@ class QueryUI(QWidget):
             self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
             self.requestTabs.currentWidget().deleteLater()
 
-    def addFilter(self):
-        self.requestTabs.currentWidget().addFilter()
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
+        self.requestTabs.currentWidget().addFilter(key, value, accuracy, negate)
+
+    def requestsCount(self):
+        return self.requestTabs.count()
 
     def removeFilter(self):
         self.requestTabs.currentWidget().removeFilters()
