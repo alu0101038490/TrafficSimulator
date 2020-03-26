@@ -439,8 +439,6 @@ class RequestWidget(QWidget):
         self.filtersWidget.setLayout(self.filtersLayout)
         self.layout.addWidget(self.filtersWidget)
 
-        self.addFilter()
-
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
         polygonButtonsLayout.setSpacing(0)
@@ -635,13 +633,18 @@ class RequestWidget(QWidget):
     def showLess(self):
         self.tableView.model().showLess()
 
-    def addFilter(self, key="", value="", accuracy=False):
-        filter = FilterWidget(self.filtersWidget, self.keyValues)
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
+        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
+        if key in currentKeys.keys():
+            filter = currentKeys[key]
+            logging.warning("Some filters have been modified.")
+        else:
+            filter = FilterWidget(self.filtersWidget, self.keyValues)
+            self.filtersLayout.addWidget(filter)
         filter.setKey(key)
         filter.setValue(value)
         filter.setExactValue(accuracy)
-        filter.setNegate(True)
-        self.filtersLayout.addWidget(filter)
+        filter.setNegate(negate)
 
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
@@ -650,12 +653,8 @@ class RequestWidget(QWidget):
 
     def addFiltersFromRow(self, index):
         row = self.tableView.model().getDictData(index)
-        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
         for k, v in row.items():
-            if k in currentKeys.keys():
-                currentKeys[k].setValue(v)
-            else:
-                self.addFilter(k, v, True)
+            self.addFilter(k, v, True)
 
     def getSelectedRowNetworkx(self):
         indexes = self.tableView.selectionModel().selectedRows()
@@ -730,7 +729,7 @@ class QueryUI(QWidget):
         for tab in self.requestTabs.findChildren(RequestWidget):
             tab.onPolygonEnabled(fTrue, fFalse)
 
-    def addRequest(self):
+    def addRequest(self, filters=None):
         requestWidget = RequestWidget(self, self.keyValues)
         setName = OverpassQuery.getUniqueSetName()
         requestWidget.setObjectName(setName)
@@ -739,6 +738,12 @@ class QueryUI(QWidget):
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
 
+        if filters is not None:
+            for key, value, accuracy, negate in filters:
+                requestWidget.addFilter(key, value, accuracy, negate)
+        else:
+            requestWidget.addFilter()
+
     def removeRequest(self):
         reply = QMessageBox.question(self, "Remove request",
                                      "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid")
@@ -746,8 +751,11 @@ class QueryUI(QWidget):
             self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
             self.requestTabs.currentWidget().deleteLater()
 
-    def addFilter(self):
-        self.requestTabs.currentWidget().addFilter()
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
+        self.requestTabs.currentWidget().addFilter(key, value, accuracy, negate)
+
+    def requestsCount(self):
+        return self.requestTabs.count()
 
     def getQuery(self):
         query = OverpassQuery(self.requestOps.outputSet())

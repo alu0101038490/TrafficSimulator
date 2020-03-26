@@ -160,6 +160,36 @@ class POSM(QMainWindow):
         addRequestAct.setShortcut('Ctrl+A')
         self.requestMenu.addAction(addRequestAct)
 
+        templatesMenu = self.requestMenu.addMenu("Add template")
+
+        addRoadAct = QAction('Roads', self)
+        addRoadAct.triggered.connect(lambda: self.addTemplate([("highway", "", True, False),
+                                                              ("name", "", True, False),
+                                                              ("ref", "", True, False),
+                                                              ("maxspeed", "^1([01]\d|20)|\d\d?$", False, False),
+                                                              ("lanes", "", True, False),
+                                                              ("oneway", "", True, False)]))
+        templatesMenu.addAction(addRoadAct)
+
+        addMainRoadAct = QAction('Main roads', self)
+        mainHighways = "^(motorway|trunk|primary|secondary|residential)(_link)?$"
+        everythinButYes = "^(y(e([^s]|$|s.)|[^e]|$)|[^y]|$).*"
+        addMainRoadAct.triggered.connect(lambda: self.addTemplate([("highway", mainHighways, False, False),
+                                                                  ("construction", "", False, True),
+                                                                  ("noexit", "yes", True, True),
+                                                                  ("access", everythinButYes, False, True)]))
+        templatesMenu.addAction(addMainRoadAct)
+
+        addParkingAct = QAction('Parking', self)
+        addParkingAct.triggered.connect(lambda: self.addTemplate([("service", "parking", False, False),
+                                                                 ("highway", "", False, False)]))
+        templatesMenu.addAction(addParkingAct)
+
+        addPedestriansAct = QAction('Pedestrians', self)
+        pedestrianHighway = "^(pedestrian|footway|path|cycleway|bridleway|steps|crossing)$"
+        addPedestriansAct.triggered.connect(lambda: self.addTemplate([("highway", pedestrianHighway, False, False)]))
+        templatesMenu.addAction(addPedestriansAct)
+
         removeRequestAct = QAction('Remove current request', self)
         removeRequestAct.triggered.connect(self.removeRequest)
         removeRequestAct.setShortcut('Ctrl+R')
@@ -290,9 +320,16 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
-    def addRequest(self):
+    def addRequest(self, filters = None):
         self.mapRenderer.page().runJavaScript("addPolygon();")
-        self.queryUI.addRequest()
+        self.queryUI.addRequest(filters)
+
+    def addTemplate(self, filters):
+        if self.queryUI.requestsCount() > 0:
+            for key, value, accuracy, negate in filters:
+                self.queryUI.addFilter(key, value, accuracy, negate)
+        else:
+            self.queryUI.addRequest(filters)
 
     def removeRequest(self):
         self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
