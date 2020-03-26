@@ -71,9 +71,12 @@ class POSM(QMainWindow):
 
     def initUI(self):
         self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.horSplitter = QSplitter(Qt.Horizontal)
+        self.horSplitter.setChildrenCollapsible(False)
         self.editionSplitter = QSplitter(Qt.Vertical)
+        self.editionSplitter.setChildrenCollapsible(False)
 
         self.queryUI = QueryUI()
         self.queryUI.onClearPolygon(self.cleanCurrentPolygon)
@@ -100,6 +103,7 @@ class POSM(QMainWindow):
         self.addRequest()
 
         self.consoleSplitter = QSplitter(Qt.Vertical)
+        self.consoleSplitter.setChildrenCollapsible(False)
         self.consoleSplitter.addWidget(self.mapRenderer)
 
         self.console = InformationalConsole()
@@ -156,7 +160,7 @@ class POSM(QMainWindow):
         self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
-        addRequestAct.triggered.connect(self.addRequest)
+        addRequestAct.triggered.connect(lambda b: self.addRequest())
         addRequestAct.setShortcut('Ctrl+A')
         self.requestMenu.addAction(addRequestAct)
 
@@ -600,6 +604,68 @@ class POSM(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setStyleSheet("""
+        QToolBox::tab {
+            background: #DDDDDD;
+            color: darkgray;
+        }
+        
+        QToolBox::tab:selected { /* italicize selected tabs */
+            font: italic;
+            color: white;
+        }
+        
+        QToolButton {
+            background-color: #f6f7fa;
+        }
+        
+        QToolButton:pressed {
+            background-color: #dadbde;
+        }
+        
+        QToolTip {
+            border: 2px solid darkkhaki;
+            padding: 5px;
+            border-radius: 3px;
+            opacity: 200;
+        }   
+        
+        QSplitter::handle {
+            image: none;
+        }
+        
+        QSplitter::handle:horizontal {
+            width: 2px;
+        }
+        
+        QSplitter::handle:vertical {
+            height: 2px;
+        }
+        
+        QTabWidget::tab-bar {
+            left: 0px;
+        }
+        
+        QTabWidget::pane { /* The tab widget frame */
+            border-top: 2px solid #C2C7CB;
+        }
+        
+        QTabBar::tab {
+            background: white;
+            border: 1px solid #DEDEDE;
+            border-bottom-color: white;
+            min-width: 0ex;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            padding-left: 11px;
+            padding-right: 11px;
+            margin-top: 0px;
+        }
+        
+        QTabBar::tab:selected {
+            border-bottom-color: #1C8600;
+        }
+    """)
     ex = POSM()
     ex.show()
     sys.exit(app.exec_())

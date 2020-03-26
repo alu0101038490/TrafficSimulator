@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit
+    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QScrollArea
 from requests import RequestException
 
 from Exceptions.OverpassExceptions import OverpassRequestException
@@ -674,6 +674,11 @@ class GlobalOverpassSettingUI(QWidget):
         self.dateEdit.setMinimumDate(QDate(2012, 9, 13))
         self.dateEdit.setMaximumDate(QDate.currentDate())
 
+        prevIcon = self.dateEdit.findChild(QToolButton, "qt_calendar_prevmonth")
+        nextIcon = self.dateEdit.findChild(QToolButton, "qt_calendar_nextmonth")
+        prevIcon.setIcon(QIcon(os.path.join(picturesDir, "arrowLeft.png")))
+        nextIcon.setIcon(QIcon(os.path.join(picturesDir, "arrowRight.png")))
+
         self.layout.addWidget(self.dateEdit)
 
     def getDate(self):
@@ -696,10 +701,13 @@ class QueryUI(QWidget):
 
     def initUI(self):
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.requestAreaWidget = QToolBox()
+        self.requestAreaWidget.layout().setSpacing(1)
 
         self.requestTabs = QTabWidget()
+        self.requestTabs.setUsesScrollButtons(True)
         self.requestAreaWidget.addItem(self.requestTabs, "Requests")
 
         self.requestOps = RequestsOperations(self)
