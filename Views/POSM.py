@@ -442,12 +442,15 @@ class POSM(QMainWindow):
                     }
                     result.push(aux)
                 }
-                return [currentPolygon, result, "[" + isClickActivated.toString() + "]"];
+                return [currentPolygon, result, "[" + isClickActivated.toString() + "]", getManualPolygon(), interactiveMode.toString()];
             }
 
-            function setPolygons(current, coors, clicksActivated) {
+            function setPolygons(current, coors, clicksActivated, manualPolygon, mode) {
                 latlngs = [];
                 polygons = [];
+                manualModeLatlngs = [];
+                manualModePolygon = null;
+                interactiveMode = mode;
                 isClickActivated = clicksActivated;
                 for (i in coors){
                     latlngs.push([]);
@@ -456,7 +459,10 @@ class POSM(QMainWindow):
                     }
                     polygons.push(null);
                 }
-                currentPolygon = i;
+                for (i in manualPolygon) { 
+                    manualModeLatlngs.push(L.latLng(manualPolygon[i][0], manualPolygon[i][1]));
+                }
+                currentPolygon = current;
                 draw();
             }
 
@@ -504,7 +510,11 @@ class POSM(QMainWindow):
     def setPolygons(self):
         if len(self.htmlSettings) > 0:
             self.mapRenderer.page().runJavaScript(
-                "setPolygons(%s, %s, %s);" % (self.htmlSettings[0], str(self.htmlSettings[1]), self.htmlSettings[2]))
+                "setPolygons(%s, %s, %s, %s, %s);" % (self.htmlSettings[0],
+                                                      str(self.htmlSettings[1]),
+                                                      self.htmlSettings[2],
+                                                      str(self.htmlSettings[3]),
+                                                      self.htmlSettings[4]))
 
     def disablePolygon(self):
         self.mapRenderer.page().runJavaScript("disablePolygon();")
