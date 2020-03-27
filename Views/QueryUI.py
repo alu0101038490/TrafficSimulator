@@ -6,10 +6,10 @@ import traceback
 import osmnx as ox
 import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QScrollArea
+    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QScrollArea, QFormLayout
 from requests import RequestException
 
 from Exceptions.OverpassExceptions import OverpassRequestException
@@ -22,6 +22,14 @@ from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 picturesDir = os.path.join(resDir, "pictures")
+
+
+class HorizontalLine(QFrame):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setFrameShape(QFrame.HLine)
+        self.setFrameShadow(QFrame.Sunken)
 
 
 class OperationsTableModel(QAbstractTableModel):
@@ -101,10 +109,14 @@ class RequestsOperations(QWidget):
         twoListsOfSets.layout().setSpacing(0)
 
         self.requestList = QListView()
+        self.requestList.setFrameStyle(QFrame.NoFrame)
+        self.requestList.viewport().setAutoFillBackground(False)
         self.requestsModel = QStandardItemModel()
         self.requestList.setModel(self.requestsModel)
 
         self.requestList2 = QListView()
+        self.requestList2.setFrameStyle(QFrame.NoFrame)
+        self.requestList2.viewport().setAutoFillBackground(False)
         self.requestsModel2 = QStandardItemModel()
         self.requestList2.setModel(self.requestsModel2)
 
@@ -270,7 +282,7 @@ class FilterWidget(QWidget):
         self.initUI()
 
     def initUI(self):
-        self.layout = QVBoxLayout()
+        self.layout = QFormLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
 
         topWidget = QWidget()
@@ -279,9 +291,10 @@ class FilterWidget(QWidget):
         topLayout.setContentsMargins(0, 0, 0, 0)
         topWidget.setLayout(topLayout)
 
-        keyLabel = QLabel("Key:")
-        keyLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        topLayout.addWidget(keyLabel)
+        self.keyInput = QComboBox()
+        self.keyInput.setEditable(True)
+        self.keyInput.addItems(self.keyValues)
+        topLayout.addWidget(self.keyInput)
 
         self.deleteButton = QPushButton(QIcon(os.path.join(picturesDir, "remove.png")), "")
         self.deleteButton.setFlat(True)
@@ -293,14 +306,7 @@ class FilterWidget(QWidget):
         self.keyInfoButton.clicked.connect(self.getInfo)
         topLayout.addWidget(self.keyInfoButton)
 
-        self.layout.addWidget(topWidget)
-
-        self.keyInput = QComboBox()
-        self.keyInput.setEditable(True)
-
-        self.keyInput.addItems(self.keyValues)
-
-        self.layout.addWidget(self.keyInput)
+        self.layout.addRow("Key:", topWidget)
 
         valueEdition = QWidget()
         valueEdition.setLayout(QHBoxLayout())
@@ -311,18 +317,17 @@ class FilterWidget(QWidget):
         self.valueInput.setEditable(True)
         valueEdition.layout().addWidget(self.valueInput)
 
+        self.layout.addRow("Value:", valueEdition)
+
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
 
         self.checkboxAccuracy = QCheckBox()
         self.checkboxAccuracy.setText("Exact Value")
-        valueEdition.layout().addWidget(self.checkboxAccuracy)
+        self.layout.addRow("", self.checkboxAccuracy)
 
         self.checkboxNegate = QCheckBox()
         self.checkboxNegate.setText("Negate")
-        valueEdition.layout().addWidget(self.checkboxNegate)
-
-        self.layout.addWidget(QLabel("Value:"))
-        self.layout.addWidget(valueEdition)
+        self.layout.addRow("", self.checkboxNegate)
 
         line = QFrame(self)
         line.setFrameShape(QFrame.HLine)
@@ -397,14 +402,19 @@ class RequestWidget(QWidget):
 
     def initUI(self):
         self.layout = QVBoxLayout()
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(10,10,10,10)
 
-        self.layout.addWidget(QLabel("Elements type:"))
+        elementTypeForm = QWidget()
+        elementTypeFormLayout = QFormLayout()
+        elementTypeForm.setLayout(elementTypeFormLayout)
+        elementTypeFormLayout.setLabelAlignment(Qt.AlignLeft)
+        elementTypeFormLayout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         elementsTypeGB = QWidget()
-        elementsTypeLayout = QHBoxLayout()
+        elementsTypeLayout = QVBoxLayout()
         elementsTypeGB.setLayout(elementsTypeLayout)
-        elementsTypeLayout.setContentsMargins(0, 0, 0, 0)
+        elementsTypeLayout.setContentsMargins(10, 0, 0, 0)
+        elementsTypeLayout.setSpacing(0)
 
         self.nodesCB = QCheckBox(self.tr("&Nodes"))
         elementsTypeLayout.addWidget(self.nodesCB)
@@ -424,30 +434,26 @@ class RequestWidget(QWidget):
         self.waysCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
         self.relCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
 
-        self.layout.addWidget(elementsTypeGB)
-
-        self.layout.addWidget(QLabel("Location:"))
+        elementTypeFormLayout.addRow("Elements type:", elementsTypeGB)
+        self.layout.addWidget(elementTypeForm)
 
         self.locationNameWidget = QLineEdit()
         self.locationNameWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.layout.addWidget(self.locationNameWidget)
 
-        self.layout.addWidget(QLabel("Filters:"))
+        elementTypeFormLayout.addRow("Location:", self.locationNameWidget)
 
         self.filtersWidget = QWidget(self)
         self.filtersLayout = QVBoxLayout()
+        self.filtersLayout.setContentsMargins(40,10,10,10)
         self.filtersWidget.setLayout(self.filtersLayout)
-        self.layout.addWidget(self.filtersWidget)
+        elementTypeFormLayout.addRow("Filters:", None)
+        elementTypeFormLayout.addRow(self.filtersWidget)
 
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
         polygonButtonsLayout.setSpacing(0)
         polygonButtonsLayout.setContentsMargins(0, 0, 0, 0)
         polygonButtons.setLayout(polygonButtonsLayout)
-
-        polygonLabel = QLabel("Polygon:")
-        polygonLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        polygonButtonsLayout.addWidget(polygonLabel)
 
         self.drawPolButton = QPushButton(QIcon(os.path.join(picturesDir, "polygon.png")), "")
         self.drawPolButton.setFlat(True)
@@ -460,16 +466,10 @@ class RequestWidget(QWidget):
 
         polygonButtonsLayout.addWidget(self.buttonClearPol)
 
-        self.layout.addWidget(polygonButtons)
-
-        line = QFrame(self)
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        self.layout.addWidget(line)
-
-        self.layout.addWidget(QLabel("Surroundings:"))
+        elementTypeFormLayout.addRow("Polygon:", polygonButtons)
 
         surroundGB = QGroupBox()
+        surroundGB.setFlat(True)
         surroundLayout = QVBoxLayout()
         surroundLayout.setContentsMargins(0, 0, 0, 0)
 
@@ -488,28 +488,12 @@ class RequestWidget(QWidget):
 
         surroundGB.setLayout(surroundLayout)
 
-        self.layout.addWidget(surroundGB)
-
-        line = QFrame(self)
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        self.layout.addWidget(line)
-
-        self.tableOptions = QWidget()
-        self.tableOptions.setVisible(False)
-        tableOptionsLayout = QHBoxLayout()
-        self.tableOptions.setLayout(tableOptionsLayout)
-        self.layout.addWidget(self.tableOptions)
+        elementTypeFormLayout.addRow("Surroundings:", surroundGB)
 
         self.onlyDisconnectedCB = QCheckBox()
         self.onlyDisconnectedCB.setText("Only disconnected ways")
-        tableOptionsLayout.addWidget(self.onlyDisconnectedCB)
-
-        self.layout.addWidget(QLabel("Disambiguation table:"))
 
         self.columnSelection = CheckableComboBox("Keys")
-        self.columnSelection.setVisible(False)
-        tableOptionsLayout.addWidget(self.columnSelection)
 
         self.tableView = QTableView()
         self.tableView.doubleClicked.connect(self.addFilterFromCell)
@@ -521,33 +505,36 @@ class RequestWidget(QWidget):
         self.verticalHeader = self.tableView.verticalHeader()
         self.verticalHeader.sectionDoubleClicked.connect(self.addFiltersFromRow)
 
-        self.tableView.setVisible(False)
         self.tableView.setMinimumHeight(300)
-        self.layout.addWidget(self.tableView)
 
         tableButtons = QWidget()
         tableButtonsLayout = QHBoxLayout()
         tableButtons.setLayout(tableButtonsLayout)
+        tableButtonsLayout.setSpacing(0)
+        tableButtonsLayout.setContentsMargins(0,0,0,0)
 
-        buttonTable = QPushButton()
-        buttonTable.setText("Update table")
+        buttonTable = QPushButton(QIcon(os.path.join(picturesDir, "reset.png")), "")
+        buttonTable.setFlat(True)
         buttonTable.clicked.connect(self.showTable)
 
         tableButtonsLayout.addWidget(buttonTable)
 
-        buttonMore = QPushButton()
-        buttonMore.setText("Show more")
+        buttonMore = QPushButton(QIcon(os.path.join(picturesDir, "showMore.png")), "")
+        buttonMore.setFlat(True)
         buttonMore.clicked.connect(self.showMore)
 
         tableButtonsLayout.addWidget(buttonMore)
 
-        buttonLess = QPushButton()
-        buttonLess.setText("Show less")
+        buttonLess = QPushButton(QIcon(os.path.join(picturesDir, "showLess.png")), "")
+        buttonLess.setFlat(True)
         buttonLess.clicked.connect(self.showLess)
 
         tableButtonsLayout.addWidget(buttonLess)
 
-        self.layout.addWidget(tableButtons)
+        elementTypeFormLayout.addRow("Disambiguation:", tableButtons)
+        elementTypeFormLayout.addRow("", self.onlyDisconnectedCB)
+        elementTypeFormLayout.addRow("", self.columnSelection)
+        elementTypeFormLayout.addRow(self.tableView)
 
         self.setLayout(self.layout)
 
@@ -564,7 +551,6 @@ class RequestWidget(QWidget):
         elif item['osm_type'] == 'node':
             id += 2400000000
         return id
-
 
     def getType(self):
         return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),

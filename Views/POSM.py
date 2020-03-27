@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
+    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
@@ -106,8 +106,18 @@ class POSM(QMainWindow):
         self.consoleSplitter.setChildrenCollapsible(False)
         self.consoleSplitter.addWidget(self.mapRenderer)
 
+        self.consoleWidget = QWidget()
+        self.consoleWidget.setLayout(QVBoxLayout())
+        self.consoleWidget.layout().setContentsMargins(0, 0, 0, 0)
+        self.consoleWidget.layout().setSpacing(0)
+
+        self.consoleHeader = QLabel("Console")
+        self.consoleHeader.setContentsMargins(0,5,0,5)
+        self.consoleWidget.layout().addWidget(self.consoleHeader)
         self.console = InformationalConsole()
-        self.consoleSplitter.addWidget(self.console)
+        self.consoleWidget.layout().addWidget(self.console)
+
+        self.consoleSplitter.addWidget(self.consoleWidget)
 
         self.horSplitter.addWidget(self.consoleSplitter)
 
@@ -200,7 +210,7 @@ class POSM(QMainWindow):
         self.requestMenu.addAction(removeRequestAct)
 
         addFilterAct = QAction('Add filter', self)
-        addFilterAct.triggered.connect(self.queryUI.addFilter)
+        addFilterAct.triggered.connect(lambda b: self.queryUI.addFilter())
         addFilterAct.setShortcut('Ctrl+T')
         self.requestMenu.addAction(addFilterAct)
 
