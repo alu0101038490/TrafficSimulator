@@ -15,7 +15,7 @@ from requests import RequestException
 from Exceptions.OverpassExceptions import OverpassRequestException
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff, OsmType
-from Utils.SumoUtils import tempDir, writeXMLResponse
+from Utils.SumoUtils import writeXMLResponse, tableDir
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
@@ -577,7 +577,7 @@ class RequestWidget(QWidget):
         self.drawPolButton.toggled.connect(lambda: fTrue() if self.drawPolButton.isChecked() else fFalse())
 
     def showTable(self):
-        query = OverpassQuery()
+        query = OverpassQuery(self.objectName())
 
         switcher = {
             "Adjacent": Surround.ADJACENT,
@@ -586,14 +586,13 @@ class RequestWidget(QWidget):
         }
 
         selectedSurrounding = [b for b in self.findChildren(QRadioButton) if b.isChecked()][0]
-        request = OverpassRequest(switcher.get(selectedSurrounding.objectName()))
+        request = OverpassRequest(self.getType(), switcher.get(selectedSurrounding.objectName()))
         for filterWidget in self.findChildren(FilterWidget):
             request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
                               filterWidget.isNegateSelected())
 
         query.addRequest(self.objectName(), request)
 
-        tableDir = os.path.join(tempDir, "table.osm.xml")
         try:
             writeXMLResponse(query.getQL(), tableDir)
         except OverpassRequestException as e:

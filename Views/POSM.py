@@ -156,7 +156,7 @@ class POSM(QMainWindow):
         self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
-        addRequestAct.triggered.connect(self.addRequest)
+        addRequestAct.triggered.connect(lambda b: self.addRequest())
         addRequestAct.setShortcut('Ctrl+A')
         self.requestMenu.addAction(addRequestAct)
 
@@ -196,7 +196,7 @@ class POSM(QMainWindow):
         self.requestMenu.addAction(removeRequestAct)
 
         addFilterAct = QAction('Add filter', self)
-        addFilterAct.triggered.connect(self.queryUI.addFilter)
+        addFilterAct.triggered.connect(lambda b: self.queryUI.addFilter())
         addFilterAct.setShortcut('Ctrl+T')
         self.requestMenu.addAction(addFilterAct)
 
@@ -590,7 +590,17 @@ class POSM(QMainWindow):
             logging.error(traceback.format_exc())
 
     def showTableSelection(self):
-        self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
+        try:
+            self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
+        except (OverpassRequestException, OsmnxException) as e:
+            logging.error(str(e))
+            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
+        except ox.EmptyOverpassResponse:
+            logging.error("There are no elements with the given row.")
+        except OSError:
+            logging.error("There was a problem creating the file with the row selection.")
+        except Exception:
+            logging.error(traceback.format_exc())
 
     def closeEvent(self, event):
         for f in os.listdir(tempDir):

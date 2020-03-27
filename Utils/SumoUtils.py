@@ -14,7 +14,8 @@ from Views import osmBuild, sumolib
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 tempDir = os.path.join(resDir, "temp")
-responsePath = os.path.join(resDir, "temp", "response.osm.xml")
+tableDir = os.path.join(tempDir, "table.osm.xml")
+responsePath = os.path.join(tempDir, "response.osm.xml")
 defaultTileMap = os.path.join(resDir, "html", "tile.html")
 tilePath = os.path.join(resDir, "temp", "tile.html")
 typemapPath = os.path.join(resDir, "typemap")
@@ -132,7 +133,11 @@ def getIntersections():
 
 
 def buildHTMLWithNetworkx(G):
-    graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
+    try:
+        graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
+    except (ValueError, KeyError):
+        raise OsmnxException("Probably there are elements without all its nodes. It is not possible to show the "
+                             "results but you can use the option 'Open netedit'.")
     graphMap.save(tilePath)
 
     logging.info("Html written.")
