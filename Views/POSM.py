@@ -6,7 +6,7 @@ from os.path import expanduser
 
 import osmnx as ox
 from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor, QColor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
@@ -41,25 +41,27 @@ class InformationalConsole(QTextEdit):
     def flush(self):
         pass
 
+    def addProcessEnd(self):
+        self.moveCursor(QTextCursor.End)
+        self.insertHtml("<hr /><br />")
+
     def writeMessage(self, message, color):
         self.moveCursor(QTextCursor.End)
-        self.setTextColor(Qt.black)
-        self.insertPlainText(message[:10])
-        self.setTextColor(color)
-        self.insertPlainText(message[10:] + "\n")
-        self.moveCursor(QTextCursor.End)
+        self.insertHtml("<p><font color=\"#000000\">{}</font><font color=\"{}\">{}</font></p><br />".format(message[:10],
+                                                                                                      color,
+                                                                                                      message[10:]))
 
     def writeWarning(self, warning):
-        self.writeMessage(warning, Qt.darkYellow)
+        self.writeMessage(warning, QColor(Qt.darkYellow).name(QColor.HexRgb))
 
     def writeInfo(self, warning):
-        self.writeMessage(warning, Qt.black)
+        self.writeMessage(warning, QColor(Qt.black).name(QColor.HexRgb))
 
     def writeError(self, warning):
-        self.writeMessage(warning, Qt.darkRed)
+        self.writeMessage(warning, QColor(Qt.darkRed).name(QColor.HexRgb))
 
     def writeSuccess(self, warning):
-        self.writeMessage(warning, Qt.darkGreen)
+        self.writeMessage(warning, QColor(Qt.darkGreen).name(QColor.HexRgb))
 
 
 class POSM(QMainWindow):
@@ -164,25 +166,25 @@ class POSM(QMainWindow):
 
         addRoadAct = QAction('Roads', self)
         addRoadAct.triggered.connect(lambda: self.addTemplate([("highway", "", True, False),
-                                                              ("name", "", True, False),
-                                                              ("ref", "", True, False),
-                                                              ("maxspeed", "^1([01]\d|20)|\d\d?$", False, False),
-                                                              ("lanes", "", True, False),
-                                                              ("oneway", "", True, False)]))
+                                                               ("name", "", True, False),
+                                                               ("ref", "", True, False),
+                                                               ("maxspeed", "^1([01]\d|20)|\d\d?$", False, False),
+                                                               ("lanes", "", True, False),
+                                                               ("oneway", "", True, False)]))
         templatesMenu.addAction(addRoadAct)
 
         addMainRoadAct = QAction('Main roads', self)
         mainHighways = "^(motorway|trunk|primary|secondary|residential)(_link)?$"
         everythinButYes = "^(y(e([^s]|$|s.)|[^e]|$)|[^y]|$).*"
         addMainRoadAct.triggered.connect(lambda: self.addTemplate([("highway", mainHighways, False, False),
-                                                                  ("construction", "", False, True),
-                                                                  ("noexit", "yes", True, True),
-                                                                  ("access", everythinButYes, False, True)]))
+                                                                   ("construction", "", False, True),
+                                                                   ("noexit", "yes", True, True),
+                                                                   ("access", everythinButYes, False, True)]))
         templatesMenu.addAction(addMainRoadAct)
 
         addParkingAct = QAction('Parking', self)
         addParkingAct.triggered.connect(lambda: self.addTemplate([("service", "parking", False, False),
-                                                                 ("highway", "", False, False)]))
+                                                                  ("highway", "", False, False)]))
         templatesMenu.addAction(addParkingAct)
 
         addPedestriansAct = QAction('Pedestrians', self)
@@ -311,6 +313,7 @@ class POSM(QMainWindow):
             self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
             self.mapRenderer.load(self.lastMapUrl)
             logging.info("Query drawn.")
+            self.console.addProcessEnd()
         except (OverpassRequestException, OsmnxException) as e:
             logging.error(str(e))
         except ox.EmptyOverpassResponse:
@@ -320,7 +323,7 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
-    def addRequest(self, filters = None):
+    def addRequest(self, filters=None):
         self.mapRenderer.page().runJavaScript("addPolygon();")
         self.queryUI.addRequest(filters)
 
