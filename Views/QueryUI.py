@@ -100,21 +100,30 @@ class RequestsOperations(QWidget):
         self.__ops = {}
 
     def initUI(self):
-        self.layout = QVBoxLayout()
-
-        self.layout.addWidget(QLabel("Sets"))
+        self.layout = QFormLayout()
+        self.layout.setLabelAlignment(Qt.AlignLeft)
+        self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         twoListsOfSets = QWidget()
         twoListsOfSets.setLayout(QHBoxLayout())
+        twoListsOfSets.layout().setContentsMargins(0,10,0,0)
         twoListsOfSets.layout().setSpacing(0)
 
         self.requestList = QListView()
+        self.requestList.setFlow(QListView.LeftToRight)
+        self.requestList.setWrapping(True)
+        self.requestList.setResizeMode(QListView.Adjust)
+        self.requestList.setUniformItemSizes(True)
         self.requestList.setFrameStyle(QFrame.NoFrame)
         self.requestList.viewport().setAutoFillBackground(False)
         self.requestsModel = QStandardItemModel()
         self.requestList.setModel(self.requestsModel)
 
         self.requestList2 = QListView()
+        self.requestList2.setFlow(QListView.LeftToRight)
+        self.requestList2.setWrapping(True)
+        self.requestList2.setResizeMode(QListView.Adjust)
+        self.requestList2.setUniformItemSizes(True)
         self.requestList2.setFrameStyle(QFrame.NoFrame)
         self.requestList2.viewport().setAutoFillBackground(False)
         self.requestsModel2 = QStandardItemModel()
@@ -123,13 +132,11 @@ class RequestsOperations(QWidget):
         twoListsOfSets.layout().addWidget(self.requestList)
         twoListsOfSets.layout().addWidget(self.requestList2)
 
-        self.layout.addWidget(twoListsOfSets)
-
-        self.layout.addWidget(QLabel("Operation"))
+        self.layout.addRow("Sets", twoListsOfSets)
 
         self.operationSelection = QGroupBox()
         self.operationSelection.setFlat(True)
-        self.operationSelection.setLayout(QHBoxLayout())
+        self.operationSelection.setLayout(QVBoxLayout())
 
         self.buttonIntersection = QRadioButton("Intersection")
         self.operationSelection.layout().addWidget(self.buttonIntersection)
@@ -144,25 +151,24 @@ class RequestsOperations(QWidget):
         self.operationSelection.layout().addWidget(self.buttonDiff)
         self.buttonDiff.clicked.connect(self.__enableSecondRequestList)
 
-        self.layout.addWidget(self.operationSelection)
+        self.layout.addRow("Operation", self.operationSelection)
 
         self.buttonApply = QPushButton("Apply")
         self.buttonApply.clicked.connect(self.__applyOp)
         self.operationSelection.layout().addWidget(self.buttonApply)
-        self.layout.addWidget(self.buttonApply)
+        self.layout.addRow("", self.buttonApply)
 
-        self.layout.addWidget(QLabel("Resulting sets"))
+        self.layout.addRow("Resulting sets", None)
 
         self.resultingSets = QTableView()
         self.resultingSets.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.resultingSets.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.resultingSets.setModel(OperationsTableModel())
-        self.layout.addWidget(self.resultingSets)
-
-        self.layout.addWidget(QLabel("Output set"))
+        self.layout.addRow(self.resultingSets)
 
         self.outputSetSelection = QComboBox()
-        self.layout.addWidget(self.outputSetSelection)
+        self.outputSetSelection.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+        self.layout.addRow("Output set", self.outputSetSelection)
 
         self.setLayout(self.layout)
 
