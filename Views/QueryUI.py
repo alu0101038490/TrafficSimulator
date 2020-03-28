@@ -719,9 +719,6 @@ class QueryUI(QWidget):
         self.generalConfig = GlobalOverpassSettingUI(self)
         self.requestAreaWidget.addItem(self.generalConfig, "General")
 
-        for w in self.requestAreaWidget.findChildren(QScrollArea):
-            w.setMinimumWidth(w.frameSize().width())
-
         self.layout.addWidget(self.requestAreaWidget)
 
         self.setLayout(self.layout)
