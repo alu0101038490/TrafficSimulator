@@ -634,7 +634,7 @@ class RequestWidget(QWidget):
 
     def addFilter(self, key="", value="", accuracy=False, negate=False):
         currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
-        if key in currentKeys.keys():
+        if key != "" and key in currentKeys.keys():
             filter = currentKeys[key]
             logging.warning("Some filters have been modified.")
         else:
