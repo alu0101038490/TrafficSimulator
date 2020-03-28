@@ -9,7 +9,8 @@ from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon, QPalette
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QScrollArea, QFormLayout
+    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QScrollArea, QFormLayout, \
+    QLayout, QAbstractScrollArea
 from requests import RequestException
 
 from Exceptions.OverpassExceptions import OverpassRequestException
@@ -101,6 +102,7 @@ class RequestsOperations(QWidget):
 
     def initUI(self):
         self.layout = QFormLayout()
+        self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
         self.layout.setLabelAlignment(Qt.AlignLeft)
         self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
@@ -289,7 +291,11 @@ class FilterWidget(QWidget):
 
     def initUI(self):
         self.layout = QFormLayout()
+        self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setVerticalSpacing(0)
+        self.layout.setLabelAlignment(Qt.AlignLeft)
+        self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         topWidget = QWidget()
         topLayout = QHBoxLayout()
@@ -298,6 +304,7 @@ class FilterWidget(QWidget):
         topWidget.setLayout(topLayout)
 
         self.keyInput = QComboBox()
+        self.keyInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.keyInput.setEditable(True)
         self.keyInput.addItems(self.keyValues)
         topLayout.addWidget(self.keyInput)
@@ -310,30 +317,36 @@ class FilterWidget(QWidget):
         self.keyInfoButton = QPushButton(QIcon(os.path.join(picturesDir, "info.png")), "")
         self.keyInfoButton.setFlat(True)
         self.keyInfoButton.clicked.connect(self.getInfo)
-        topLayout.addWidget(self.keyInfoButton)
 
         self.layout.addRow("Key:", topWidget)
 
         valueEdition = QWidget()
         valueEdition.setLayout(QHBoxLayout())
+        valueEdition.layout().setSpacing(0)
         valueEdition.layout().setContentsMargins(0, 0, 0, 0)
 
         self.valueInput = QComboBox()
         self.valueInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.valueInput.setEditable(True)
         valueEdition.layout().addWidget(self.valueInput)
+        valueEdition.layout().addWidget(self.keyInfoButton)
+
 
         self.layout.addRow("Value:", valueEdition)
 
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
 
+        flagsWidgetLayout = QHBoxLayout()
+
         self.checkboxAccuracy = QCheckBox()
         self.checkboxAccuracy.setText("Exact Value")
-        self.layout.addRow("", self.checkboxAccuracy)
+        flagsWidgetLayout.addWidget(self.checkboxAccuracy)
 
         self.checkboxNegate = QCheckBox()
         self.checkboxNegate.setText("Negate")
-        self.layout.addRow("", self.checkboxNegate)
+        flagsWidgetLayout.addWidget(self.checkboxNegate)
+
+        self.layout.addRow("Flags:", flagsWidgetLayout)
 
         line = QFrame(self)
         line.setFrameShape(QFrame.HLine)
@@ -407,14 +420,12 @@ class RequestWidget(QWidget):
         self.relCB.setChecked(False)
 
     def initUI(self):
-        self.layout = QVBoxLayout()
+        self.layout = QFormLayout()
         self.layout.setContentsMargins(10,10,10,10)
 
-        elementTypeForm = QWidget()
-        elementTypeFormLayout = QFormLayout()
-        elementTypeForm.setLayout(elementTypeFormLayout)
-        elementTypeFormLayout.setLabelAlignment(Qt.AlignLeft)
-        elementTypeFormLayout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        self.layout.setLabelAlignment(Qt.AlignLeft)
+        self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
         elementsTypeGB = QWidget()
         elementsTypeLayout = QVBoxLayout()
@@ -440,20 +451,19 @@ class RequestWidget(QWidget):
         self.waysCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
         self.relCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
 
-        elementTypeFormLayout.addRow("Elements type:", elementsTypeGB)
-        self.layout.addWidget(elementTypeForm)
+        self.layout.addRow("Elements type:", elementsTypeGB)
 
         self.locationNameWidget = QLineEdit()
         self.locationNameWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
-        elementTypeFormLayout.addRow("Location:", self.locationNameWidget)
+        self.layout.addRow("Location:", self.locationNameWidget)
 
         self.filtersWidget = QWidget(self)
         self.filtersLayout = QVBoxLayout()
-        self.filtersLayout.setContentsMargins(40,10,10,10)
+        self.filtersLayout.setContentsMargins(10,10,0,10)
         self.filtersWidget.setLayout(self.filtersLayout)
-        elementTypeFormLayout.addRow("Filters:", None)
-        elementTypeFormLayout.addRow(self.filtersWidget)
+        self.layout.addRow("Filters:", None)
+        self.layout.addRow(self.filtersWidget)
 
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
@@ -472,7 +482,7 @@ class RequestWidget(QWidget):
 
         polygonButtonsLayout.addWidget(self.buttonClearPol)
 
-        elementTypeFormLayout.addRow("Polygon:", polygonButtons)
+        self.layout.addRow("Polygon:", polygonButtons)
 
         surroundGB = QGroupBox()
         surroundGB.setFlat(True)
@@ -494,12 +504,13 @@ class RequestWidget(QWidget):
 
         surroundGB.setLayout(surroundLayout)
 
-        elementTypeFormLayout.addRow("Surroundings:", surroundGB)
+        self.layout.addRow("Surroundings:", surroundGB)
 
         self.onlyDisconnectedCB = QCheckBox()
         self.onlyDisconnectedCB.setText("Only disconnected ways")
 
         self.columnSelection = CheckableComboBox("Keys")
+        self.columnSelection.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
         self.tableView = QTableView()
         self.tableView.doubleClicked.connect(self.addFilterFromCell)
@@ -537,10 +548,10 @@ class RequestWidget(QWidget):
 
         tableButtonsLayout.addWidget(buttonLess)
 
-        elementTypeFormLayout.addRow("Disambiguation:", tableButtons)
-        elementTypeFormLayout.addRow("", self.onlyDisconnectedCB)
-        elementTypeFormLayout.addRow("", self.columnSelection)
-        elementTypeFormLayout.addRow(self.tableView)
+        self.layout.addRow("Disambiguation:", tableButtons)
+        self.layout.addRow("", self.onlyDisconnectedCB)
+        self.layout.addRow("", self.columnSelection)
+        self.layout.addRow(self.tableView)
 
         self.setLayout(self.layout)
 
@@ -707,6 +718,9 @@ class QueryUI(QWidget):
 
         self.generalConfig = GlobalOverpassSettingUI(self)
         self.requestAreaWidget.addItem(self.generalConfig, "General")
+
+        for w in self.requestAreaWidget.findChildren(QScrollArea):
+            w.setMinimumWidth(w.frameSize().width())
 
         self.layout.addWidget(self.requestAreaWidget)
 
