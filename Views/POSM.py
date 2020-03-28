@@ -24,8 +24,10 @@ class InformationalConsole(QTextEdit):
         super().__init__()
         self.setReadOnly(True)
 
-        logging.basicConfig(stream=self, level=logging.INFO, format='%(levelname)s%(asctime)s - %(message)s',
+        logging.basicConfig(stream=self, level=logging.DEBUG, format='%(levelname)s%(asctime)s - %(message)s',
                             datefmt="%H:%M:%S")
+
+        self.insertPlainText("\nWelcome!")
 
     def write(self, text):
         if text[0] == "W":
@@ -36,6 +38,8 @@ class InformationalConsole(QTextEdit):
             self.writeError(text[5:])
         elif text[0] == "C":
             self.writeError(text[8:])
+        elif text[0] == "D" and text[-5:-1] == "LINE":
+            self.addProcessEnd()
         app.processEvents()
 
     def flush(self):
@@ -43,11 +47,11 @@ class InformationalConsole(QTextEdit):
 
     def addProcessEnd(self):
         self.moveCursor(QTextCursor.End)
-        self.insertHtml("<hr /><br />")
+        self.insertHtml("<hr />")
 
     def writeMessage(self, message, color):
         self.moveCursor(QTextCursor.End)
-        self.insertHtml("<p><font color=\"#000000\">{}</font><font color=\"{}\">{}</font></p><br />".format(message[:10],
+        self.insertHtml("<br /><p><font color=\"#000000\">{}</font><font color=\"{}\">{}</font></p>\n".format(message[:10],
                                                                                                       color,
                                                                                                       message[10:]))
 
@@ -73,6 +77,8 @@ class POSM(QMainWindow):
 
     def initUI(self):
         self.layout = QHBoxLayout()
+
+        self.console = InformationalConsole()
 
         self.horSplitter = QSplitter(Qt.Horizontal)
         self.editionSplitter = QSplitter(Qt.Vertical)
@@ -104,7 +110,6 @@ class POSM(QMainWindow):
         self.consoleSplitter = QSplitter(Qt.Vertical)
         self.consoleSplitter.addWidget(self.mapRenderer)
 
-        self.console = InformationalConsole()
         self.consoleSplitter.addWidget(self.console)
 
         self.horSplitter.addWidget(self.consoleSplitter)
@@ -198,7 +203,7 @@ class POSM(QMainWindow):
         self.requestMenu.addAction(removeRequestAct)
 
         addFilterAct = QAction('Add filter', self)
-        addFilterAct.triggered.connect(lambda b: self.queryUI.addFilter())
+        addFilterAct.triggered.connect(lambda b: self.addFilter())
         addFilterAct.setShortcut('Ctrl+T')
         self.requestMenu.addAction(addFilterAct)
 
@@ -230,10 +235,9 @@ class POSM(QMainWindow):
         showLastMapAct.triggered.connect(self.changeToLastMap)
         templatesMenu.addAction(showLastMapAct)
 
-        self.showHideInteractiveMode = QAction('Interactive mode', self)
-        self.showHideInteractiveMode.triggered.connect(
-            lambda: self.queryUI.show() if self.queryUI.isHidden() else self.queryUI.hide())
-        windowsMenu.addAction(self.showHideInteractiveMode)
+        self.showHideInteractiveModeAct = QAction('Interactive mode', self)
+        self.showHideInteractiveModeAct.triggered.connect(self.showHideInteractiveMode)
+        windowsMenu.addAction(self.showHideInteractiveModeAct)
 
         showHideConsole = QAction('Console', self)
         showHideConsole.triggered.connect(self.showHideConsole)
@@ -246,10 +250,20 @@ class POSM(QMainWindow):
     def changeToEmptyMap(self):
         if self.mapRenderer.url() != self.emptyMapUrl:
             self.getPolygons(lambda polygons: self.changeMap(polygons, self.emptyMapUrl))
+            logging.info("Changing to empty map.")
+        else:
+            logging.warning("The empty map is currently showing.")
+        logging.debug("LINE")
 
     def changeToLastMap(self):
-        if self.mapRenderer.url() == self.emptyMapUrl and self.lastMapUrl is not None:
+        if self.lastMapUrl is None:
+            logging.warning("No request have been made yet.")
+        elif self.mapRenderer.url() != self.emptyMapUrl:
+            logging.warning("The last request map is currently showing.")
+        else:
             self.getPolygons(lambda polygons: self.changeMap(polygons, self.lastMapUrl))
+            logging.info("Changing to last request map.")
+        logging.debug("LINE")
 
     def changeMap(self, settings, url):
         self.htmlSettings = settings
@@ -257,18 +271,34 @@ class POSM(QMainWindow):
 
     def logManualModePolygonCoords(self, coords):
         logging.info("Polygon coordinates:\"{}\"".format(" ".join([str(c) for point in coords for c in point])))
+        logging.debug("LINE")
+
+    def showHideInteractiveMode(self):
+        if self.queryUI.isHidden():
+            self.queryUI.show()
+            logging.info("Showing 'Interactive mode' window.")
+        else:
+            self.queryUI.hide()
+            logging.info("Hiding 'Interactive mode' window.")
+        logging.debug("LINE")
 
     def showHideConsole(self):
         if self.console.isHidden():
             self.console.show()
+            logging.info("Showing 'Console' window.")
         else:
             self.console.hide()
+            logging.info("Hiding 'Console' window.")
+        logging.debug("LINE")
 
     def showHideQuery(self):
         if self.queryText.isHidden():
             self.queryText.show()
+            logging.info("Showing 'Query' window.")
         else:
             self.queryText.hide()
+            logging.info("Hiding 'Query' window.")
+        logging.debug("LINE")
 
     def switchManualMode(self):
         if self.queryText.isReadOnly():
@@ -283,9 +313,11 @@ class POSM(QMainWindow):
                     action.setEnabled(False)
                 self.manualModeAct.setEnabled(True)
                 self.manualModeMenu.setEnabled(True)
-                self.showHideInteractiveMode.setEnabled(False)
+                self.showHideInteractiveModeAct.setEnabled(False)
 
                 logging.info("Switching to manual mode.")
+            else:
+                logging.info("'Switch between interactive and manual mode' cancelled.")
         else:
             reply = QMessageBox.question(self, "Interactive mode", "Are you sure?\nThe current query will be removed.")
 
@@ -302,18 +334,22 @@ class POSM(QMainWindow):
                 for action in self.requestMenu.actions():
                     action.setEnabled(True)
                 self.manualModeMenu.setEnabled(False)
-                self.showHideInteractiveMode.setEnabled(True)
+                self.showHideInteractiveModeAct.setEnabled(True)
 
                 logging.info("Switching to interactive mode.")
+            else:
+                logging.info("'Switch between interactive and manual mode' cancelled.")
 
-        self.mapRenderer.page().runJavaScript("switchInteractiveManualMode();")
+        logging.info("Showing 'manual mode' polygon.")
+        self.mapRenderer.page().runJavaScript("switchInteractiveManualMode();",
+                                              lambda x: logging.debug("LINE"))
 
     def loadMap(self):
         try:
             self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
             self.mapRenderer.load(self.lastMapUrl)
             logging.info("Query drawn.")
-            self.console.addProcessEnd()
+            logging.debug("LINE")
         except (OverpassRequestException, OsmnxException) as e:
             logging.error(str(e))
         except ox.EmptyOverpassResponse:
@@ -323,20 +359,48 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
+        if len(key) == 0 and len(value) == 0:
+            self.queryUI.addFilter()
+            logging.info("Empty filter added.")
+        else:
+            self.queryUI.addFilter(key, value, accuracy, negate)
+            logging.info("'{}' filter added.".format(key))
+        logging.debug("LINE")
+
     def addRequest(self, filters=None):
         self.mapRenderer.page().runJavaScript("addPolygon();")
         self.queryUI.addRequest(filters)
+        logging.info("Request added.")
+        logging.debug("LINE")
 
     def addTemplate(self, filters):
         if self.queryUI.requestsCount() > 0:
             for key, value, accuracy, negate in filters:
                 self.queryUI.addFilter(key, value, accuracy, negate)
+                if len(key) == 0 and len(value) == 0:
+                    logging.info("Empty filter added.")
+                else:
+                    logging.info("'{}' filter added.".format(key))
+            logging.info("Template applied.")
+            logging.debug("LINE")
         else:
+            logging.warning("There is no requests. Adding a new one.")
+            logging.info("Template applied.")
             self.queryUI.addRequest(filters)
 
+
     def removeRequest(self):
-        self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
-        self.queryUI.removeRequest()
+        reply = QMessageBox.question(self, "Remove current request",
+                                     "Are you sure? This option is not undoable.")
+
+        if reply == QMessageBox.Yes:
+            self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
+            self.queryUI.removeRequest()
+            logging.info("'Remove request' successfully executed.")
+        else:
+            logging.info("'Remove request' cancelled.")
+        logging.debug("LINE")
 
     def modifyHtml(self, id):
         code = """
@@ -526,7 +590,8 @@ class POSM(QMainWindow):
         self.mapRenderer.page().runJavaScript("enablePolygon();")
 
     def cleanCurrentPolygon(self):
-        self.mapRenderer.page().runJavaScript("cleanPolygon();")
+        logging.info("Cleaning polygon.")
+        self.mapRenderer.page().runJavaScript("cleanPolygon();", logging.debug("LINE"))
 
     def changeCurrentPolygon(self, i):
         self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
@@ -564,6 +629,8 @@ class POSM(QMainWindow):
         else:
             logging.info("\"Save query\" canceled.")
 
+        logging.debug("LINE")
+
     def openQuery(self):
         filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.txt"),
                                                                "Text files (*.txt)")
@@ -573,12 +640,15 @@ class POSM(QMainWindow):
                 f = open(filename, "w+")
                 self.queryText.setPlainText(f.read())
                 f.close()
+                logging.info("File read successfully.")
                 if self.queryText.isReadOnly():
                     self.switchManualMode()
             except OSError:
                 logging.error("There was a problem opening the query file.")
         else:
             logging.info("\"Open query\" canceled.")
+
+        logging.debug("LINE")
 
     def saveNet(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save File',
@@ -587,6 +657,7 @@ class POSM(QMainWindow):
             buildNet(filename)
         else:
             logging.info("\"Save File\" canceled.")
+        logging.debug("LINE")
         return filename
 
     def openNet(self):
@@ -597,6 +668,8 @@ class POSM(QMainWindow):
             else:
                 openNetedit(filename + ".net.xml")
                 logging.info("Opening NETEDIT.")
+                logging.warning("If NETEDIT is not open in ten seconds, there was an unhandled problem.")
+                logging.debug("LINE")
         except OSError:
             logging.error("Can't find NETEDIT.")
         except Exception:
@@ -614,6 +687,7 @@ class POSM(QMainWindow):
             logging.error("There was a problem creating the file with the row selection.")
         except Exception:
             logging.error(traceback.format_exc())
+        logging.debug("LINE")
 
     def closeEvent(self, event):
         for f in os.listdir(tempDir):
