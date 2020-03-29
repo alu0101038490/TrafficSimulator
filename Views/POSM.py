@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout
+    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
@@ -81,13 +81,27 @@ class POSM(QMainWindow):
         self.queryUI = QueryUI()
         self.queryUI.onClearPolygon(self.cleanCurrentPolygon)
         self.queryUI.onPolygonEnabled(self.enablePolygon, self.disablePolygon)
-        self.queryUI.onTabChanged(self.changeCurrentPolygon)
+        self.queryUI.setOnTabChanged(self.changeCurrentPolygon)
         self.editionSplitter.addWidget(self.queryUI)
+
+        self.queryWidget = QWidget()
+        self.queryWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.queryWidget.setLayout(QVBoxLayout())
+        self.queryWidget.layout().setContentsMargins(0, 0, 0, 0)
+        self.queryWidget.layout().setSpacing(0)
+
+        self.queryHeader = QLabel("Query")
+        self.queryHeader.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.queryHeader.setFixedHeight(self.queryHeader.sizeHint().height() + 10)
+        self.queryHeader.setContentsMargins(5, 5, 0, 5)
+        self.queryWidget.layout().addWidget(self.queryHeader)
 
         self.queryText = CodeEditor()
         self.qlHighlighter = OverpassQLHighlighter(self.queryText.document())
         self.queryText.setReadOnly(True)
-        self.editionSplitter.addWidget(self.queryText)
+        self.queryWidget.layout().addWidget(self.queryText)
+
+        self.editionSplitter.addWidget(self.queryWidget)
 
         self.horSplitter.addWidget(self.editionSplitter)
 
@@ -112,7 +126,8 @@ class POSM(QMainWindow):
         self.consoleWidget.layout().setSpacing(0)
 
         self.consoleHeader = QLabel("Console")
-        self.consoleHeader.setContentsMargins(0,5,0,5)
+        self.consoleHeader.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.consoleHeader.setContentsMargins(5, 5, 0, 5)
         self.consoleWidget.layout().addWidget(self.consoleHeader)
         self.console = InformationalConsole()
         self.consoleWidget.layout().addWidget(self.console)
@@ -178,25 +193,25 @@ class POSM(QMainWindow):
 
         addRoadAct = QAction('Roads', self)
         addRoadAct.triggered.connect(lambda: self.addTemplate([("highway", "", True, False),
-                                                              ("name", "", True, False),
-                                                              ("ref", "", True, False),
-                                                              ("maxspeed", "^1([01]\d|20)|\d\d?$", False, False),
-                                                              ("lanes", "", True, False),
-                                                              ("oneway", "", True, False)]))
+                                                               ("name", "", True, False),
+                                                               ("ref", "", True, False),
+                                                               ("maxspeed", "^1([01]\d|20)|\d\d?$", False, False),
+                                                               ("lanes", "", True, False),
+                                                               ("oneway", "", True, False)]))
         templatesMenu.addAction(addRoadAct)
 
         addMainRoadAct = QAction('Main roads', self)
         mainHighways = "^(motorway|trunk|primary|secondary|residential)(_link)?$"
         everythinButYes = "^(y(e([^s]|$|s.)|[^e]|$)|[^y]|$).*"
         addMainRoadAct.triggered.connect(lambda: self.addTemplate([("highway", mainHighways, False, False),
-                                                                  ("construction", "", False, True),
-                                                                  ("noexit", "yes", True, True),
-                                                                  ("access", everythinButYes, False, True)]))
+                                                                   ("construction", "", False, True),
+                                                                   ("noexit", "yes", True, True),
+                                                                   ("access", everythinButYes, False, True)]))
         templatesMenu.addAction(addMainRoadAct)
 
         addParkingAct = QAction('Parking', self)
         addParkingAct.triggered.connect(lambda: self.addTemplate([("service", "parking", False, False),
-                                                                 ("highway", "", False, False)]))
+                                                                  ("highway", "", False, False)]))
         templatesMenu.addAction(addParkingAct)
 
         addPedestriansAct = QAction('Pedestrians', self)
@@ -273,14 +288,18 @@ class POSM(QMainWindow):
     def showHideConsole(self):
         if self.console.isHidden():
             self.console.show()
+            self.consoleWidget.setMaximumHeight(QWIDGETSIZE_MAX)
         else:
             self.console.hide()
+            self.consoleWidget.setMaximumHeight(self.queryHeader.sizeHint().height())
 
     def showHideQuery(self):
         if self.queryText.isHidden():
             self.queryText.show()
+            self.queryWidget.setMaximumHeight(QWIDGETSIZE_MAX)
         else:
             self.queryText.hide()
+            self.queryWidget.setMaximumHeight(self.queryHeader.sizeHint().height())
 
     def switchManualMode(self):
         if self.queryText.isReadOnly():
@@ -334,7 +353,7 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
-    def addRequest(self, filters = None):
+    def addRequest(self, filters=None):
         self.mapRenderer.page().runJavaScript("addPolygon();")
         self.queryUI.addRequest(filters)
 
@@ -674,6 +693,12 @@ if __name__ == '__main__':
         
         QTabBar::tab:selected {
             border-bottom-color: #1C8600;
+        }
+        
+        FilterWidget {
+            background: #ffffff;
+            border: 0px solid green;
+            border-radius: 10px;
         }
     """)
     ex = POSM()

@@ -6,16 +6,17 @@ import traceback
 import osmnx as ox
 import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon, QPalette
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
-    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QScrollArea, QFormLayout, \
-    QLayout, QAbstractScrollArea
+    QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QFormLayout, \
+    QMenu, QAction, QGraphicsDropShadowEffect
 from requests import RequestException
 
 from Exceptions.OverpassExceptions import OverpassRequestException
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff, OsmType
+from IconButton import IconButton
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
@@ -108,7 +109,7 @@ class RequestsOperations(QWidget):
 
         twoListsOfSets = QWidget()
         twoListsOfSets.setLayout(QHBoxLayout())
-        twoListsOfSets.layout().setContentsMargins(0,10,0,0)
+        twoListsOfSets.layout().setContentsMargins(0, 10, 0, 0)
         twoListsOfSets.layout().setSpacing(0)
 
         self.requestList = QListView()
@@ -116,8 +117,6 @@ class RequestsOperations(QWidget):
         self.requestList.setWrapping(True)
         self.requestList.setResizeMode(QListView.Adjust)
         self.requestList.setUniformItemSizes(True)
-        self.requestList.setFrameStyle(QFrame.NoFrame)
-        self.requestList.viewport().setAutoFillBackground(False)
         self.requestsModel = QStandardItemModel()
         self.requestList.setModel(self.requestsModel)
 
@@ -126,8 +125,6 @@ class RequestsOperations(QWidget):
         self.requestList2.setWrapping(True)
         self.requestList2.setResizeMode(QListView.Adjust)
         self.requestList2.setUniformItemSizes(True)
-        self.requestList2.setFrameStyle(QFrame.NoFrame)
-        self.requestList2.viewport().setAutoFillBackground(False)
         self.requestsModel2 = QStandardItemModel()
         self.requestList2.setModel(self.requestsModel2)
 
@@ -135,6 +132,7 @@ class RequestsOperations(QWidget):
         twoListsOfSets.layout().addWidget(self.requestList2)
 
         self.layout.addRow("Sets", twoListsOfSets)
+        self.layout.addRow(HorizontalLine(self))
 
         self.operationSelection = QGroupBox()
         self.operationSelection.setFlat(True)
@@ -159,6 +157,7 @@ class RequestsOperations(QWidget):
         self.buttonApply.clicked.connect(self.__applyOp)
         self.operationSelection.layout().addWidget(self.buttonApply)
         self.layout.addRow("", self.buttonApply)
+        self.layout.addRow(HorizontalLine(self))
 
         self.layout.addRow("Resulting sets", None)
 
@@ -167,6 +166,7 @@ class RequestsOperations(QWidget):
         self.resultingSets.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.resultingSets.setModel(OperationsTableModel())
         self.layout.addRow(self.resultingSets)
+        self.layout.addRow(HorizontalLine(self))
 
         self.outputSetSelection = QComboBox()
         self.outputSetSelection.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
@@ -282,17 +282,24 @@ class RequestsOperations(QWidget):
         event.accept()
 
 
-class FilterWidget(QWidget):
+class FilterWidget(QFrame):
 
     def __init__(self, parent, keyValues):
         super().__init__(parent)
         self.keyValues = keyValues
         self.initUI()
 
+        self.setAutoFillBackground(True)
+        effect = QGraphicsDropShadowEffect()
+        effect.setBlurRadius(10)
+        effect.setColor(QColor(0, 0, 0, 160))
+        effect.setOffset(0.0)
+        self.setGraphicsEffect(effect)
+
     def initUI(self):
         self.layout = QFormLayout()
         self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setContentsMargins(10, 10, 10, 10)
         self.layout.setVerticalSpacing(0)
         self.layout.setLabelAlignment(Qt.AlignLeft)
         self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
@@ -309,14 +316,22 @@ class FilterWidget(QWidget):
         self.keyInput.addItems(self.keyValues)
         topLayout.addWidget(self.keyInput)
 
-        self.deleteButton = QPushButton(QIcon(os.path.join(picturesDir, "remove.png")), "")
-        self.deleteButton.setFlat(True)
-        self.deleteButton.clicked.connect(self.deleteLater)
-        topLayout.addWidget(self.deleteButton)
+        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")), topWidget.windowHandle(), topWidget.height())
+        self.filterOptionsButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
 
-        self.keyInfoButton = QPushButton(QIcon(os.path.join(picturesDir, "info.png")), "")
-        self.keyInfoButton.setFlat(True)
-        self.keyInfoButton.clicked.connect(self.getInfo)
+        self.filterOptionsMenu = QMenu()
+
+        removeAct = QAction('Remove filter', self)
+        removeAct.triggered.connect(self.deleteLater)
+        self.filterOptionsMenu.addAction(removeAct)
+
+        helpAct = QAction('Help', self)
+        helpAct.triggered.connect(self.getInfo)
+        self.filterOptionsMenu.addAction(helpAct)
+
+        self.filterOptionsButton.setMenu(self.filterOptionsMenu)
+        self.filterOptionsButton.setFlat(True)
+        topLayout.addWidget(self.filterOptionsButton)
 
         self.layout.addRow("Key:", topWidget)
 
@@ -329,8 +344,6 @@ class FilterWidget(QWidget):
         self.valueInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.valueInput.setEditable(True)
         valueEdition.layout().addWidget(self.valueInput)
-        valueEdition.layout().addWidget(self.keyInfoButton)
-
 
         self.layout.addRow("Value:", valueEdition)
 
@@ -421,7 +434,7 @@ class RequestWidget(QWidget):
 
     def initUI(self):
         self.layout = QFormLayout()
-        self.layout.setContentsMargins(10,10,10,10)
+        self.layout.setContentsMargins(10, 10, 10, 10)
 
         self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
         self.layout.setLabelAlignment(Qt.AlignLeft)
@@ -451,38 +464,44 @@ class RequestWidget(QWidget):
         self.waysCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
         self.relCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
 
-        self.layout.addRow("Elements type:", elementsTypeGB)
+        self.layout.addRow("Elements type", elementsTypeGB)
+        self.layout.addRow(HorizontalLine(self))
 
         self.locationNameWidget = QLineEdit()
         self.locationNameWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
-        self.layout.addRow("Location:", self.locationNameWidget)
+        self.layout.addRow("Location", self.locationNameWidget)
+        self.layout.addRow(HorizontalLine(self))
 
         self.filtersWidget = QWidget(self)
         self.filtersLayout = QVBoxLayout()
-        self.filtersLayout.setContentsMargins(10,10,0,10)
+        self.filtersLayout.setContentsMargins(10, 10, 10, 10)
         self.filtersWidget.setLayout(self.filtersLayout)
-        self.layout.addRow("Filters:", None)
+        self.layout.addRow("Filters", None)
         self.layout.addRow(self.filtersWidget)
+        self.layout.addRow(HorizontalLine(self))
 
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
+        polygonButtons.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        polygonButtonsLayout.setAlignment(Qt.AlignRight)
         polygonButtonsLayout.setSpacing(0)
         polygonButtonsLayout.setContentsMargins(0, 0, 0, 0)
         polygonButtons.setLayout(polygonButtonsLayout)
 
-        self.drawPolButton = QPushButton(QIcon(os.path.join(picturesDir, "polygon.png")), "")
+        self.drawPolButton = IconButton(QIcon(os.path.join(picturesDir, "polygon.png")), polygonButtons.windowHandle(), polygonButtons.height())
         self.drawPolButton.setFlat(True)
         self.drawPolButton.setCheckable(True)
 
         polygonButtonsLayout.addWidget(self.drawPolButton)
 
-        self.buttonClearPol = QPushButton(QIcon(os.path.join(picturesDir, "reset.png")), "")
+        self.buttonClearPol = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), polygonButtons.windowHandle(), polygonButtons.height())
         self.buttonClearPol.setFlat(True)
 
         polygonButtonsLayout.addWidget(self.buttonClearPol)
 
-        self.layout.addRow("Polygon:", polygonButtons)
+        self.layout.addRow("Polygon", polygonButtons)
+        self.layout.addRow(HorizontalLine(self))
 
         surroundGB = QGroupBox()
         surroundGB.setFlat(True)
@@ -504,7 +523,8 @@ class RequestWidget(QWidget):
 
         surroundGB.setLayout(surroundLayout)
 
-        self.layout.addRow("Surroundings:", surroundGB)
+        self.layout.addRow("Surroundings", surroundGB)
+        self.layout.addRow(HorizontalLine(self))
 
         self.onlyDisconnectedCB = QCheckBox()
         self.onlyDisconnectedCB.setText("Only disconnected ways")
@@ -528,27 +548,27 @@ class RequestWidget(QWidget):
         tableButtonsLayout = QHBoxLayout()
         tableButtons.setLayout(tableButtonsLayout)
         tableButtonsLayout.setSpacing(0)
-        tableButtonsLayout.setContentsMargins(0,0,0,0)
+        tableButtonsLayout.setContentsMargins(0, 0, 0, 0)
 
-        buttonTable = QPushButton(QIcon(os.path.join(picturesDir, "reset.png")), "")
+        buttonTable = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), tableButtons.windowHandle(), tableButtons.height())
         buttonTable.setFlat(True)
         buttonTable.clicked.connect(self.showTable)
 
         tableButtonsLayout.addWidget(buttonTable)
 
-        buttonMore = QPushButton(QIcon(os.path.join(picturesDir, "showMore.png")), "")
+        buttonMore = IconButton(QIcon(os.path.join(picturesDir, "showMore.png")), tableButtons.windowHandle(), tableButtons.height())
         buttonMore.setFlat(True)
         buttonMore.clicked.connect(self.showMore)
 
         tableButtonsLayout.addWidget(buttonMore)
 
-        buttonLess = QPushButton(QIcon(os.path.join(picturesDir, "showLess.png")), "")
+        buttonLess = IconButton(QIcon(os.path.join(picturesDir, "showLess.png")), tableButtons.windowHandle(), tableButtons.height())
         buttonLess.setFlat(True)
         buttonLess.clicked.connect(self.showLess)
 
         tableButtonsLayout.addWidget(buttonLess)
 
-        self.layout.addRow("Disambiguation:", tableButtons)
+        self.layout.addRow("Disambiguation", tableButtons)
         self.layout.addRow("", self.onlyDisconnectedCB)
         self.layout.addRow("", self.columnSelection)
         self.layout.addRow(self.tableView)
@@ -668,12 +688,16 @@ class GlobalOverpassSettingUI(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.layout = QVBoxLayout()
+        self.layout = QFormLayout()
+        self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        self.layout.setLabelAlignment(Qt.AlignLeft)
+        self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.setLayout(self.layout)
 
-        self.layout.addWidget(QLabel("Date:"))
+        self.layout.addRow("Date", None)
 
         self.dateEdit = QCalendarWidget()
+        self.dateEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.dateEdit.setMinimumDate(QDate(2012, 9, 13))
         self.dateEdit.setMaximumDate(QDate.currentDate())
 
@@ -682,7 +706,7 @@ class GlobalOverpassSettingUI(QWidget):
         prevIcon.setIcon(QIcon(os.path.join(picturesDir, "arrowLeft.png")))
         nextIcon.setIcon(QIcon(os.path.join(picturesDir, "arrowRight.png")))
 
-        self.layout.addWidget(self.dateEdit)
+        self.layout.addRow(self.dateEdit)
 
     def getDate(self):
         return self.dateEdit.selectedDate().toPyDate()
@@ -723,11 +747,24 @@ class QueryUI(QWidget):
 
         self.setLayout(self.layout)
 
+    def __updateTabSizes(self, index):
+        for i in range(self.requestTabs.count()):
+            if i != index:
+                self.requestTabs.widget(i).setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
+
+        self.requestTabs.widget(index).setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self.requestTabs.widget(index).resize(self.requestTabs.widget(index).minimumSizeHint())
+        self.requestTabs.widget(index).adjustSize()
+
     def currentRequest(self):
         return self.requestTabs.currentIndex()
 
-    def onTabChanged(self, f):
-        self.requestTabs.currentChanged.connect(f)
+    def __onTabChanged(self, f, index):
+        f(index)
+        self.__updateTabSizes(index)
+
+    def setOnTabChanged(self, f):
+        self.requestTabs.currentChanged.connect(lambda i: self.__onTabChanged(f, i))
 
     def onClearPolygon(self, f):
         self.onClearPolygonF = f
