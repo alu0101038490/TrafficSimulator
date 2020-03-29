@@ -5,7 +5,7 @@ import traceback
 from os.path import expanduser
 
 import osmnx as ox
-from PyQt5.QtCore import Qt, QUrl
+from PyQt5.QtCore import Qt, QUrl, QLocale
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
@@ -66,6 +66,7 @@ class POSM(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.setLocale(QLocale(QLocale.English))
         self.htmlSettings = []
         self.initUI()
 
@@ -699,6 +700,47 @@ if __name__ == '__main__':
             background: #ffffff;
             border: 0px solid green;
             border-radius: 10px;
+        }
+        
+        QCalendarWidget QToolButton {
+            color: black;
+            background-color: white;
+        }
+        
+        QCalendarWidget QToolButton::menu-indicator{image: none;}
+        
+        QCalendarWidget QSpinBox { 
+            color: black; 
+            background-color: transparent; 
+            selection-background-color: transparent;
+            selection-color: rgb(255, 255, 255);
+        }
+        QCalendarWidget QSpinBox::up-button { subcontrol-origin: border;  subcontrol-position: top right;  width:30px; }
+        QCalendarWidget QSpinBox::down-button {subcontrol-origin: border; subcontrol-position: bottom right;  width:30px;}
+        QCalendarWidget QSpinBox::up-arrow { width:25px;  height:25px; }
+        QCalendarWidget QSpinBox::down-arrow { width:25px;  height:25px; }
+           
+        /* header row */
+        QCalendarWidget QWidget { background: white; }
+        
+        /* normal days */
+        QCalendarWidget QAbstractItemView:enabled 
+        {
+            color: black;  
+            background-color: white; 
+            border-radius: 5px;
+        }
+        
+        /* days in other months */
+        /* navigation bar */
+        QCalendarWidget QWidget#qt_calendar_navigationbar
+        { 
+            background-color: white; 
+        }
+        
+        QCalendarWidget QAbstractItemView:disabled 
+        { 
+            color: lightgray; 
         }
     """)
     ex = POSM()

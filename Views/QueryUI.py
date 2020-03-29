@@ -8,15 +8,16 @@ import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
-    QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QLabel, QTableView, QHeaderView, \
+    QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QTableView, QHeaderView, \
     QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QFormLayout, \
     QMenu, QAction, QGraphicsDropShadowEffect
 from requests import RequestException
 
+from DelimitedCalendar import DelimitedCalendar
 from Exceptions.OverpassExceptions import OverpassRequestException
+from IconButton import IconButton
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff, OsmType
-from IconButton import IconButton
 from Utils.SumoUtils import tempDir, writeXMLResponse
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
@@ -32,6 +33,7 @@ class HorizontalLine(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.HLine)
         self.setFrameShadow(QFrame.Sunken)
+        self.setContentsMargins(0, 0, 0, 0)
 
 
 class OperationsTableModel(QAbstractTableModel):
@@ -696,7 +698,8 @@ class GlobalOverpassSettingUI(QWidget):
 
         self.layout.addRow("Date", None)
 
-        self.dateEdit = QCalendarWidget()
+        self.dateEdit = DelimitedCalendar()
+        self.dateEdit.setVerticalHeaderFormat(QCalendarWidget.NoVerticalHeader)
         self.dateEdit.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.dateEdit.setMinimumDate(QDate(2012, 9, 13))
         self.dateEdit.setMaximumDate(QDate.currentDate())
@@ -705,6 +708,11 @@ class GlobalOverpassSettingUI(QWidget):
         nextIcon = self.dateEdit.findChild(QToolButton, "qt_calendar_nextmonth")
         prevIcon.setIcon(QIcon(os.path.join(picturesDir, "arrowLeft.png")))
         nextIcon.setIcon(QIcon(os.path.join(picturesDir, "arrowRight.png")))
+        self.dateEdit.findChild(QToolButton, "qt_calendar_monthbutton").setEnabled(False)
+
+        format = self.dateEdit.weekdayTextFormat(Qt.Monday)
+        self.dateEdit.setWeekdayTextFormat(Qt.Saturday, format)
+        self.dateEdit.setWeekdayTextFormat(Qt.Sunday, format)
 
         self.layout.addRow(self.dateEdit)
 
