@@ -7,7 +7,7 @@ class DelimitedCalendar(QCalendarWidget):
 
     def paintCell(self, painter, rect, date):
         if not self.minimumDate() <= date <= self.maximumDate():
-            painter.setPen(QtGui.QPen(Qt.lightGray))
+            painter.setPen(QtGui.QPen(Qt.transparent))
             painter.drawText(rect, Qt.AlignHCenter | Qt.AlignVCenter, str(date.day()))
         else:
             super().paintCell(painter, rect, date)

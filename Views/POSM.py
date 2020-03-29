@@ -5,6 +5,9 @@ import traceback
 from os.path import expanduser
 
 import osmnx as ox
+import qtmodern.styles
+import qtmodern.windows
+from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt, QUrl, QLocale
 from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
@@ -43,7 +46,7 @@ class InformationalConsole(QTextEdit):
 
     def writeMessage(self, message, color):
         self.moveCursor(QTextCursor.End)
-        self.setTextColor(Qt.black)
+        self.setTextColor(Qt.white)
         self.insertPlainText(message[:10])
         self.setTextColor(color)
         self.insertPlainText(message[10:] + "\n")
@@ -52,14 +55,14 @@ class InformationalConsole(QTextEdit):
     def writeWarning(self, warning):
         self.writeMessage(warning, Qt.darkYellow)
 
-    def writeInfo(self, warning):
-        self.writeMessage(warning, Qt.black)
+    def writeInfo(self, info):
+        self.writeMessage(info, Qt.white)
 
-    def writeError(self, warning):
-        self.writeMessage(warning, Qt.darkRed)
+    def writeError(self, error):
+        self.writeMessage(error, Qt.darkRed)
 
-    def writeSuccess(self, warning):
-        self.writeMessage(warning, Qt.darkGreen)
+    def writeSuccess(self, success):
+        self.writeMessage(success, Qt.darkGreen)
 
 
 class POSM(QMainWindow):
@@ -69,6 +72,9 @@ class POSM(QMainWindow):
         self.setLocale(QLocale(QLocale.English))
         self.htmlSettings = []
         self.initUI()
+        self.setAttribute(Qt.WA_AlwaysShowToolTips)
+        sizegrip = QtWidgets.QSizeGrip(self)
+        self.layout.addWidget(sizegrip, 0, QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
 
     def initUI(self):
         self.layout = QHBoxLayout()
@@ -634,115 +640,54 @@ class POSM(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    ex = POSM()
+
+    qtmodern.styles.dark(app)
     app.setStyleSheet("""
+
+        QGroupBox:flat {
+            border: none;
+        }
+
         QToolBox::tab {
-            background: #DDDDDD;
-            color: darkgray;
+            background: #454545;
         }
-        
-        QToolBox::tab:selected { /* italicize selected tabs */
-            font: italic;
-            color: white;
-        }
-        
+
         QToolButton {
             background-color: #f6f7fa;
         }
-        
+
         QToolButton:pressed {
             background-color: #dadbde;
         }
-        
+
         QToolTip {
             border: 2px solid darkkhaki;
             padding: 5px;
             border-radius: 3px;
             opacity: 200;
         }   
-        
-        QSplitter::handle {
-            image: none;
-        }
-        
-        QSplitter::handle:horizontal {
-            width: 2px;
-        }
-        
-        QSplitter::handle:vertical {
-            height: 2px;
-        }
-        
-        QTabWidget::tab-bar {
-            left: 0px;
-        }
-        
-        QTabWidget::pane { /* The tab widget frame */
-            border-top: 2px solid #C2C7CB;
-        }
-        
-        QTabBar::tab {
-            background: white;
-            border: 1px solid #DEDEDE;
-            border-bottom-color: white;
-            min-width: 0ex;
-            padding-top: 2px;
-            padding-bottom: 2px;
-            padding-left: 11px;
-            padding-right: 11px;
-            margin-top: 0px;
-        }
-        
-        QTabBar::tab:selected {
-            border-bottom-color: #1C8600;
-        }
-        
+
         FilterWidget {
-            background: #ffffff;
+            background: #353535;
             border: 0px solid green;
-            border-radius: 10px;
+            border-radius: 7px;
         }
-        
+
         QCalendarWidget QToolButton {
-            color: black;
-            background-color: white;
+            background-color: #2A2A2A;
         }
-        
+
         QCalendarWidget QToolButton::menu-indicator{image: none;}
-        
-        QCalendarWidget QSpinBox { 
-            color: black; 
-            background-color: transparent; 
-            selection-background-color: transparent;
-            selection-color: rgb(255, 255, 255);
-        }
-        QCalendarWidget QSpinBox::up-button { subcontrol-origin: border;  subcontrol-position: top right;  width:30px; }
-        QCalendarWidget QSpinBox::down-button {subcontrol-origin: border; subcontrol-position: bottom right;  width:30px;}
-        QCalendarWidget QSpinBox::up-arrow { width:25px;  height:25px; }
-        QCalendarWidget QSpinBox::down-arrow { width:25px;  height:25px; }
-           
-        /* header row */
-        QCalendarWidget QWidget { background: white; }
-        
-        /* normal days */
-        QCalendarWidget QAbstractItemView:enabled 
-        {
-            color: black;  
-            background-color: white; 
-            border-radius: 5px;
-        }
-        
-        /* days in other months */
-        /* navigation bar */
+
         QCalendarWidget QWidget#qt_calendar_navigationbar
         { 
-            background-color: white; 
+            background-color: #2A2A2A; 
         }
-        
-        QCalendarWidget QAbstractItemView:disabled 
-        { 
-            color: lightgray; 
-        }
+
     """)
-    ex = POSM()
-    ex.show()
+
+    mw = qtmodern.windows.ModernWindow(ex)
+
+    mw.show()
     sys.exit(app.exec_())

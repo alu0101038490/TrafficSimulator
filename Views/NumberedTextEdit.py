@@ -31,7 +31,7 @@ class CodeEditor(QPlainTextEdit):
 
     def lineNumberAreaPaintEvent(self, event):
         painter = QPainter(self.lineNumberArea)
-        painter.fillRect(event.rect(), Qt.white)
+        painter.fillRect(event.rect(), QColor(69, 69, 69))
         block = self.firstVisibleBlock()
         blockNumber = block.blockNumber()
         top = qRound(self.blockBoundingGeometry(block).translated(self.contentOffset()).top())
@@ -39,7 +39,7 @@ class CodeEditor(QPlainTextEdit):
         while block.isValid() and top <= event.rect().bottom():
             if block.isVisible() and bottom >= event.rect().top():
                 number = str(blockNumber + 1)
-                painter.setPen(Qt.black)
+                painter.setPen(QColor(170, 170, 170))
                 painter.drawText(0, top, self.lineNumberArea.width(), self.fontMetrics().height(),
                                  Qt.AlignRight, number + " ")
 
@@ -74,7 +74,7 @@ class CodeEditor(QPlainTextEdit):
         if not self.isReadOnly():
             selection = QTextEdit.ExtraSelection()
 
-            lineColor = QColor(Qt.white).darker(110)
+            lineColor = QColor(69, 69, 69)
 
             selection.format.setBackground(lineColor)
             selection.format.setProperty(QTextFormat.FullWidthSelection, True)

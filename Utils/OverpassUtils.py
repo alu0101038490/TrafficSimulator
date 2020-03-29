@@ -1,7 +1,7 @@
 import re
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat
+from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
 
 
 class OverpassQLHighlighter(QSyntaxHighlighter):
@@ -12,7 +12,7 @@ class OverpassQLHighlighter(QSyntaxHighlighter):
         self.formats = []
 
         keywordFormat = QTextCharFormat()
-        keywordFormat.setForeground(Qt.darkMagenta)
+        keywordFormat.setForeground(QColor(144, 83, 138))
         keywordPattern = "(?<!\\w)(node|way|rel|nwr|nw|nr|wr|w|n|r|derived|area|timeout|out|maxsize|bbox|date|diff|if" \
                          "|foreach|for|complete|retro|compare|delta|ids|skel|body|tags|meta|geom|bb|center|asc|qt" \
                          "|is_in|local|timeline|convert|make|id|around|poly|newer|changed|user|uid|pivot|type|t" \
@@ -24,19 +24,19 @@ class OverpassQLHighlighter(QSyntaxHighlighter):
         self.formats.append((keywordPattern, keywordFormat, 0))
 
         numberFormat = QTextCharFormat()
-        numberFormat.setForeground(Qt.darkGreen)
+        numberFormat.setForeground(QColor(104, 151, 187))
         numberPattern = "-?\\d+(\\.\\d+)?"
 
         self.formats.append((numberPattern, numberFormat, 0))
 
         setNameFormat = QTextCharFormat()
-        setNameFormat.setForeground(Qt.darkBlue)
+        setNameFormat.setForeground(QColor(197, 116, 50))
         setNamePattern = "\\.[a-zA-Z_]\\w*"
 
         self.formats.append((setNamePattern, setNameFormat, 0))
 
         stringFormat = QTextCharFormat()
-        stringFormat.setForeground(Qt.darkRed)
+        stringFormat.setForeground(QColor(105, 133, 88))
         stringPattern = r"([\"'])((?:[^\1\\]|\\.)*?)\1"
 
         self.formats.append((stringPattern, stringFormat, 0))
