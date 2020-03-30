@@ -5,11 +5,14 @@ import traceback
 from os.path import expanduser
 
 import osmnx as ox
-from PyQt5.QtCore import Qt, QUrl
+import qtmodern.styles
+import qtmodern.windows
+from PyQt5 import QtCore, QtWidgets
+from PyQt5.QtCore import Qt, QUrl, QLocale
 from PyQt5.QtGui import QTextCursor, QColor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox
+    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
@@ -51,48 +54,69 @@ class InformationalConsole(QTextEdit):
 
     def writeMessage(self, message, color):
         self.moveCursor(QTextCursor.End)
-        self.insertHtml("<br /><p><font color=\"#000000\">{}</font><font color=\"{}\">{}</font></p>\n".format(message[:10],
+        self.insertHtml("<br /><p><font color=\"#ffffff\">{}</font><font color=\"{}\">{}</font></p>\n".format(message[:10],
                                                                                                       color,
                                                                                                       message[10:]))
 
     def writeWarning(self, warning):
         self.writeMessage(warning, QColor(Qt.darkYellow).name(QColor.HexRgb))
 
-    def writeInfo(self, warning):
-        self.writeMessage(warning, QColor(Qt.black).name(QColor.HexRgb))
+    def writeInfo(self, info):
+        self.writeMessage(info, QColor(Qt.white).name(QColor.HexRgb))
 
-    def writeError(self, warning):
-        self.writeMessage(warning, QColor(Qt.darkRed).name(QColor.HexRgb))
+    def writeError(self, error):
+        self.writeMessage(error, QColor(Qt.darkRed).name(QColor.HexRgb))
 
-    def writeSuccess(self, warning):
-        self.writeMessage(warning, QColor(Qt.darkGreen).name(QColor.HexRgb))
+    def writeSuccess(self, success):
+        self.writeMessage(success, QColor(Qt.darkGreen).name(QColor.HexRgb))
 
 
 class POSM(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        self.setLocale(QLocale(QLocale.English))
         self.htmlSettings = []
         self.initUI()
+        self.setAttribute(Qt.WA_AlwaysShowToolTips)
+        sizegrip = QtWidgets.QSizeGrip(self)
+        self.layout.addWidget(sizegrip, 0, QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
 
     def initUI(self):
         self.layout = QHBoxLayout()
+        self.layout.setContentsMargins(0, 0, 0, 0)
 
         self.console = InformationalConsole()
 
         self.horSplitter = QSplitter(Qt.Horizontal)
+        self.horSplitter.setChildrenCollapsible(False)
         self.editionSplitter = QSplitter(Qt.Vertical)
+        self.editionSplitter.setChildrenCollapsible(False)
 
         self.queryUI = QueryUI()
         self.queryUI.onClearPolygon(self.cleanCurrentPolygon)
         self.queryUI.onPolygonEnabled(self.enablePolygon, self.disablePolygon)
-        self.queryUI.onTabChanged(self.changeCurrentPolygon)
+        self.queryUI.setOnTabChanged(self.changeCurrentPolygon)
         self.editionSplitter.addWidget(self.queryUI)
+
+        self.queryWidget = QWidget()
+        self.queryWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.queryWidget.setLayout(QVBoxLayout())
+        self.queryWidget.layout().setContentsMargins(0, 0, 0, 0)
+        self.queryWidget.layout().setSpacing(0)
+
+        self.queryHeader = QLabel("Query")
+        self.queryHeader.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.queryHeader.setFixedHeight(self.queryHeader.sizeHint().height() + 10)
+        self.queryHeader.setContentsMargins(5, 5, 0, 5)
+        self.queryWidget.layout().addWidget(self.queryHeader)
 
         self.queryText = CodeEditor()
         self.qlHighlighter = OverpassQLHighlighter(self.queryText.document())
         self.queryText.setReadOnly(True)
-        self.editionSplitter.addWidget(self.queryText)
+        self.queryWidget.layout().addWidget(self.queryText)
+
+        self.editionSplitter.addWidget(self.queryWidget)
 
         self.horSplitter.addWidget(self.editionSplitter)
 
@@ -108,9 +132,21 @@ class POSM(QMainWindow):
         self.addRequest()
 
         self.consoleSplitter = QSplitter(Qt.Vertical)
+        self.consoleSplitter.setChildrenCollapsible(False)
         self.consoleSplitter.addWidget(self.mapRenderer)
 
-        self.consoleSplitter.addWidget(self.console)
+        self.consoleWidget = QWidget()
+        self.consoleWidget.setLayout(QVBoxLayout())
+        self.consoleWidget.layout().setContentsMargins(0, 0, 0, 0)
+        self.consoleWidget.layout().setSpacing(0)
+
+        self.consoleHeader = QLabel("Console")
+        self.consoleHeader.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.consoleHeader.setContentsMargins(5, 5, 0, 5)
+        self.consoleWidget.layout().addWidget(self.consoleHeader)
+        self.consoleWidget.layout().addWidget(self.console)
+
+        self.consoleSplitter.addWidget(self.consoleWidget)
 
         self.horSplitter.addWidget(self.consoleSplitter)
 
@@ -286,8 +322,10 @@ class POSM(QMainWindow):
         if self.console.isHidden():
             self.console.show()
             logging.info("Showing 'Console' window.")
+            self.consoleWidget.setMaximumHeight(QWIDGETSIZE_MAX)
         else:
             self.console.hide()
+            self.consoleWidget.setMaximumHeight(self.queryHeader.sizeHint().height())
             logging.info("Hiding 'Console' window.")
         logging.debug("LINE")
 
@@ -295,8 +333,10 @@ class POSM(QMainWindow):
         if self.queryText.isHidden():
             self.queryText.show()
             logging.info("Showing 'Query' window.")
+            self.queryWidget.setMaximumHeight(QWIDGETSIZE_MAX)
         else:
             self.queryText.hide()
+            self.queryWidget.setMaximumHeight(self.queryHeader.sizeHint().height())
             logging.info("Hiding 'Query' window.")
         logging.debug("LINE")
 
@@ -698,5 +738,53 @@ class POSM(QMainWindow):
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = POSM()
-    ex.show()
+
+    qtmodern.styles.dark(app)
+    app.setStyleSheet("""
+
+        QGroupBox:flat {
+            border: none;
+        }
+
+        QToolBox::tab {
+            background: #454545;
+        }
+
+        QToolButton {
+            background-color: #f6f7fa;
+        }
+
+        QToolButton:pressed {
+            background-color: #dadbde;
+        }
+
+        QToolTip {
+            border: 2px solid darkkhaki;
+            padding: 5px;
+            border-radius: 3px;
+            opacity: 200;
+        }   
+
+        FilterWidget {
+            background: #353535;
+            border: 0px solid green;
+            border-radius: 7px;
+        }
+
+        QCalendarWidget QToolButton {
+            background-color: #2A2A2A;
+        }
+
+        QCalendarWidget QToolButton::menu-indicator{image: none;}
+
+        QCalendarWidget QWidget#qt_calendar_navigationbar
+        { 
+            background-color: #2A2A2A; 
+        }
+
+    """)
+
+    mw = qtmodern.windows.ModernWindow(ex)
+
+    mw.show()
     sys.exit(app.exec_())
