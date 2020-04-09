@@ -9,66 +9,17 @@ import qtmodern.styles
 import qtmodern.windows
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt, QUrl, QLocale
-from PyQt5.QtGui import QTextCursor, QColor
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QTextEdit, QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX
+    QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
 from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
+from Views.Console import InformationalConsole
 from Views.NumberedTextEdit import CodeEditor
 from Views.QueryUI import QueryUI
-
-
-class InformationalConsole(QTextEdit):
-
-    def __init__(self):
-        super().__init__()
-        self.setReadOnly(True)
-
-        logging.basicConfig(stream=self, level=logging.DEBUG, format='%(levelname)s%(asctime)s - %(message)s',
-                            datefmt="%H:%M:%S")
-
-        self.insertPlainText("\nWelcome!")
-
-    def write(self, text):
-        if text[0] == "W":
-            self.writeWarning(text[7:])
-        elif text[0] == "I":
-            self.writeInfo(text[4:])
-        elif text[0] == "E":
-            self.writeError(text[5:])
-        elif text[0] == "C":
-            self.writeError(text[8:])
-        elif text[0] == "D" and text[-5:-1] == "LINE":
-            self.addProcessEnd()
-        app.processEvents()
-
-    def flush(self):
-        pass
-
-    def addProcessEnd(self):
-        self.moveCursor(QTextCursor.End)
-        self.insertHtml("<hr />")
-
-    def writeMessage(self, message, color):
-        self.moveCursor(QTextCursor.End)
-        self.insertHtml("<br /><p><font color=\"#ffffff\">{}</font><font color=\"{}\">{}</font></p>\n".format(message[:10],
-                                                                                                      color,
-                                                                                                      message[10:]))
-
-    def writeWarning(self, warning):
-        self.writeMessage(warning, QColor(Qt.darkYellow).name(QColor.HexRgb))
-
-    def writeInfo(self, info):
-        self.writeMessage(info, QColor(Qt.white).name(QColor.HexRgb))
-
-    def writeError(self, error):
-        self.writeMessage(error, QColor(Qt.darkRed).name(QColor.HexRgb))
-
-    def writeSuccess(self, success):
-        self.writeMessage(success, QColor(Qt.darkGreen).name(QColor.HexRgb))
+from constants import APP_STYLESHEET, HTML_SCRIPTS
 
 
 class POSM(QMainWindow):
@@ -429,7 +380,6 @@ class POSM(QMainWindow):
             logging.info("Template applied.")
             self.queryUI.addRequest(filters)
 
-
     def removeRequest(self):
         reply = QMessageBox.question(self, "Remove current request",
                                      "Are you sure? This option is not undoable.")
@@ -443,150 +393,7 @@ class POSM(QMainWindow):
         logging.debug("LINE")
 
     def modifyHtml(self, id):
-        code = """
-            var currentPolygon = 0;
-            var interactiveMode = true
-            var isClickActivated = [false];
-            var polygon = [null];
-            var latlngs = [[]];
-            
-            var manualModePolygon = null
-            var manualModeLatlngs = []
-
-            function draw() {
-                if(interactiveMode) {
-                    if(polygon[currentPolygon] != null) {
-                        polygon[currentPolygon].removeFrom(%s);  
-                    }
-                    polygon[currentPolygon] = L.polygon(latlngs[currentPolygon], {color: 'red'}).addTo(%s);  
-                } else {
-                    if(manualModePolygon != null) {
-                        manualModePolygon.removeFrom(%s);  
-                    }
-                    manualModePolygon = L.polygon(manualModeLatlngs, {color: 'red'}).addTo(%s);
-                }
-            }
-
-            %s.on('click', function(e) { 
-                if(!interactiveMode) {
-                    manualModeLatlngs.push(e.latlng);
-                    draw();
-                } else if(isClickActivated[currentPolygon] && currentPolygon >= 0) {
-                    latlngs[currentPolygon].push(e.latlng);
-                    draw();
-                }
-            });
-
-            function addPolygon() {
-                latlngs.push([]);
-                isClickActivated.push(false)
-                polygon.push(null);
-            }
-
-            function cleanPolygon() {
-                if(interactiveMode) {
-                    if(polygon[currentPolygon] != null)
-                        polygon[currentPolygon].removeFrom(%s);
-                    latlngs[currentPolygon] = [];
-                } else {
-                    if(manualModePolygon != null)
-                        manualModePolygon.removeFrom(%s);
-                    manualModeLatlngs = [];
-                }
-            }
-
-            function disablePolygon() {
-                isClickActivated[currentPolygon] = false;
-            }
-
-            function enablePolygon() {
-                isClickActivated[currentPolygon] = true;
-            }
-
-            function changeCurrentPolygon(i) {
-                if(polygon[currentPolygon] != null)
-                    polygon[currentPolygon].removeFrom(%s);
-                currentPolygon = i;
-                draw();
-            }
-            
-            function switchInteractiveManualMode() {
-                if(interactiveMode) {
-                    if (polygon[currentPolygon] != null)
-                        polygon[currentPolygon].removeFrom(%s);
-                } else {
-                    if (manualModePolygon)
-                        manualModePolygon.removeFrom(%s);
-                }
-                interactiveMode = !interactiveMode;
-                draw();
-            }
-            
-            function getManualPolygon() {
-                result = []
-                for (i in manualModeLatlngs) {
-                    result.push([manualModeLatlngs[i].lat, manualModeLatlngs[i].lng])
-                }
-                return result;
-            }
-
-            function removeCurrentPolygon() {
-                cleanPolygon();
-                isClickActivated.splice(currentPolygon, 1);
-                latlngs.splice(currentPolygon, 1);
-                polygon.splice(currentPolygon, 1);
-                if(currentPolygon == polygon.length) {
-                    currentPolygon = currentPolygon - 1;
-                }
-            }
-
-            function getPolygons() {
-                result = []
-                for(i in latlngs){
-                    aux = []
-                    for (j in latlngs[i]) {
-                        aux.push([latlngs[i][j].lat, latlngs[i][j].lng])
-                    }
-                    result.push(aux)
-                }
-                return [currentPolygon, result, "[" + isClickActivated.toString() + "]", getManualPolygon(), interactiveMode.toString()];
-            }
-
-            function setPolygons(current, coors, clicksActivated, manualPolygon, mode) {
-                latlngs = [];
-                polygons = [];
-                manualModeLatlngs = [];
-                manualModePolygon = null;
-                interactiveMode = mode;
-                isClickActivated = clicksActivated;
-                for (i in coors){
-                    latlngs.push([]);
-                    for (j in coors[i]) { 
-                        latlngs[i].push(L.latLng(coors[i][j][0], coors[i][j][1]));
-                    }
-                    polygons.push(null);
-                }
-                for (i in manualPolygon) { 
-                    manualModeLatlngs.push(L.latLng(manualPolygon[i][0], manualPolygon[i][1]));
-                }
-                currentPolygon = current;
-                draw();
-            }
-
-            function KeyPress(e) {
-                var evtobj = window.event? event : e
-                if (evtobj.keyCode == 90 && (event.ctrlKey || event.metaKey)) {
-                    if(interactiveMode) {
-                        latlngs[currentPolygon].pop();
-                    } else {
-                        manualModeLatlngs.pop()
-                    }
-                    draw();
-                }
-            }
-
-            document.onkeydown = KeyPress;
-            """ % (id, id, id, id, id, id, id, id, id, id)
+        code = HTML_SCRIPTS % (id, id, id, id, id, id, id, id, id, id)
         self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
 
     def getPolygons(self, f=None):
@@ -740,49 +547,7 @@ if __name__ == '__main__':
     ex = POSM()
 
     qtmodern.styles.dark(app)
-    app.setStyleSheet("""
-
-        QGroupBox:flat {
-            border: none;
-        }
-
-        QToolBox::tab {
-            background: #454545;
-        }
-
-        QToolButton {
-            background-color: #f6f7fa;
-        }
-
-        QToolButton:pressed {
-            background-color: #dadbde;
-        }
-
-        QToolTip {
-            border: 2px solid darkkhaki;
-            padding: 5px;
-            border-radius: 3px;
-            opacity: 200;
-        }   
-
-        FilterWidget {
-            background: #353535;
-            border: 0px solid green;
-            border-radius: 7px;
-        }
-
-        QCalendarWidget QToolButton {
-            background-color: #2A2A2A;
-        }
-
-        QCalendarWidget QToolButton::menu-indicator{image: none;}
-
-        QCalendarWidget QWidget#qt_calendar_navigationbar
-        { 
-            background-color: #2A2A2A; 
-        }
-
-    """)
+    app.setStyleSheet(APP_STYLESHEET)
 
     mw = qtmodern.windows.ModernWindow(ex)
 

@@ -6,22 +6,24 @@ import traceback
 import osmnx as ox
 import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon, QPalette
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QTableView, QHeaderView, \
     QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QFormLayout, \
     QMenu, QAction, QGraphicsDropShadowEffect, QAbstractButton
 from requests import RequestException
 
-from DelimitedCalendar import DelimitedCalendar
 from Exceptions.OverpassExceptions import OverpassRequestException
-from IconButton import IconButton
-from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
-    OverpassDiff, OsmType
+from Models import OverpassRequest
+from Models.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
+from Models.OverpassQuery import OverpassQuery
 from Utils.SumoUtils import writeXMLResponse, tableDir
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
+from Views.DelimitedCalendar import DelimitedCalendar
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
+from Views.IconButton import IconButton
+from constants import Surround, OsmType
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 picturesDir = os.path.join(resDir, "pictures")
