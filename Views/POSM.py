@@ -229,6 +229,7 @@ class POSM(QMainWindow):
         showHideQuery.triggered.connect(self.showHideQuery)
         windowsMenu.addAction(showHideQuery)
 
+    # ACTIONS
     def changeToEmptyMap(self):
         if self.mapRenderer.url() != self.emptyMapUrl:
             self.getPolygons(lambda polygons: self.changeMap(polygons, self.emptyMapUrl))
@@ -254,6 +255,10 @@ class POSM(QMainWindow):
     def logManualModePolygonCoords(self, coords):
         logging.info("Polygon coordinates:\"{}\"".format(" ".join([str(c) for point in coords for c in point])))
         logging.debug("LINE")
+
+    def cleanCurrentPolygon(self):
+        logging.info("Cleaning polygon.")
+        self.mapRenderer.page().runJavaScript("cleanPolygon();", logging.debug("LINE"))
 
     def showHideInteractiveMode(self):
         if self.queryUI.isHidden():
@@ -330,30 +335,6 @@ class POSM(QMainWindow):
         self.mapRenderer.page().runJavaScript("switchInteractiveManualMode();",
                                               lambda x: logging.debug("LINE"))
 
-    def loadMap(self):
-        try:
-            self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
-            self.mapRenderer.load(self.lastMapUrl)
-            logging.info("Query drawn.")
-            logging.debug("LINE")
-        except (OverpassRequestException, OsmnxException) as e:
-            logging.error(str(e))
-        except ox.EmptyOverpassResponse:
-            logging.error("There are no elements with the given query.")
-        except OSError:
-            logging.error("There was a problem creating the file with the request response.")
-        except Exception:
-            logging.error(traceback.format_exc())
-
-    def addFilter(self, key="", value="", accuracy=False, negate=False):
-        if len(key) == 0 and len(value) == 0:
-            self.queryUI.addFilter()
-            logging.info("Empty filter added.")
-        else:
-            self.queryUI.addFilter(key, value, accuracy, negate)
-            logging.info("'{}' filter added.".format(key))
-        logging.debug("LINE")
-
     def addRequest(self, filters=None):
         self.mapRenderer.page().runJavaScript("addPolygon();")
         self.queryUI.addRequest(filters)
@@ -375,57 +356,6 @@ class POSM(QMainWindow):
         else:
             logging.info("'Remove request' cancelled.")
         logging.debug("LINE")
-
-    def modifyHtml(self, id):
-        code = HTML_SCRIPTS % (id, id, id, id, id, id, id, id, id, id)
-        self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
-
-    def getPolygons(self, f=None):
-        if f is None:
-            f = self.setHtmlSettings
-        self.mapRenderer.page().runJavaScript("getPolygons();", f)
-
-    def setHtmlSettings(self, settings):
-        self.htmlSettings = settings
-
-    def playQuery(self):
-        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettingsAndLoad)
-
-    def setHtmlSettingsAndLoad(self, settings):
-        self.htmlSettings = settings
-        if self.queryText.isReadOnly():
-            query = self.queryUI.getQuery()
-            for i in range(len(self.htmlSettings[1])):
-                query.addPolygon(i, self.htmlSettings[1][i])
-
-            try:
-                self.queryText.setPlainText(query.getQL())
-            except RuntimeError as e:
-                logging.error(str(e))
-                return
-        self.loadMap()
-
-    def setPolygons(self):
-        if len(self.htmlSettings) > 0:
-            self.mapRenderer.page().runJavaScript(
-                "setPolygons(%s, %s, %s, %s, %s);" % (self.htmlSettings[0],
-                                                      str(self.htmlSettings[1]),
-                                                      self.htmlSettings[2],
-                                                      str(self.htmlSettings[3]),
-                                                      self.htmlSettings[4]))
-
-    def disablePolygon(self):
-        self.mapRenderer.page().runJavaScript("disablePolygon();")
-
-    def enablePolygon(self):
-        self.mapRenderer.page().runJavaScript("enablePolygon();")
-
-    def cleanCurrentPolygon(self):
-        logging.info("Cleaning polygon.")
-        self.mapRenderer.page().runJavaScript("cleanPolygon();", logging.debug("LINE"))
-
-    def changeCurrentPolygon(self, i):
-        self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
 
     def saveQuery(self):
         filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save query', expanduser("~/filename.txt"),
@@ -506,6 +436,69 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
+    #POLYGONS
+    def loadMap(self):
+        try:
+            self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
+            self.mapRenderer.load(self.lastMapUrl)
+            logging.info("Query drawn.")
+            logging.debug("LINE")
+        except (OverpassRequestException, OsmnxException) as e:
+            logging.error(str(e))
+        except ox.EmptyOverpassResponse:
+            logging.error("There are no elements with the given query.")
+        except OSError:
+            logging.error("There was a problem creating the file with the request response.")
+        except Exception:
+            logging.error(traceback.format_exc())
+
+    def modifyHtml(self, id):
+        code = HTML_SCRIPTS % (id, id, id, id, id, id, id, id, id, id)
+        self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
+
+    def getPolygons(self, f=None):
+        if f is None:
+            f = self.setHtmlSettings
+        self.mapRenderer.page().runJavaScript("getPolygons();", f)
+
+    def setHtmlSettings(self, settings):
+        self.htmlSettings = settings
+
+    def playQuery(self):
+        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettingsAndLoad)
+
+    def setHtmlSettingsAndLoad(self, settings):
+        self.htmlSettings = settings
+        if self.queryText.isReadOnly():
+            query = self.queryUI.getQuery()
+            for i in range(len(self.htmlSettings[1])):
+                query.addPolygon(i, self.htmlSettings[1][i])
+
+            try:
+                self.queryText.setPlainText(query.getQL())
+            except RuntimeError as e:
+                logging.error(str(e))
+                return
+        self.loadMap()
+
+    def setPolygons(self):
+        if len(self.htmlSettings) > 0:
+            self.mapRenderer.page().runJavaScript(
+                "setPolygons(%s, %s, %s, %s, %s);" % (self.htmlSettings[0],
+                                                      str(self.htmlSettings[1]),
+                                                      self.htmlSettings[2],
+                                                      str(self.htmlSettings[3]),
+                                                      self.htmlSettings[4]))
+
+    def disablePolygon(self):
+        self.mapRenderer.page().runJavaScript("disablePolygon();")
+
+    def enablePolygon(self):
+        self.mapRenderer.page().runJavaScript("enablePolygon();")
+
+    def changeCurrentPolygon(self, i):
+        self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
+
     def showTableSelection(self):
         try:
             self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
@@ -520,6 +513,7 @@ class POSM(QMainWindow):
             logging.error(traceback.format_exc())
         logging.debug("LINE")
 
+    # EVENTS
     def closeEvent(self, event):
         for f in os.listdir(tempDir):
             os.remove(os.path.join(tempDir, f))
