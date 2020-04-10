@@ -4,14 +4,13 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QTextCursor, QColor
 from PyQt5.QtWidgets import QTextEdit
 
-from Views.POSM import app
-
 
 class InformationalConsole(QTextEdit):
 
-    def __init__(self):
+    def __init__(self, app):
         super().__init__()
         self.setReadOnly(True)
+        self.app = app
 
         logging.basicConfig(stream=self, level=logging.DEBUG, format='%(levelname)s%(asctime)s - %(message)s',
                             datefmt="%H:%M:%S")
@@ -29,7 +28,7 @@ class InformationalConsole(QTextEdit):
             self.writeError(text[8:])
         elif text[0] == "D" and text[-5:-1] == "LINE":
             self.addProcessEnd()
-        app.processEvents()
+        self.app.processEvents()
 
     def flush(self):
         pass

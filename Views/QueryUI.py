@@ -5,7 +5,7 @@ import traceback
 
 import osmnx as ox
 import requests
-from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
+from PyQt5.QtCore import Qt, QVariant, QModelIndex, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QTableView, QHeaderView, \
@@ -14,7 +14,8 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
 from requests import RequestException
 
 from Exceptions.OverpassExceptions import OverpassRequestException
-from Models import OverpassRequest
+from Models.OverpassFilter import OverpassFilter
+from Models.OverpassRequest import OverpassRequest
 from Models.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
 from Models.OverpassQuery import OverpassQuery
 from Utils.SumoUtils import writeXMLResponse, tableDir
@@ -22,82 +23,13 @@ from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKe
 from Views.CollapsibleList import CheckableComboBox
 from Views.DelimitedCalendar import DelimitedCalendar
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
+from Views.HorizontalLine import HorizontalLine
 from Views.IconButton import IconButton
+from Views.OperationsTableModel import OperationsTableModel
 from constants import Surround, OsmType
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 picturesDir = os.path.join(resDir, "pictures")
-
-
-class HorizontalLine(QFrame):
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.setFrameShape(QFrame.HLine)
-        self.setFrameShadow(QFrame.Sunken)
-        self.setContentsMargins(0, 0, 0, 0)
-
-
-class OperationsTableModel(QAbstractTableModel):
-
-    def __init__(self):
-        QAbstractTableModel.__init__(self)
-
-        self.headerItems = ["Name", "Type", "Components"]
-        self.ops = []
-
-    def addOp(self, name, op):
-        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
-        self.ops.append((name, op))
-        self.endInsertRows()
-
-    def removeOp(self, opToRemove):
-        for i in range(len(self.ops)):
-            if self.ops[i][0] == opToRemove:
-                self.beginRemoveRows(QModelIndex(), i, i)
-                self.ops.pop(i)
-                self.endRemoveRows()
-                break
-
-    def getOpByIndex(self, i):
-        return self.ops[i][0]
-
-    def rowCount(self, parent=QModelIndex(), **kwargs):
-        return len(self.ops)
-
-    def columnCount(self, parent=QModelIndex(), **kwargs):
-        return len(self.headerItems)
-
-    def headerData(self, section, orientation, role):
-        if role != Qt.DisplayRole:
-            return None
-        if orientation == Qt.Horizontal:
-            return self.headerItems[section]
-        else:
-            return "{}".format(section)
-
-    def data(self, index, role=Qt.DisplayRole):
-        column = index.column()
-        row = index.row()
-
-        if role == Qt.DisplayRole:
-            if column == 0:
-                return self.ops[row][0]
-            elif column == 1:
-                return self.ops[row][1].getType()
-            elif column == 2:
-                if self.ops[row][1].getType() == "Difference":
-                    return "%s - %s" % (self.ops[row][1].includedSet, ",".join(self.ops[row][1].sets))
-                else:
-                    return ",".join(self.ops[row][1].sets)
-        elif role == Qt.BackgroundRole:
-            return QColor(QColor(42, 42, 42))
-        elif role == Qt.TextAlignmentRole:
-            return Qt.AlignRight
-        elif role == Qt.ForegroundRole:
-            return QColor(QColor(160, 160, 160))
-
-        return None
 
 
 class RequestsOperations(QWidget):
@@ -128,7 +60,7 @@ class RequestsOperations(QWidget):
         self.requestList.setAutoFillBackground(True)
         self.requestList.setGraphicsEffect(effect)
         self.requestList.setFrameStyle(QFrame.NoFrame)
-        self.requestList.viewport().setAutoFillBackground( False )
+        self.requestList.viewport().setAutoFillBackground(False)
         self.requestList.setFlow(QListView.LeftToRight)
         self.requestList.setWrapping(True)
         self.requestList.setResizeMode(QListView.Adjust)
@@ -349,7 +281,8 @@ class FilterWidget(QFrame):
         self.keyInput.addItems(self.keyValues)
         topLayout.addWidget(self.keyInput)
 
-        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")), topWidget.windowHandle(), topWidget.height())
+        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")), topWidget.windowHandle(),
+                                              topWidget.height())
         self.filterOptionsButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
 
         self.filterOptionsMenu = QMenu()
@@ -401,6 +334,12 @@ class FilterWidget(QFrame):
         self.layout.addWidget(line)
 
         self.setLayout(self.layout)
+
+    def getFilter(self):
+        return OverpassFilter(self.getKey(),
+                              self.getValue(),
+                              self.isNegateSelected(),
+                              self.isExactValueSelected())
 
     def getInfo(self):
         keyName = self.keyInput.currentText()
@@ -508,11 +447,29 @@ class RequestWidget(QWidget):
         self.layout.addRow("LOCATION", self.locationNameWidget)
         self.layout.addRow(HorizontalLine(self))
 
+        filtersButtons = QWidget()
+        filtersButtonsLayout = QHBoxLayout()
+        filtersButtons.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        filtersButtonsLayout.setAlignment(Qt.AlignRight)
+        filtersButtonsLayout.setSpacing(0)
+        filtersButtonsLayout.setContentsMargins(0, 0, 0, 0)
+        filtersButtons.setLayout(filtersButtonsLayout)
+
+        self.addFilterButton = IconButton(QIcon(os.path.join(picturesDir, "add.png")),
+                                          filtersButtons.windowHandle(),
+                                          filtersButtons.height())
+        self.addFilterButton.setToolTip("Add filter")
+        self.addFilterButton.setFlat(True)
+        self.addFilterButton.clicked.connect(lambda b: self.addFilter())
+
+        filtersButtonsLayout.addWidget(self.addFilterButton)
+
+        self.layout.addRow("FILTERS", filtersButtons)
+
         self.filtersWidget = QWidget(self)
         self.filtersLayout = QVBoxLayout()
         self.filtersLayout.setContentsMargins(10, 10, 10, 10)
         self.filtersWidget.setLayout(self.filtersLayout)
-        self.layout.addRow("FILTERS", None)
         self.layout.addRow(self.filtersWidget)
         self.layout.addRow(HorizontalLine(self))
 
@@ -524,14 +481,16 @@ class RequestWidget(QWidget):
         polygonButtonsLayout.setContentsMargins(0, 0, 0, 0)
         polygonButtons.setLayout(polygonButtonsLayout)
 
-        self.drawPolButton = IconButton(QIcon(os.path.join(picturesDir, "polygon.png")), polygonButtons.windowHandle(), polygonButtons.height())
+        self.drawPolButton = IconButton(QIcon(os.path.join(picturesDir, "polygon.png")), polygonButtons.windowHandle(),
+                                        polygonButtons.height())
         self.drawPolButton.setToolTip("Draw polygon")
         self.drawPolButton.setFlat(True)
         self.drawPolButton.setCheckable(True)
 
         polygonButtonsLayout.addWidget(self.drawPolButton)
 
-        self.buttonClearPol = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), polygonButtons.windowHandle(), polygonButtons.height())
+        self.buttonClearPol = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), polygonButtons.windowHandle(),
+                                         polygonButtons.height())
         self.buttonClearPol.setToolTip("Remove polygon")
         self.buttonClearPol.setFlat(True)
 
@@ -540,8 +499,8 @@ class RequestWidget(QWidget):
         self.layout.addRow("POLYGON", polygonButtons)
         self.layout.addRow(HorizontalLine(self))
 
-        surroundGB = QGroupBox()
-        surroundGB.setFlat(True)
+        self.surroundGB = QGroupBox()
+        self.surroundGB.setFlat(True)
         surroundLayout = QVBoxLayout()
         surroundLayout.setContentsMargins(0, 0, 0, 0)
 
@@ -558,9 +517,9 @@ class RequestWidget(QWidget):
         noneRB.setChecked(True)
         surroundLayout.addWidget(noneRB)
 
-        surroundGB.setLayout(surroundLayout)
+        self.surroundGB.setLayout(surroundLayout)
 
-        self.layout.addRow("SURROUNDINGS", surroundGB)
+        self.layout.addRow("SURROUNDINGS", self.surroundGB)
         self.layout.addRow(HorizontalLine(self))
 
         self.onlyDisconnectedCB = QCheckBox()
@@ -601,14 +560,16 @@ class RequestWidget(QWidget):
         tableButtonsLayout.setSpacing(0)
         tableButtonsLayout.setContentsMargins(0, 0, 0, 0)
 
-        buttonMore = IconButton(QIcon(os.path.join(picturesDir, "showMore.png")), tableButtons.windowHandle(), tableButtons.height())
+        buttonMore = IconButton(QIcon(os.path.join(picturesDir, "showMore.png")), tableButtons.windowHandle(),
+                                tableButtons.height())
         buttonMore.setToolTip("Show more")
         buttonMore.setFlat(True)
         buttonMore.clicked.connect(self.showMore)
 
         tableButtonsLayout.addWidget(buttonMore)
 
-        buttonLess = IconButton(QIcon(os.path.join(picturesDir, "showLess.png")), tableButtons.windowHandle(), tableButtons.height())
+        buttonLess = IconButton(QIcon(os.path.join(picturesDir, "showLess.png")), tableButtons.windowHandle(),
+                                tableButtons.height())
         buttonLess.setToolTip("Show less")
         buttonLess.setFlat(True)
         buttonLess.clicked.connect(self.showLess)
@@ -622,7 +583,7 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
-    def getLocationId(self):
+    def __getLocationId__(self):
         if self.locationNameWidget.text() == "":
             return None
         item = next((x for x in ox.nominatim_request({"q": self.locationNameWidget.text(), 'format': 'json'})
@@ -636,9 +597,25 @@ class RequestWidget(QWidget):
             id += 2400000000
         return id
 
-    def getType(self):
+    def __getType__(self):
         return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),
                                self.relCB.isChecked(), self.areasCB.isChecked())
+
+    def __getSelectedSurrounding__(self):
+        switcher = {
+            "Adjacent": Surround.ADJACENT,
+            "Around": Surround.AROUND,
+            "None": Surround.NONE
+        }
+        selectedSurrounding = self.surroundGB.checkedButton()
+        return switcher.get(selectedSurrounding.objectName())
+
+    def getRequest(self):
+        request = OverpassRequest(self.__getType__(), self.__getSelectedSurrounding__())
+        request.setLocationId(self.__getLocationId__())
+        for filterWidget in self.self.filtersWidget.findChildren(FilterWidget):
+            request.addFilter(filterWidget.getFilter())
+        return request
 
     def onClearPolygon(self, f):
         self.buttonClearPol.clicked.connect(f)
@@ -678,7 +655,6 @@ class RequestWidget(QWidget):
         self.similarWaysTable = SimilarWaysTable(jsonResponse)
         self.tableView.setModel(self.similarWaysTable)
         self.tableView.setVisible(True)
-        self.tableOptions.setVisible(True)
 
         for key in self.tableView.model().getAllColumns():
             self.columnSelection.addItem(key, key in self.tableView.model().getSelectedColumns())
@@ -787,6 +763,7 @@ class QueryUI(QWidget):
 
         self.requestTabs = QTabWidget()
         self.requestTabs.setUsesScrollButtons(True)
+        self.requestTabs.currentChanged.connect(self.__updateTabSizes__)
         self.requestAreaWidget.addItem(self.requestTabs, "Requests")
 
         self.requestOps = RequestsOperations(self)
@@ -796,23 +773,23 @@ class QueryUI(QWidget):
         self.requestAreaWidget.addItem(self.generalConfig, "General")
 
         self.headers = self.requestAreaWidget.findChildren(QAbstractButton, "qt_toolbox_toolboxbutton")
-        self.requestAreaWidget.currentChanged.connect(self.__onToolTabChanged)
+        self.requestAreaWidget.currentChanged.connect(self.__onToolTabChanged__)
         self.headers[0].setIcon(QIcon(os.path.join(picturesDir, "arrowUp.png")))
-        for i in range(1,len(self.headers)):
+        for i in range(1, len(self.headers)):
             self.headers[i].setIcon(QIcon(os.path.join(picturesDir, "arrowDown.png")))
 
         self.layout.addWidget(self.requestAreaWidget)
 
         self.setLayout(self.layout)
 
-    def __onToolTabChanged(self, i):
+    def __onToolTabChanged__(self, i):
         for h in range(len(self.headers)):
             if h == i:
                 self.headers[h].setIcon(QIcon(os.path.join(picturesDir, "arrowUp.png")))
             else:
                 self.headers[h].setIcon(QIcon(os.path.join(picturesDir, "arrowDown.png")))
 
-    def __updateTabSizes(self, index):
+    def __updateTabSizes__(self, index):
         for i in range(self.requestTabs.count()):
             if i != index:
                 self.requestTabs.widget(i).setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
@@ -821,26 +798,25 @@ class QueryUI(QWidget):
         self.requestTabs.widget(index).resize(self.requestTabs.widget(index).minimumSizeHint())
         self.requestTabs.widget(index).adjustSize()
 
-    def currentRequest(self):
-        return self.requestTabs.currentIndex()
+    def setOnRequestChanged(self, f):
+        self.requestTabs.currentChanged.connect(f)
 
-    def __onTabChanged(self, f, index):
-        f(index)
-        self.__updateTabSizes(index)
-
-    def setOnTabChanged(self, f):
-        self.requestTabs.currentChanged.connect(lambda i: self.__onTabChanged(f, i))
-
-    def onClearPolygon(self, f):
+    # TODO
+    def setOnClearPolygon(self, f):
         self.onClearPolygonF = f
         for tab in self.requestTabs.findChildren(RequestWidget):
-            tab.onClearPolygon(f)
+            tab.setOnClearPolygon(f)
 
-    def onPolygonEnabled(self, fTrue, fFalse):
+    # TODO
+    def setOnPolygonEnabled(self, fTrue, fFalse):
         self.onPolygonEnabledF = fTrue
         self.onPolygonDisabledF = fFalse
         for tab in self.requestTabs.findChildren(RequestWidget):
-            tab.onPolygonEnabled(fTrue, fFalse)
+            tab.setOnPolygonEnabled(fTrue, fFalse)
+
+    # TODO
+    def getSelectedRowNetworkx(self):
+        return self.requestTabs.currentWidget().getSelectedRowNetworkx()
 
     def addRequest(self, filters=None):
         requestWidget = RequestWidget(self, self.keyValues)
@@ -858,43 +834,20 @@ class QueryUI(QWidget):
             requestWidget.addFilter()
 
     def removeRequest(self):
-        reply = QMessageBox.question(self, "Remove request",
-                                     "Are you sure?\nAll sets containing this one will be deleted if they are no longer valid")
-        if reply == QMessageBox.Yes:
-            self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
-            self.requestTabs.currentWidget().deleteLater()
-
-    def addFilter(self, key="", value="", accuracy=False, negate=False):
-        self.requestTabs.currentWidget().addFilter(key, value, accuracy, negate)
+        self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
+        self.requestTabs.currentWidget().deleteLater()
 
     def requestsCount(self):
         return self.requestTabs.count()
 
     def getQuery(self):
         query = OverpassQuery(self.requestOps.outputSet())
-
         query.addDate(self.generalConfig.getDate())
 
-        switcher = {
-            "Adjacent": Surround.ADJACENT,
-            "Around": Surround.AROUND,
-            "None": Surround.NONE
-        }
-
         for requestWidget in self.findChildren(RequestWidget):
-            selectedSurrounding = [b for b in requestWidget.findChildren(QRadioButton) if b.isChecked()][0]
-            request = OverpassRequest(requestWidget.getType(), switcher.get(selectedSurrounding.objectName()))
-            request.setLocationId(requestWidget.getLocationId())
-            for filterWidget in requestWidget.findChildren(FilterWidget):
-                request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
-                                  filterWidget.isNegateSelected())
-
-            query.addRequest(requestWidget.objectName(), request)
+            query.addRequest(requestWidget.objectName(), requestWidget.getRequest())
 
         for name, op in self.requestOps.ops.items():
             query.addSetsOp(name, op)
 
         return query
-
-    def getSelectedRowNetworkx(self):
-        return self.requestTabs.currentWidget().getSelectedRowNetworkx()

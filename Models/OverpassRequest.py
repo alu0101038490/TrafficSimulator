@@ -1,3 +1,4 @@
+from Models.OverpassFilter import OverpassFilter
 from constants import Surround, OsmType
 
 
@@ -6,7 +7,7 @@ class OverpassRequest(object):
     def __init__(self, requestType, surrounding, aroundRadius=100):
         super().__init__()
         self.type = requestType
-        self.filters = {}
+        self.filters = []
         self.surrounding = surrounding
         self.aroundRadius = aroundRadius
         self.polygon = []
@@ -15,8 +16,11 @@ class OverpassRequest(object):
     def setLocationId(self, locationID):
         self.locationId = locationID
 
-    def addFilter(self, key, value, exactValue, negated):
-        self.filters[key] = (value, '=' if exactValue else '~', "!" if negated else '')
+    def addFilterByValues(self, key, value, exactValue, negated):
+        self.filters.append(OverpassFilter(key, value, exactValue, negated))
+
+    def addFilter(self, filter):
+        self.filters.append(filter)
 
     def addPolygon(self, coords):
         self.polygon = coords
@@ -35,11 +39,8 @@ class OverpassRequest(object):
         if len(self.polygon) > 0:
             ql += "(poly:\"%s\")" % " ".join([str(c) for point in self.polygon for c in point])
 
-        for key, (value, exact, negated) in self.filters.items():
-            if value:
-                ql += '["{}"{}{}"{}"]'.format(key, negated, exact, value)
-            else:
-                ql += '[{}"{}"]'.format(negated, key)
+        for filter in self.filters:
+            ql += filter.getQL()
 
         if self.surrounding == Surround.AROUND:
             ql += ";{}(around:{});)".format(self.type.value, str(self.aroundRadius))

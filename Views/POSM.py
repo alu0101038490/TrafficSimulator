@@ -37,7 +37,7 @@ class POSM(QMainWindow):
         self.layout = QHBoxLayout()
         self.layout.setContentsMargins(0, 0, 0, 0)
 
-        self.console = InformationalConsole()
+        self.console = InformationalConsole(app)
 
         self.horSplitter = QSplitter(Qt.Horizontal)
         self.horSplitter.setChildrenCollapsible(False)
@@ -45,9 +45,9 @@ class POSM(QMainWindow):
         self.editionSplitter.setChildrenCollapsible(False)
 
         self.queryUI = QueryUI()
-        self.queryUI.onClearPolygon(self.cleanCurrentPolygon)
-        self.queryUI.onPolygonEnabled(self.enablePolygon, self.disablePolygon)
-        self.queryUI.setOnTabChanged(self.changeCurrentPolygon)
+        self.queryUI.setOnClearPolygon(self.cleanCurrentPolygon)
+        self.queryUI.setOnPolygonEnabled(self.enablePolygon, self.disablePolygon)
+        self.queryUI.setOnRequestChanged(self.changeCurrentPolygon)
         self.editionSplitter.addWidget(self.queryUI)
 
         self.queryWidget = QWidget()
@@ -188,11 +188,6 @@ class POSM(QMainWindow):
         removeRequestAct.triggered.connect(self.removeRequest)
         removeRequestAct.setShortcut('Ctrl+R')
         self.requestMenu.addAction(removeRequestAct)
-
-        addFilterAct = QAction('Add filter', self)
-        addFilterAct.triggered.connect(lambda b: self.addFilter())
-        addFilterAct.setShortcut('Ctrl+T')
-        self.requestMenu.addAction(addFilterAct)
 
         self.manualModeAct = QAction('Switch between interactive and manual mode', self)
         self.manualModeAct.triggered.connect(self.switchManualMode)
@@ -366,19 +361,8 @@ class POSM(QMainWindow):
         logging.debug("LINE")
 
     def addTemplate(self, filters):
-        if self.queryUI.requestsCount() > 0:
-            for key, value, accuracy, negate in filters:
-                self.queryUI.addFilter(key, value, accuracy, negate)
-                if len(key) == 0 and len(value) == 0:
-                    logging.info("Empty filter added.")
-                else:
-                    logging.info("'{}' filter added.".format(key))
-            logging.info("Template applied.")
-            logging.debug("LINE")
-        else:
-            logging.warning("There is no requests. Adding a new one.")
-            logging.info("Template applied.")
-            self.queryUI.addRequest(filters)
+        logging.info("Template applied.")
+        self.queryUI.addRequest(filters)
 
     def removeRequest(self):
         reply = QMessageBox.question(self, "Remove current request",
