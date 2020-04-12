@@ -6,22 +6,22 @@ import traceback
 import osmnx as ox
 import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QAbstractTableModel, QDate
-from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon, QPalette
+from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QTableView, QHeaderView, \
     QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QFormLayout, \
     QMenu, QAction, QGraphicsDropShadowEffect, QAbstractButton
 from requests import RequestException
 
-from DelimitedCalendar import DelimitedCalendar
 from Exceptions.OverpassExceptions import OverpassRequestException
-from IconButton import IconButton
 from Models.OverpassQuery import OverpassQuery, Surround, OverpassRequest, OverpassUnion, OverpassIntersection, \
     OverpassDiff, OsmType
 from Utils.SumoUtils import writeXMLResponse, tableDir
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
+from Views.DelimitedCalendar import DelimitedCalendar
 from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
+from Views.IconButton import IconButton
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 picturesDir = os.path.join(resDir, "pictures")
@@ -329,8 +329,8 @@ class FilterWidget(QFrame):
     def initUI(self):
         self.layout = QFormLayout()
         self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-        self.layout.setContentsMargins(10, 10, 10, 10)
-        self.layout.setVerticalSpacing(0)
+        self.layout.setContentsMargins(10, 5, 10, 5)
+        self.layout.setVerticalSpacing(5)
         self.layout.setLabelAlignment(Qt.AlignLeft)
         self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
@@ -347,7 +347,9 @@ class FilterWidget(QFrame):
         self.keyInput.addItems(self.keyValues)
         topLayout.addWidget(self.keyInput)
 
-        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")), topWidget.windowHandle(), topWidget.height())
+        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")),
+                                              topWidget.windowHandle(),
+                                              self.keyInput.height())
         self.filterOptionsButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
 
         self.filterOptionsMenu = QMenu()
@@ -366,6 +368,11 @@ class FilterWidget(QFrame):
 
         self.layout.addRow("Key:", topWidget)
 
+        self.comparisonInput = QComboBox()
+        self.comparisonInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.comparisonInput.addItems(["is equal to", "is at most", "is at least", "contains"])
+        self.layout.addRow("", self.comparisonInput)
+
         valueEdition = QWidget()
         valueEdition.setLayout(QHBoxLayout())
         valueEdition.layout().setSpacing(0)
@@ -381,7 +388,11 @@ class FilterWidget(QFrame):
 
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
 
+        flagsWidget = QWidget()
+        flagsWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         flagsWidgetLayout = QHBoxLayout()
+        flagsWidgetLayout.setContentsMargins(0, 0, 0, 0)
+        flagsWidget.setLayout(flagsWidgetLayout)
 
         self.checkboxAccuracy = QCheckBox()
         self.checkboxAccuracy.setText("Exact Value")
@@ -391,7 +402,7 @@ class FilterWidget(QFrame):
         self.checkboxNegate.setText("Negate")
         flagsWidgetLayout.addWidget(self.checkboxNegate)
 
-        self.layout.addRow("Flags:", flagsWidgetLayout)
+        self.layout.addRow("Flags:", flagsWidget)
 
         line = QFrame(self)
         line.setFrameShape(QFrame.HLine)
