@@ -1,24 +1,26 @@
 import logging
 import os
 import pathlib
+import threading
 import traceback
 
 import osmnx as ox
 import requests
 from PyQt5.QtCore import Qt, QVariant, QModelIndex, QDate
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QTableView, QHeaderView, \
     QPushButton, QListView, QMessageBox, QToolBox, QCalendarWidget, QLineEdit, QToolButton, QFormLayout, \
     QMenu, QAction, QGraphicsDropShadowEffect, QAbstractButton
 from requests import RequestException
 
-from Exceptions.OverpassExceptions import OverpassRequestException
+from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Models.OverpassFilter import OverpassFilter
 from Models.OverpassRequest import OverpassRequest
 from Models.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
 from Models.OverpassQuery import OverpassQuery
-from Utils.SumoUtils import writeXMLResponse, tableDir
+from Utils.SumoUtils import writeXMLResponse, tableDir, buildHTMLWithNetworkx
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
 from Views.DelimitedCalendar import DelimitedCalendar
@@ -26,7 +28,7 @@ from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 from Views.HorizontalLine import HorizontalLine
 from Views.IconButton import IconButton
 from Views.OperationsTableModel import OperationsTableModel
-from constants import Surround, OsmType
+from constants import Surround, OsmType, JS_SCRIPT_ROUTE
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 picturesDir = os.path.join(resDir, "pictures")
@@ -398,6 +400,8 @@ class RequestWidget(QWidget):
     def __init__(self, parent, keyValues):
         super().__init__(parent)
         self.keyValues = keyValues
+        self.polygonSettings = []
+        self.polygonPage = QWebEnginePage()
         self.initUI()
 
     def __onAreaSelected(self):
@@ -486,6 +490,7 @@ class RequestWidget(QWidget):
         self.drawPolButton.setToolTip("Draw polygon")
         self.drawPolButton.setFlat(True)
         self.drawPolButton.setCheckable(True)
+        self.drawPolButton.toggled.connect(self.enableDisablePolygon)
 
         polygonButtonsLayout.addWidget(self.drawPolButton)
 
@@ -493,6 +498,7 @@ class RequestWidget(QWidget):
                                          polygonButtons.height())
         self.buttonClearPol.setToolTip("Remove polygon")
         self.buttonClearPol.setFlat(True)
+        self.buttonClearPol.clicked.connect(self.clearPolygon)
 
         polygonButtonsLayout.addWidget(self.buttonClearPol)
 
@@ -610,18 +616,58 @@ class RequestWidget(QWidget):
         selectedSurrounding = self.surroundGB.checkedButton()
         return switcher.get(selectedSurrounding.objectName())
 
+    def __setPolygon__(self, coors, event):
+        self.coors = coors
+        event.set()
+
+    def __setPolygonVar__(self, coors, event):
+        self.polygonSettings = coors
+        event.set()
+
+    def __getPolygon__(self):
+        resultAvailable = threading.Event()
+        self.polygonPage.runJavaScript("getPolygons();", lambda x: self.__setPolygonVar__(x, resultAvailable))
+        resultAvailable.wait()
+        return self.polygonSettings
+
+    def changePage(self, html):
+        if len(self.polygonSettings) > 0:
+            html += "\n" + JS_SCRIPT_ROUTE.format(*self.__getPolygon__())
+            self.polygonPage.setHtml(html)
+
+    def showTableSelection(self):
+        try:
+            self.changePage(buildHTMLWithNetworkx(self.getSelectedRowNetworkx()))
+        except (OverpassRequestException, OsmnxException) as e:
+            logging.error(str(e))
+            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
+        except ox.EmptyOverpassResponse:
+            logging.error("There are no elements with the given row.")
+        except OSError:
+            logging.error("There was a problem creating the file with the row selection.")
+        except Exception:
+            logging.error(traceback.format_exc())
+        logging.debug("LINE")
+
     def getRequest(self):
         request = OverpassRequest(self.__getType__(), self.__getSelectedSurrounding__())
         request.setLocationId(self.__getLocationId__())
+        request.addPolygon(self.__getPolygon__()[0])
         for filterWidget in self.self.filtersWidget.findChildren(FilterWidget):
             request.addFilter(filterWidget.getFilter())
         return request
 
-    def onClearPolygon(self, f):
-        self.buttonClearPol.clicked.connect(f)
+    def getMap(self):
+        return self.polygonPage
 
-    def onPolygonEnabled(self, fTrue, fFalse):
-        self.drawPolButton.toggled.connect(lambda: fTrue() if self.drawPolButton.isChecked() else fFalse())
+    def clearPolygon(self):
+        self.polygonPage.runJavaScript("cleanPolygon();", logging.debug("LINE"))
+
+    def enableDisablePolygon(self):
+        if self.drawPolButton.isChecked():
+            self.mapRenderer.page().runJavaScript("enablePolygon();")
+        else:
+            self.mapRenderer.page().runJavaScript("disablePolygon();")
 
     def showTable(self):
         query = OverpassQuery(self.objectName())
@@ -802,19 +848,6 @@ class QueryUI(QWidget):
         self.requestTabs.currentChanged.connect(f)
 
     # TODO
-    def setOnClearPolygon(self, f):
-        self.onClearPolygonF = f
-        for tab in self.requestTabs.findChildren(RequestWidget):
-            tab.setOnClearPolygon(f)
-
-    # TODO
-    def setOnPolygonEnabled(self, fTrue, fFalse):
-        self.onPolygonEnabledF = fTrue
-        self.onPolygonDisabledF = fFalse
-        for tab in self.requestTabs.findChildren(RequestWidget):
-            tab.setOnPolygonEnabled(fTrue, fFalse)
-
-    # TODO
     def getSelectedRowNetworkx(self):
         return self.requestTabs.currentWidget().getSelectedRowNetworkx()
 
@@ -851,3 +884,12 @@ class QueryUI(QWidget):
             query.addSetsOp(name, op)
 
         return query
+
+    def updateMaps(self, html):
+        for requestWidget in self.findChildren(RequestWidget):
+            requestWidget.changePage(html)
+
+        return self.getCurrentMap()
+
+    def getCurrentMap(self):
+        return self.requestTabs.currentWidget().getMap()

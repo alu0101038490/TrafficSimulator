@@ -15,11 +15,11 @@ from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
-from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, buildHTMLWithNetworkx, tempDir
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, tempDir
 from Views.Console import InformationalConsole
 from Views.NumberedTextEdit import CodeEditor
 from Views.QueryUI import QueryUI
-from constants import APP_STYLESHEET, HTML_SCRIPTS
+from constants import APP_STYLESHEET
 
 
 class POSM(QMainWindow):
@@ -47,7 +47,7 @@ class POSM(QMainWindow):
         self.queryUI = QueryUI()
         self.queryUI.setOnClearPolygon(self.cleanCurrentPolygon)
         self.queryUI.setOnPolygonEnabled(self.enablePolygon, self.disablePolygon)
-        self.queryUI.setOnRequestChanged(self.changeCurrentPolygon)
+        self.queryUI.setOnRequestChanged(self.changeCurrentMap)
         self.editionSplitter.addWidget(self.queryUI)
 
         self.queryWidget = QWidget()
@@ -77,8 +77,6 @@ class POSM(QMainWindow):
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
         self.mapRenderer.load(self.emptyMapUrl)
-        self.mapRenderer.loadFinished.connect(
-            lambda: self.mapRenderer.page().runJavaScript("document.body.children[0].id;", self.modifyHtml))
 
         self.addRequest()
 
@@ -202,7 +200,7 @@ class POSM(QMainWindow):
 
         manualModeGetPolygonAct = QAction('Polygon coordinates', self)
         manualModeGetPolygonAct.triggered.connect(
-            lambda: self.mapRenderer.page().runJavaScript("getManualPolygon();", self.logManualModePolygonCoords))
+            lambda: self.mapRenderer.page().runJavaScript("getPolygons();", self.logManualModePolygonCoords))
         self.manualModeMenu.addAction(manualModeGetPolygonAct)
 
         windowsMenu = menubar.addMenu('Windows')
@@ -332,11 +330,8 @@ class POSM(QMainWindow):
                 logging.info("'Switch between interactive and manual mode' cancelled.")
 
         logging.info("Showing 'manual mode' polygon.")
-        self.mapRenderer.page().runJavaScript("switchInteractiveManualMode();",
-                                              lambda x: logging.debug("LINE"))
 
     def addRequest(self, filters=None):
-        self.mapRenderer.page().runJavaScript("addPolygon();")
         self.queryUI.addRequest(filters)
         logging.info("Request added.")
         logging.debug("LINE")
@@ -350,7 +345,6 @@ class POSM(QMainWindow):
                                      "Are you sure? This option is not undoable.")
 
         if reply == QMessageBox.Yes:
-            self.mapRenderer.page().runJavaScript("removeCurrentPolygon();")
             self.queryUI.removeRequest()
             logging.info("'Remove request' successfully executed.")
         else:
@@ -437,10 +431,13 @@ class POSM(QMainWindow):
             logging.error(traceback.format_exc())
 
     #POLYGONS
+    def changeCurrentMap(self, i):
+        self.mapRenderer.setPage(self.queryUI.getCurrentMap())
+
     def loadMap(self):
         try:
             self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
-            self.mapRenderer.load(self.lastMapUrl)
+            self.mapRenderer.setPage(self.queryUI.updateMaps(self.lastMapUrl))
             logging.info("Query drawn.")
             logging.debug("LINE")
         except (OverpassRequestException, OsmnxException) as e:
@@ -452,66 +449,15 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
-    def modifyHtml(self, id):
-        code = HTML_SCRIPTS % (id, id, id, id, id, id, id, id, id, id)
-        self.mapRenderer.page().runJavaScript(code, lambda x: self.setPolygons())
-
-    def getPolygons(self, f=None):
-        if f is None:
-            f = self.setHtmlSettings
-        self.mapRenderer.page().runJavaScript("getPolygons();", f)
-
-    def setHtmlSettings(self, settings):
-        self.htmlSettings = settings
-
     def playQuery(self):
-        self.mapRenderer.page().runJavaScript("getPolygons();", self.setHtmlSettingsAndLoad)
-
-    def setHtmlSettingsAndLoad(self, settings):
-        self.htmlSettings = settings
         if self.queryText.isReadOnly():
-            query = self.queryUI.getQuery()
-            for i in range(len(self.htmlSettings[1])):
-                query.addPolygon(i, self.htmlSettings[1][i])
-
             try:
+                query = self.queryUI.getQuery()
                 self.queryText.setPlainText(query.getQL())
             except RuntimeError as e:
                 logging.error(str(e))
                 return
         self.loadMap()
-
-    def setPolygons(self):
-        if len(self.htmlSettings) > 0:
-            self.mapRenderer.page().runJavaScript(
-                "setPolygons(%s, %s, %s, %s, %s);" % (self.htmlSettings[0],
-                                                      str(self.htmlSettings[1]),
-                                                      self.htmlSettings[2],
-                                                      str(self.htmlSettings[3]),
-                                                      self.htmlSettings[4]))
-
-    def disablePolygon(self):
-        self.mapRenderer.page().runJavaScript("disablePolygon();")
-
-    def enablePolygon(self):
-        self.mapRenderer.page().runJavaScript("enablePolygon();")
-
-    def changeCurrentPolygon(self, i):
-        self.mapRenderer.page().runJavaScript("changeCurrentPolygon(%i);" % i)
-
-    def showTableSelection(self):
-        try:
-            self.mapRenderer.load(buildHTMLWithNetworkx(self.queryUI.getSelectedRowNetworkx()))
-        except (OverpassRequestException, OsmnxException) as e:
-            logging.error(str(e))
-            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
-        except ox.EmptyOverpassResponse:
-            logging.error("There are no elements with the given row.")
-        except OSError:
-            logging.error("There was a problem creating the file with the row selection.")
-        except Exception:
-            logging.error(traceback.format_exc())
-        logging.debug("LINE")
 
     # EVENTS
     def closeEvent(self, event):

@@ -6,7 +6,6 @@ import xml.etree.ElementTree as ET
 
 import osmnx as ox
 import requests
-from PyQt5.QtCore import QUrl
 
 from Exceptions.OverpassExceptions import RequestSyntaxException, TimeoutException, TooManyRequestsException, \
     UnknownException, OsmnxException
@@ -140,9 +139,9 @@ def buildHTMLWithNetworkx(G):
                              "results but you can use the option 'Open netedit'.")
     graphMap.save(tilePath)
 
-    logging.info("Html written.")
+    logging.info("Html built.")
 
-    return QUrl.fromLocalFile(tilePath)
+    return graphMap.get_root().render()
 
 
 def buildHTMLWithQuery(query):
