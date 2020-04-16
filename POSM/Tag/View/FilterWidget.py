@@ -10,7 +10,7 @@ from requests import RequestException
 
 from Shared.Utils.TaginfoUtils import getKeyDescription, getValuesByKey
 from Shared.View.IconButton import IconButton
-from Shared.constants import picturesDir
+from Shared.constants import picturesDir, TagComparison
 from Tag.Model.OverpassFilter import OverpassFilter
 
 
@@ -31,8 +31,8 @@ class FilterWidget(QFrame):
     def initUI(self):
         self.layout = QFormLayout()
         self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-        self.layout.setContentsMargins(10, 10, 10, 10)
-        self.layout.setVerticalSpacing(0)
+        self.layout.setContentsMargins(10, 5, 10, 5)
+        self.layout.setVerticalSpacing(5)
         self.layout.setLabelAlignment(Qt.AlignLeft)
         self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
@@ -49,8 +49,9 @@ class FilterWidget(QFrame):
         self.keyInput.addItems(self.keyValues)
         topLayout.addWidget(self.keyInput)
 
-        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")), topWidget.windowHandle(),
-                                              topWidget.height())
+        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")),
+                                              topWidget.windowHandle(),
+                                              self.keyInput.height())
         self.filterOptionsButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
 
         self.filterOptionsMenu = QMenu()
@@ -69,6 +70,21 @@ class FilterWidget(QFrame):
 
         self.layout.addRow("Key:", topWidget)
 
+        self.comparisonInput = QComboBox()
+        self.comparisonInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.comparisonSwtich = [TagComparison.EQUAL,
+                                 TagComparison.AT_MOST,
+                                 TagComparison.AT_LEAST,
+                                 TagComparison.CONTAIN_ALL,
+                                 TagComparison.CONTAIN_ONE]
+        self.comparisonInput.addItems(["is equal to",
+                                       "is at most",
+                                       "is at least",
+                                       "contains",
+                                       "contains one of"])
+        self.comparisonInput.currentIndexChanged.connect(self.__onComparisonSelected__)
+        self.layout.addRow("", self.comparisonInput)
+
         valueEdition = QWidget()
         valueEdition.setLayout(QHBoxLayout())
         valueEdition.layout().setSpacing(0)
@@ -84,7 +100,11 @@ class FilterWidget(QFrame):
 
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
 
+        flagsWidget = QWidget()
+        flagsWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         flagsWidgetLayout = QHBoxLayout()
+        flagsWidgetLayout.setContentsMargins(0, 0, 0, 0)
+        flagsWidget.setLayout(flagsWidgetLayout)
 
         self.checkboxAccuracy = QCheckBox()
         self.checkboxAccuracy.setText("Exact Value")
@@ -94,7 +114,7 @@ class FilterWidget(QFrame):
         self.checkboxNegate.setText("Negate")
         flagsWidgetLayout.addWidget(self.checkboxNegate)
 
-        self.layout.addRow("Flags:", flagsWidgetLayout)
+        self.layout.addRow("Flags:", flagsWidget)
 
         line = QFrame(self)
         line.setFrameShape(QFrame.HLine)
@@ -103,8 +123,15 @@ class FilterWidget(QFrame):
 
         self.setLayout(self.layout)
 
+    def __onComparisonSelected__(self, i):
+        if i == 0:
+            self.checkboxAccuracy.setEnabled(True)
+        else:
+            self.checkboxAccuracy.setEnabled(False)
+
     def getFilter(self):
         return OverpassFilter(self.getKey(),
+                              self.getComparison(),
                               self.getValue(),
                               self.isNegateSelected(),
                               self.isExactValueSelected())
@@ -135,6 +162,9 @@ class FilterWidget(QFrame):
 
     def getKey(self):
         return self.keyInput.currentText()
+
+    def getComparison(self):
+        return self.comparisonSwtich[self.comparisonInput.currentIndex()]
 
     def getValue(self):
         return self.valueInput.currentText()
