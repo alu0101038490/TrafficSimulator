@@ -1,3 +1,5 @@
+import os
+import pathlib
 from enum import Enum
 
 
@@ -76,10 +78,17 @@ APP_STYLESHEET = """
 
     """
 
-JS_SCRIPT_ROUTE = """
-    <script>
-        var isClickActivated = {};
-        var latlngs = {};
-    </script>
-    <script src="../javascript/polygonsManagement.js"></script>
-"""
+resDir = pathlib.Path(__file__).parent.absolute().joinpath("Resources")
+javascriptFile = os.path.join(resDir, "javascript", "polygonsManagement.js")
+tempDir = os.path.join(resDir, "temp")
+tableDir = os.path.join(tempDir, "table.osm.xml")
+responsePath = os.path.join(tempDir, "response.osm.xml")
+tilePath = os.path.join(resDir, "temp", "tile.html")
+defaultTileMap = os.path.join(resDir, "html", "tile.html")
+typemapPath = os.path.join(resDir, "typemap")
+
+with open(javascriptFile, "r") as f:
+    JS_SCRIPT = f.read()
+
+with open(defaultTileMap, "r") as f:
+    EMPTY_HTML = f.read()

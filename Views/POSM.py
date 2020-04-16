@@ -1,5 +1,6 @@
 import logging
 import os
+import pathlib
 import sys
 import traceback
 from os.path import expanduser
@@ -9,17 +10,20 @@ import qtmodern.styles
 import qtmodern.windows
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import Qt, QUrl, QLocale
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
-    QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX
+    QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX, QCheckBox
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Utils.OverpassUtils import OverpassQLHighlighter
-from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery, defaultTileMap, tempDir
+from Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery
+from Views.CollapsibleList import CheckableComboBox
 from Views.Console import InformationalConsole
+from Views.IconButton import IconButton
 from Views.NumberedTextEdit import CodeEditor
-from Views.QueryUI import QueryUI
-from constants import APP_STYLESHEET
+from Views.QueryUI import QueryUI, picturesDir, FilterWidget, RequestWidget
+from constants import APP_STYLESHEET, EMPTY_HTML, tempDir, defaultTileMap, JS_SCRIPT
 
 
 class POSM(QMainWindow):
@@ -45,8 +49,6 @@ class POSM(QMainWindow):
         self.editionSplitter.setChildrenCollapsible(False)
 
         self.queryUI = QueryUI()
-        self.queryUI.setOnClearPolygon(self.cleanCurrentPolygon)
-        self.queryUI.setOnPolygonEnabled(self.enablePolygon, self.disablePolygon)
         self.queryUI.setOnRequestChanged(self.changeCurrentMap)
         self.editionSplitter.addWidget(self.queryUI)
 
@@ -71,14 +73,13 @@ class POSM(QMainWindow):
 
         self.horSplitter.addWidget(self.editionSplitter)
 
-        self.emptyMapUrl = QUrl.fromLocalFile(defaultTileMap)
+        self.emptyMapUrl = QWebEnginePage()
+        self.emptyMapUrl.setHtml(EMPTY_HTML)
         self.lastMapUrl = None
 
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
-        self.mapRenderer.load(self.emptyMapUrl)
-
-        self.addRequest()
+        self.mapRenderer.setPage(self.emptyMapUrl)
 
         self.consoleSplitter = QSplitter(Qt.Vertical)
         self.consoleSplitter.setChildrenCollapsible(False)
@@ -139,11 +140,6 @@ class POSM(QMainWindow):
         playAct.triggered.connect(self.playQuery)
         playAct.setShortcut('Ctrl+P')
         runMenu.addAction(playAct)
-
-        showSelectionAct = QAction('Run selected row of the disambiguation table', self)
-        showSelectionAct.triggered.connect(self.showTableSelection)
-        showSelectionAct.setShortcut('Ctrl+N')
-        runMenu.addAction(showSelectionAct)
 
         self.requestMenu = menubar.addMenu('Request')
 

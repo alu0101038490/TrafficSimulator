@@ -1,6 +1,5 @@
 import logging
 import os
-import pathlib
 import subprocess
 import xml.etree.ElementTree as ET
 
@@ -10,14 +9,7 @@ import requests
 from Exceptions.OverpassExceptions import RequestSyntaxException, TimeoutException, TooManyRequestsException, \
     UnknownException, OsmnxException
 from Views import osmBuild, sumolib
-
-resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
-tempDir = os.path.join(resDir, "temp")
-tableDir = os.path.join(tempDir, "table.osm.xml")
-responsePath = os.path.join(tempDir, "response.osm.xml")
-defaultTileMap = os.path.join(resDir, "html", "tile.html")
-tilePath = os.path.join(resDir, "temp", "tile.html")
-typemapPath = os.path.join(resDir, "typemap")
+from constants import responsePath, tilePath, typemapPath
 
 
 def buildNet(outputName, inputFileName=responsePath):

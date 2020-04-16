@@ -1,13 +1,14 @@
 import logging
 import os
 import pathlib
-import threading
 import traceback
 
+import bs4
 import osmnx as ox
 import requests
-from PyQt5.QtCore import Qt, QVariant, QModelIndex, QDate
+from PyQt5.QtCore import Qt, QVariant, QModelIndex, QDate, QJsonValue, pyqtSlot
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QIcon
+from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QSizePolicy, QComboBox, QCheckBox, QGroupBox, QRadioButton, QFrame, QTabWidget, QTableView, QHeaderView, \
@@ -17,10 +18,10 @@ from requests import RequestException
 
 from Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Models.OverpassFilter import OverpassFilter
-from Models.OverpassRequest import OverpassRequest
 from Models.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
 from Models.OverpassQuery import OverpassQuery
-from Utils.SumoUtils import writeXMLResponse, tableDir, buildHTMLWithNetworkx
+from Models.OverpassRequest import OverpassRequest
+from Utils.SumoUtils import writeXMLResponse, buildHTMLWithNetworkx
 from Utils.TaginfoUtils import getOfficialKeys, getKeyDescription, getValuesByKey
 from Views.CollapsibleList import CheckableComboBox
 from Views.DelimitedCalendar import DelimitedCalendar
@@ -28,7 +29,7 @@ from Views.DisambiguationTable import SimilarWaysTable, DisconnectedWaysTable
 from Views.HorizontalLine import HorizontalLine
 from Views.IconButton import IconButton
 from Views.OperationsTableModel import OperationsTableModel
-from constants import Surround, OsmType, JS_SCRIPT_ROUTE
+from constants import Surround, OsmType, EMPTY_HTML, tableDir, JS_SCRIPT
 
 resDir = pathlib.Path(__file__).parent.parent.absolute().joinpath("Resources")
 picturesDir = os.path.join(resDir, "pictures")
@@ -401,7 +402,10 @@ class RequestWidget(QWidget):
         super().__init__(parent)
         self.keyValues = keyValues
         self.polygonSettings = []
+        self.webChannel = QWebChannel()
+        self.webChannel.registerObject('request', self)
         self.polygonPage = QWebEnginePage()
+        self.polygonPage.setWebChannel(self.webChannel)
         self.initUI()
 
     def __onAreaSelected(self):
@@ -613,27 +617,26 @@ class RequestWidget(QWidget):
             "Around": Surround.AROUND,
             "None": Surround.NONE
         }
-        selectedSurrounding = self.surroundGB.checkedButton()
+        selectedSurrounding = [b for b in self.surroundGB.findChildren(QRadioButton) if b.isChecked()][0]
         return switcher.get(selectedSurrounding.objectName())
 
-    def __setPolygon__(self, coors, event):
-        self.coors = coors
-        event.set()
-
-    def __setPolygonVar__(self, coors, event):
-        self.polygonSettings = coors
-        event.set()
+    @pyqtSlot(QJsonValue)
+    def __setPolygons__(self, val):
+        self.polygonSettings = []
+        for point in val.toArray():
+            self.polygonSettings.append([point["lat"].toDouble(), point["lng"].toDouble()])
 
     def __getPolygon__(self):
-        resultAvailable = threading.Event()
-        self.polygonPage.runJavaScript("getPolygons();", lambda x: self.__setPolygonVar__(x, resultAvailable))
-        resultAvailable.wait()
         return self.polygonSettings
 
     def changePage(self, html):
-        if len(self.polygonSettings) > 0:
-            html += "\n" + JS_SCRIPT_ROUTE.format(*self.__getPolygon__())
-            self.polygonPage.setHtml(html)
+        soup = bs4.BeautifulSoup(html, features="html.parser")
+        js = soup.new_tag("script")
+        js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.drawPolButton.isChecked()).lower()))
+        soup.append(js)
+        soup.head.append(soup.new_tag("script", src="qrc:///qtwebchannel/qwebchannel.js"))
+
+        self.polygonPage.setHtml(str(soup))
 
     def showTableSelection(self):
         try:
@@ -652,8 +655,8 @@ class RequestWidget(QWidget):
     def getRequest(self):
         request = OverpassRequest(self.__getType__(), self.__getSelectedSurrounding__())
         request.setLocationId(self.__getLocationId__())
-        request.addPolygon(self.__getPolygon__()[0])
-        for filterWidget in self.self.filtersWidget.findChildren(FilterWidget):
+        request.addPolygon(self.__getPolygon__())
+        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
             request.addFilter(filterWidget.getFilter())
         return request
 
@@ -661,13 +664,13 @@ class RequestWidget(QWidget):
         return self.polygonPage
 
     def clearPolygon(self):
-        self.polygonPage.runJavaScript("cleanPolygon();", logging.debug("LINE"))
+        self.polygonPage.runJavaScript("cleanPolygon();", lambda x: logging.debug("LINE"))
 
     def enableDisablePolygon(self):
         if self.drawPolButton.isChecked():
-            self.mapRenderer.page().runJavaScript("enablePolygon();")
+            self.polygonPage.runJavaScript("enablePolygon();")
         else:
-            self.mapRenderer.page().runJavaScript("disablePolygon();")
+            self.polygonPage.runJavaScript("disablePolygon();")
 
     def showTable(self):
         query = OverpassQuery(self.objectName())
@@ -798,6 +801,7 @@ class QueryUI(QWidget):
         self.onClearPolygonF = lambda: None
         self.onPolygonEnabledF = lambda: None
         self.onPolygonDisabledF = lambda: None
+        self.currentHtml = EMPTY_HTML
         self.initUI()
 
     def initUI(self):
@@ -847,16 +851,11 @@ class QueryUI(QWidget):
     def setOnRequestChanged(self, f):
         self.requestTabs.currentChanged.connect(f)
 
-    # TODO
-    def getSelectedRowNetworkx(self):
-        return self.requestTabs.currentWidget().getSelectedRowNetworkx()
-
     def addRequest(self, filters=None):
         requestWidget = RequestWidget(self, self.keyValues)
         setName = OverpassQuery.getUniqueSetName()
         requestWidget.setObjectName(setName)
-        requestWidget.onPolygonEnabled(self.onPolygonEnabledF, self.onPolygonDisabledF)
-        requestWidget.onClearPolygon(self.onClearPolygonF)
+        requestWidget.changePage(self.currentHtml)
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
 
@@ -886,6 +885,7 @@ class QueryUI(QWidget):
         return query
 
     def updateMaps(self, html):
+        self.currentHtml = html
         for requestWidget in self.findChildren(RequestWidget):
             requestWidget.changePage(html)
 
