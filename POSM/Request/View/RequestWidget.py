@@ -5,7 +5,7 @@ import traceback
 import bs4
 import osmnx as ox
 from PyQt5.QtCore import Qt, pyqtSlot, QJsonValue
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QDoubleValidator, QIntValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineEdit, QSizePolicy, QHBoxLayout, \
@@ -141,18 +141,25 @@ class RequestWidget(QWidget):
         surroundLayout = QVBoxLayout()
         surroundLayout.setContentsMargins(0, 0, 0, 0)
 
-        aroundRB = QRadioButton(self.tr("&Streets around"))
-        aroundRB.setObjectName("Around")
-        surroundLayout.addWidget(aroundRB)
+        noneRB = QRadioButton(self.tr("&None"))
+        noneRB.setObjectName("None")
+        noneRB.setChecked(True)
+        surroundLayout.addWidget(noneRB)
 
         adjacentRB = QRadioButton(self.tr("&Adjacent streets"))
         adjacentRB.setObjectName("Adjacent")
         surroundLayout.addWidget(adjacentRB)
 
-        noneRB = QRadioButton(self.tr("&None"))
-        noneRB.setObjectName("None")
-        noneRB.setChecked(True)
-        surroundLayout.addWidget(noneRB)
+        aroundRB = QRadioButton(self.tr("&Streets around"))
+        aroundRB.setObjectName("Around")
+        surroundLayout.addWidget(aroundRB)
+
+        self.aroundRadiusEdit = QLineEdit("")
+        self.aroundRadiusEdit.hide()
+        self.aroundRadiusEdit.setPlaceholderText("Radius in meters")
+        self.aroundRadiusEdit.setValidator(QIntValidator(0, 10000000, self.surroundGB))
+        aroundRB.toggled.connect(lambda b: self.aroundRadiusEdit.show() if b else self.aroundRadiusEdit.hide())
+        surroundLayout.addWidget(self.aroundRadiusEdit)
 
         self.surroundGB.setLayout(surroundLayout)
 
@@ -280,7 +287,12 @@ class RequestWidget(QWidget):
         logging.debug("LINE")
 
     def getRequest(self):
-        request = OverpassRequest(self.__getType__(), self.__getSelectedSurrounding__())
+        surroundType = self.__getSelectedSurrounding__()
+        aroundRadius = 100
+        if surroundType == Surround.AROUND and len(self.aroundRadiusEdit.text()) > 0:
+            aroundRadius = int(self.aroundRadiusEdit.text())
+
+        request = OverpassRequest(self.__getType__(), surroundType, aroundRadius)
         request.setLocationId(self.__getLocationId__())
         request.addPolygon(self.__getPolygon__())
         for filterWidget in self.filtersWidget.findChildren(FilterWidget):
