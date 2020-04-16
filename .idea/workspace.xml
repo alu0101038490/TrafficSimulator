@@ -2,21 +2,206 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5e036036-5583-4bb9-813f-405db159198a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Controller/Repository/ChangeQueryRepository.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Controller/Repository/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Controller/UseCases/ChangeQueryUseCase.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Controller/UseCases/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Controller/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Models/OverpassOperations.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Models/OverpassRequest.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/Views/Console.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/TrafficSimulator.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/TrafficSimulator.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Models/OverpassQuery.py" beforeDir="false" afterPath="$PROJECT_DIR$/Models/OverpassQuery.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/DelimitedCalendar.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/DelimitedCalendar.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/IconButton.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/IconButton.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/POSM.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/POSM.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/QueryUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/Views/QueryUI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Exceptions/OverpassExceptions.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/OverpassFilter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/OverpassOperations.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/OverpassQuery.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Models/OverpassRequest.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/GenericUtils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/OverpassUtils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/SumoUtils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Utils/TaginfoUtils.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/CollapsibleList.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/Console.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/DelimitedCalendar.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/DisambiguationTable.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/HorizontalLine.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/IconButton.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/NumberedTextEdit.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/OperationsTableModel.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/POSM.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/QueryUI.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/osmBuild.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/color.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/files/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/files/additional.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/files/selection.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/connection.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/edge.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/corridor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/cross.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/demand.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/grid.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/network.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/generator/straight.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/lane.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/node.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/net/roundabout.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/options.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/fcdfilter.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/gpsdat.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/gpx.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/keplerjson.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/kml.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/ns2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/omnet.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/phem.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/poi.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/convert/shawn.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/dump.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/output/inductionloop.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/route.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/checkFlows.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/pop2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/runsdb.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicCorridor/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicCorridor/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicCross/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicCross/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicCrossL/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicCrossL/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicNet/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicRiLSACorridor3/network.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicRiLSACorridor3/routes_BasicRiLSACorridor3(1-31).rou.alt.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicRiLSACorridor3/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicRiLSANet2x2/network.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/BasicRiLSANet2x2/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/genroutes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/makeRoutes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/measures.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/rilsa1.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/rilsa1_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/routes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example1/vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/genroutes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/makeRoutes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/rilsa2.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/rilsa2_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/routes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/tls_add.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example2/vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/genroutes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/makeRoutes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/rilsa3.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/rilsa3_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/routes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/tls_add.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example3/vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/genroutes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/makeRoutes.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/rilsa4.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/rilsa4_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/routes.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/tls_add.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/RiLSA_example4/vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta_bus_stops.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta_buslanes.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta_busses.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta_detectors.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/acosta_vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/e1_output.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/meta.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/acosta/sumo_log.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined_bus_stops.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined_buslanes.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined_busses.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined_detectors.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/joined_vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/meta.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/joined/sumo_log.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/meta.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.phase.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.phase.tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.platoon.detectors.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.platoon.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.platoon.tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.platoon.tripinfo.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.request.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.rou.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.swarm.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio.swarm.tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_bus_stops.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_buslanes.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_busses.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_detectors.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_tls_2.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/pasubio_vtypes.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/run.sumo.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RealWorld/pasubio/sumo_log.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/!rilsaTLSdef.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/build.netc.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/input_connections.con.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/input_edges.edg.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/input_nodes.nod.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/rilsa1.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/!rilsaTLSdef.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/build.netc.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/input_connections.con.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/input_edges.edg.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/input_nodes.nod.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/rilsa1both.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1BothTLS/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/!rilsaTLSdef.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/build.netc.cfg" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/input_connections.con.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/input_edges.edg.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/input_nodes.nod.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/rilsa1.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/RiLSA1OutTLS/tls.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_corridor.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_cross.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_crossl.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_net.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_rilsacorridor3.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_rilsanet.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/basic_rilsanet2x2.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/net.net.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/real_world.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/rilsa1.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/rilsa1_both_tls.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/rilsa1_both_tls24.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/rilsa1_out_tls.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/scenarios/rilsa1_out_tls24.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/vtypes/vtypes2010.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/vtypes/vtypes2014.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/vtypes/vtypes2020.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/vtypes/vtypes2030.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/scenario/vtypes/vtypes2040.add.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/sensors/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/sensors/inductive_loop.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/shapes/poi.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/shapes/polygon.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/version.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/visualization/__init__.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/visualization/helpers.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Views/sumolib/xml.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/constants.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/get-pip.py" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -45,10 +230,12 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="run.code.analysis.last.selected.profile" value="aDefault" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PythonContentEntriesConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/POSM/Shared/Exceptions" />
+      <recent name="$PROJECT_DIR$/src/POSM/Shared/Utils" />
       <recent name="$PROJECT_DIR$/SUMO" />
     </key>
   </component>
@@ -61,12 +248,12 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="$USER_HOME$/opt/miniconda3/bin/python3" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Views" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/POSM" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Views/POSM.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/POSM/POSM.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -90,6 +277,10 @@
       <workItem from="1582625280101" duration="39302000" />
       <workItem from="1582803251310" duration="16368000" />
       <workItem from="1586448136444" duration="3363000" />
+      <workItem from="1586699302403" duration="25127000" />
+      <workItem from="1586877277766" duration="16906000" />
+      <workItem from="1587052436812" duration="197000" />
+      <workItem from="1587053051392" duration="1100000" />
     </task>
     <servers />
   </component>
@@ -97,10 +288,10 @@
     <option name="version" value="1" />
   </component>
   <component name="WindowStateProjectService">
-    <state x="104" y="62" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1582626151068">
+    <state x="104" y="62" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1587053101489">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="104" y="62" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1280.800@0.0.1280.800" timestamp="1582626151068" />
+    <state x="104" y="62" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1280.800@0.0.1280.800" timestamp="1587053101489" />
     <state x="323" y="210" key="#com.intellij.fileTypes.FileTypeChooser" timestamp="1586449407089">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
@@ -113,65 +304,92 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="378" y="154" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1280.800@0.0.1280.800" timestamp="1586450970064" />
-    <state x="474" y="297" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog" timestamp="1586452196080">
+    <state x="434" y="134" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog" timestamp="1586963672416">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="474" y="297" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/0.0.1280.800@0.0.1280.800" timestamp="1586452196080" />
+    <state x="434" y="134" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/0.0.1280.800@0.0.1280.800" timestamp="1586963672416" />
     <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1582798776101">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1280.800@0.0.1280.800" timestamp="1582798776101" />
-    <state width="1238" height="92" key="GridCell.Tab.0.bottom" timestamp="1586452022823">
+    <state width="1238" height="211" key="GridCell.Tab.0.bottom" timestamp="1587054318722">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="92" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1586452022823" />
-    <state width="1238" height="92" key="GridCell.Tab.0.center" timestamp="1586452022820">
+    <state width="1238" height="211" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1587054318722" />
+    <state width="1238" height="337" key="GridCell.Tab.0.bottom/0.23.1280.688@0.23.1280.688" timestamp="1586877130007" />
+    <state width="1238" height="211" key="GridCell.Tab.0.center" timestamp="1587054318720">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="92" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1586452022820" />
-    <state width="1238" height="92" key="GridCell.Tab.0.left" timestamp="1586452022819">
+    <state width="1238" height="211" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1587054318720" />
+    <state width="1238" height="337" key="GridCell.Tab.0.center/0.23.1280.688@0.23.1280.688" timestamp="1586877130005" />
+    <state width="1238" height="211" key="GridCell.Tab.0.left" timestamp="1587054318719">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="92" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1586452022819" />
-    <state width="1238" height="92" key="GridCell.Tab.0.right" timestamp="1586452022822">
+    <state width="1238" height="211" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1587054318719" />
+    <state width="1238" height="337" key="GridCell.Tab.0.left/0.23.1280.688@0.23.1280.688" timestamp="1586877130004" />
+    <state width="1238" height="211" key="GridCell.Tab.0.right" timestamp="1587054318721">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="92" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1586452022822" />
-    <state width="1238" height="263" key="GridCell.Tab.1.bottom" timestamp="1582897323768">
+    <state width="1238" height="211" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1587054318721" />
+    <state width="1238" height="337" key="GridCell.Tab.0.right/0.23.1280.688@0.23.1280.688" timestamp="1586877130005" />
+    <state width="1238" height="183" key="GridCell.Tab.1.bottom" timestamp="1586973499732">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.bottom/0.0.1280.800@0.0.1280.800" timestamp="1582897323768" />
-    <state width="1238" height="263" key="GridCell.Tab.1.center" timestamp="1582897323767">
+    <state width="1238" height="183" key="GridCell.Tab.1.bottom/0.0.1280.800@0.0.1280.800" timestamp="1586973499732" />
+    <state width="1238" height="244" key="GridCell.Tab.1.bottom/0.23.1280.688@0.23.1280.688" timestamp="1586973240304" />
+    <state width="1238" height="183" key="GridCell.Tab.1.center" timestamp="1586973499730">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.center/0.0.1280.800@0.0.1280.800" timestamp="1582897323767" />
-    <state width="1238" height="263" key="GridCell.Tab.1.left" timestamp="1582897323767">
+    <state width="1238" height="183" key="GridCell.Tab.1.center/0.0.1280.800@0.0.1280.800" timestamp="1586973499730" />
+    <state width="1238" height="244" key="GridCell.Tab.1.center/0.23.1280.688@0.23.1280.688" timestamp="1586973240302" />
+    <state width="1238" height="183" key="GridCell.Tab.1.left" timestamp="1586973499720">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.left/0.0.1280.800@0.0.1280.800" timestamp="1582897323767" />
-    <state width="1238" height="263" key="GridCell.Tab.1.right" timestamp="1582897323768">
+    <state width="1238" height="183" key="GridCell.Tab.1.left/0.0.1280.800@0.0.1280.800" timestamp="1586973499720" />
+    <state width="1238" height="244" key="GridCell.Tab.1.left/0.23.1280.688@0.23.1280.688" timestamp="1586973240301" />
+    <state width="1238" height="183" key="GridCell.Tab.1.right" timestamp="1586973499731">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="263" key="GridCell.Tab.1.right/0.0.1280.800@0.0.1280.800" timestamp="1582897323767" />
-    <state x="386" y="118" key="RollbackChangesDialog" timestamp="1586451627687">
+    <state width="1238" height="183" key="GridCell.Tab.1.right/0.0.1280.800@0.0.1280.800" timestamp="1586973499731" />
+    <state width="1238" height="244" key="GridCell.Tab.1.right/0.23.1280.688@0.23.1280.688" timestamp="1586973240303" />
+    <state x="386" y="118" key="RollbackChangesDialog" timestamp="1586960021463">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="386" y="118" key="RollbackChangesDialog/0.0.1280.800@0.0.1280.800" timestamp="1586451627687" />
-    <state x="141" y="23" key="SettingsEditor" timestamp="1582625916155">
+    <state x="386" y="118" key="RollbackChangesDialog/0.0.1280.800@0.0.1280.800" timestamp="1586960021463" />
+    <state x="141" y="23" key="SettingsEditor" timestamp="1587053486399">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="141" y="23" key="SettingsEditor/0.0.1280.800@0.0.1280.800" timestamp="1582625916155" />
-    <state x="317" y="232" key="com.intellij.ide.util.TipDialog" timestamp="1582803251031">
+    <state x="141" y="23" key="SettingsEditor/0.0.1280.800@0.0.1280.800" timestamp="1587053486399" />
+    <state width="640" height="400" key="XDebugger.FullValuePopup" timestamp="1586964732255">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="317" y="232" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1582803251031" />
-    <state x="305" y="124" key="search.everywhere.popup" timestamp="1586450598834">
+    <state width="640" height="400" key="XDebugger.FullValuePopup/0.0.1280.800@0.0.1280.800" timestamp="1586964732255" />
+    <state x="317" y="223" key="com.intellij.ide.util.TipDialog" timestamp="1587053051758">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="305" y="124" key="search.everywhere.popup/0.0.1280.800@0.0.1280.800" timestamp="1586450598834" />
+    <state x="317" y="223" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1587053051758" />
+    <state x="298" y="157" width="683" height="486" key="find.popup" timestamp="1586962071104">
+      <screen x="0" y="0" width="1280" height="800" />
+    </state>
+    <state x="298" y="157" width="683" height="486" key="find.popup/0.0.1280.800@0.0.1280.800" timestamp="1586962071104" />
+    <state x="305" y="124" width="670" height="676" key="search.everywhere.popup" timestamp="1586970995357">
+      <screen x="0" y="0" width="1280" height="800" />
+    </state>
+    <state x="305" y="124" width="670" height="676" key="search.everywhere.popup/0.0.1280.800@0.0.1280.800" timestamp="1586970995357" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Views/POSM.py</url>
+          <line>429</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582801719943" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
-    <SUITE FILE_PATH="coverage/TrafficSimulator$POSM.coverage" NAME="POSM Coverage Results" MODIFIED="1586452022795" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
+    <SUITE FILE_PATH="coverage/TrafficSimulator$POSM.coverage" NAME="POSM Coverage Results" MODIFIED="1587054318702" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/POSM" />
   </component>
 </project>
