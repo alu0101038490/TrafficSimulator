@@ -73,15 +73,19 @@ class FilterWidget(QFrame):
         self.comparisonInput = QComboBox()
         self.comparisonInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.comparisonSwtich = [TagComparison.EQUAL,
+                                 TagComparison.CONTAIN_ALL,
+                                 TagComparison.IS_ONE_OF,
                                  TagComparison.AT_MOST,
                                  TagComparison.AT_LEAST,
-                                 TagComparison.CONTAIN_ALL,
-                                 TagComparison.CONTAIN_ONE]
+                                 TagComparison.HAS_KEY,
+                                 TagComparison.HAS_ONE_KEY]
         self.comparisonInput.addItems(["is equal to",
+                                       "contains",
+                                       "contains one of",
                                        "is at most",
                                        "is at least",
-                                       "contains",
-                                       "contains one of"])
+                                       "is included",
+                                       "at least one is included"])
         self.comparisonInput.currentIndexChanged.connect(self.__onComparisonSelected__)
         self.layout.addRow("", self.comparisonInput)
 
@@ -124,10 +128,22 @@ class FilterWidget(QFrame):
         self.setLayout(self.layout)
 
     def __onComparisonSelected__(self, i):
-        if i == 0:
-            self.checkboxAccuracy.setEnabled(True)
+        if i == 6:
+            self.checkboxNegate.hide()
         else:
-            self.checkboxAccuracy.setEnabled(False)
+            self.checkboxNegate.show()
+
+        if i > 4:
+            self.valueInput.setEnabled(False)
+            self.valueInput.lineEdit().setPlaceholderText("Not required")
+        else:
+            self.valueInput.setEnabled(True)
+            self.valueInput.lineEdit().setPlaceholderText("'service', 'motorway'...")
+
+        if 2 < i <= 4:
+            self.checkboxAccuracy.hide()
+        else:
+            self.checkboxAccuracy.show()
 
     def getFilter(self):
         return OverpassFilter(self.getKey(),

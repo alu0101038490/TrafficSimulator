@@ -8,7 +8,9 @@ class TagComparison(Enum):
     AT_MOST = 2
     AT_LEAST = 3
     CONTAIN_ALL = 4
-    CONTAIN_ONE = 5
+    IS_ONE_OF = 5
+    HAS_KEY = 6
+    HAS_ONE_KEY = 7
 
 
 class Surround(Enum):
