@@ -77,6 +77,7 @@ class FilterWidget(QFrame):
                                  TagComparison.IS_ONE_OF,
                                  TagComparison.AT_MOST,
                                  TagComparison.AT_LEAST,
+                                 TagComparison.HAS_NOT_KEY,
                                  TagComparison.HAS_KEY,
                                  TagComparison.HAS_ONE_KEY]
         self.comparisonInput.addItems(["is equal to",
@@ -84,6 +85,7 @@ class FilterWidget(QFrame):
                                        "contains one of",
                                        "is at most",
                                        "is at least",
+                                       "is not included",
                                        "is included",
                                        "at least one is included"])
         self.comparisonInput.currentIndexChanged.connect(self.__onComparisonSelected__)
@@ -128,19 +130,16 @@ class FilterWidget(QFrame):
         self.setLayout(self.layout)
 
     def __onComparisonSelected__(self, i):
-        if i == 6:
-            self.checkboxNegate.hide()
-        else:
-            self.checkboxNegate.show()
-
         if i > 4:
             self.valueInput.setEnabled(False)
             self.valueInput.lineEdit().setPlaceholderText("Not required")
+            self.checkboxNegate.hide()
         else:
             self.valueInput.setEnabled(True)
             self.valueInput.lineEdit().setPlaceholderText("'service', 'motorway'...")
+            self.checkboxNegate.show()
 
-        if 2 < i <= 4:
+        if 2 < i <= 5:
             self.checkboxAccuracy.hide()
         else:
             self.checkboxAccuracy.show()

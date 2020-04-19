@@ -29,11 +29,9 @@ class OverpassFilter(object):
             insensitive = "" if self.exactValue else ",i"
             return '["{}"{}~"^({})$"{}]'.format(self.key, negation, "|".join(words), insensitive)
         elif TagComparison.HAS_KEY == self.comparison:
-            negation = "!" if self.negated else ""
-            if not self.exactValue:
-                return '[~{}~".*",i]'.format(self.key)
-            else:
-                return '[{}"{}"]'.format(negation, self.key)
+            return ('["{}"]' if self.exactValue else '[~{}~".*",i]').format(self.key)
+        elif TagComparison.HAS_NOT_KEY == self.comparison:
+            return '[!"{}"]'.format(self.key)
         elif TagComparison.HAS_ONE_KEY == self.comparison:
             keys = [key for key in self.key.split()]
             if self.exactValue:

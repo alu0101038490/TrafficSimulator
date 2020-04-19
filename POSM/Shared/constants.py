@@ -11,6 +11,7 @@ class TagComparison(Enum):
     IS_ONE_OF = 5
     HAS_KEY = 6
     HAS_ONE_KEY = 7
+    HAS_NOT_KEY = 8
 
 
 class Surround(Enum):
