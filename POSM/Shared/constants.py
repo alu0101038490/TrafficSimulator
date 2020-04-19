@@ -3,6 +3,17 @@ import pathlib
 from enum import Enum
 
 
+class TagComparison(Enum):
+    EQUAL = 1
+    AT_MOST = 2
+    AT_LEAST = 3
+    CONTAIN_ALL = 4
+    IS_ONE_OF = 5
+    HAS_KEY = 6
+    HAS_ONE_KEY = 7
+    HAS_NOT_KEY = 8
+
+
 class Surround(Enum):
     AROUND = 1
     ADJACENT = 2
