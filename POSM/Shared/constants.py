@@ -44,7 +44,7 @@ class OsmType(Enum):
         else:
             return switchCase[binaryType]
 
-
+# ==================== STYLE =====================
 APP_STYLESHEET = """
 
     QGroupBox:flat {
@@ -89,6 +89,7 @@ APP_STYLESHEET = """
 
     """
 
+# ==================== ROUTES ====================
 resDir = pathlib.Path(__file__).parent.parent.parent.absolute().joinpath("Resources")
 javascriptFile = os.path.join(resDir, "javascript", "polygonsManagement.js")
 tempDir = os.path.join(resDir, "temp")
@@ -99,6 +100,7 @@ defaultTileMap = os.path.join(resDir, "html", "tile.html")
 typemapPath = os.path.join(resDir, "typemap")
 picturesDir = os.path.join(resDir, "pictures")
 
+# ==================== HTML ====================
 with open(javascriptFile, "r") as f:
     JS_SCRIPT = f.read()
 

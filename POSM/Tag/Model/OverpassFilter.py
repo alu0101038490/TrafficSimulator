@@ -1,5 +1,6 @@
 from Shared.constants import TagComparison
 
+
 class OverpassFilter(object):
 
     def __init__(self, key, comparison, value, negated, exactValue):
@@ -46,6 +47,7 @@ class OverpassFilter(object):
 
     def getDict(self):
         return {"key": self.key,
+                "comparison": self.comparison.value,
                 "value": self.value,
                 "negated": self.negated,
                 "exactValue": self.exactValue}
@@ -53,6 +55,7 @@ class OverpassFilter(object):
     @staticmethod
     def getFilterFromDict(dict):
         return OverpassFilter(dict["key"],
+                              TagComparison(dict["comparison"]),
                               dict["value"],
                               dict["negated"],
                               dict["exactValue"])
