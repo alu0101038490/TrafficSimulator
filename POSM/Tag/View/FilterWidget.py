@@ -72,7 +72,7 @@ class FilterWidget(QFrame):
 
         self.comparisonInput = QComboBox()
         self.comparisonInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        self.comparisonSwtich = [TagComparison.EQUAL,
+        self.comparisonSwitch = [TagComparison.EQUAL,
                                  TagComparison.CONTAIN_ALL,
                                  TagComparison.IS_ONE_OF,
                                  TagComparison.AT_MOST,
@@ -151,6 +151,13 @@ class FilterWidget(QFrame):
                               self.isNegateSelected(),
                               self.isExactValueSelected())
 
+    def setFilter(self, newFilter):
+        self.setKey(newFilter.key)
+        self.setComparison(newFilter.comparison)
+        self.setValue(newFilter.value)
+        self.setNegate(newFilter.isNegated)
+        self.setExactValue(newFilter.isExactValue)
+
     def getInfo(self):
         keyName = self.keyInput.currentText()
         try:
@@ -179,7 +186,13 @@ class FilterWidget(QFrame):
         return self.keyInput.currentText()
 
     def getComparison(self):
-        return self.comparisonSwtich[self.comparisonInput.currentIndex()]
+        return self.comparisonSwitch[self.comparisonInput.currentIndex()]
+
+    def setComparison(self, tagComparison):
+        try:
+            self.comparisonInput.setCurrentIndex(self.comparisonSwitch.index(tagComparison))
+        except ValueError:
+            return
 
     def getValue(self):
         return self.valueInput.currentText()
@@ -201,6 +214,3 @@ class FilterWidget(QFrame):
 
     def setNegate(self, bool):
         self.checkboxNegate.setChecked(bool)
-
-    def isSelectedToDelete(self):
-        return self.removeCB.isChecked()
