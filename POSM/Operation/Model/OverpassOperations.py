@@ -22,6 +22,9 @@ class OverpassSetOp(ABC):
         if set in self.sets:
             self.sets.remove(set)
 
+    def getDict(self):
+        return {"type": self.getType(), "sets": self.sets}
+
     @abstractmethod
     def getType(self):
         pass
@@ -39,6 +42,12 @@ class OverpassUnion(OverpassSetOp):
 
     def __init__(self):
         super().__init__()
+
+    @staticmethod
+    def getOpFromDict(opDict):
+        op = OverpassUnion()
+        op.addSets(opDict["sets"])
+        return op
 
     def getType(self):
         return "Union"
@@ -58,6 +67,12 @@ class OverpassIntersection(OverpassSetOp):
 
     def __init__(self):
         super().__init__()
+
+    @staticmethod
+    def getOpFromDict(opDict):
+        op = OverpassIntersection()
+        op.addSets(opDict["sets"])
+        return op
 
     def getType(self):
         return "Intersection"
@@ -82,6 +97,17 @@ class OverpassDiff(OverpassSetOp):
     @property
     def includedSet(self):
         return self.__includedSet
+
+    def getDict(self):
+        baseDict = super().getDict()
+        baseDict["includedSet"] = self.includedSet
+        return baseDict
+
+    @staticmethod
+    def getOpFromDict(opDict):
+        op = OverpassDiff(opDict["includedSet"])
+        op.addSets(opDict["sets"])
+        return op
 
     def getType(self):
         return "Difference"

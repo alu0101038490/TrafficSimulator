@@ -1,0 +1,22 @@
+{
+   "requests": {
+      "a": {
+         "type": "way",
+         "filters": [
+            {
+               "key": "ref",
+               "value": "TF-5",
+               "negated": false,
+               "exactValue": true
+            }
+         ],
+         "surrounding": 3,
+         "aroundRadius": 100,
+         "polygon": [],
+         "location": null
+      }
+   },
+   "outputSet": "a",
+   "operations": {},
+   "configuration": {}
+}

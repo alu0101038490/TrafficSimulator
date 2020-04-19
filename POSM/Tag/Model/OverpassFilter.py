@@ -1,4 +1,3 @@
-
 class OverpassFilter(object):
 
     def __init__(self, key, value, negated, exactValue):
@@ -16,3 +15,16 @@ class OverpassFilter(object):
         else:
             ql = '[{}"{}"]'.format(negation, self.key)
         return ql
+
+    def getDict(self):
+        return {"key": self.key,
+                "value": self.value,
+                "negated": self.negated,
+                "exactValue": self.exactValue}
+
+    @staticmethod
+    def getFilterFromDict(dict):
+        return OverpassFilter(dict["key"],
+                              dict["value"],
+                              dict["negated"],
+                              dict["exactValue"])

@@ -1,6 +1,10 @@
+import json
 from datetime import datetime
 
+from Operation.Model.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
+from Request.Model.OverpassRequest import OverpassRequest
 from Shared.Utils.GenericUtils import nextString
+from Shared.constants import tempDir
 
 
 class OverpassQuery(object):
@@ -53,3 +57,31 @@ class OverpassQuery(object):
             statement += op.getQL() + "->." + name + ";\n"
 
         return "%s(.%s;>;);\nout meta;" % (statement, self.outputSet)
+
+    def getDict(self):
+        return {"requests": {key: value.getDict() for key, value in self.requests.items()},
+                "outputSet": self.outputSet,
+                "operations": {key: value.getDict() for key, value in self.ops.items()},
+                "configuration": self.config}
+
+    def saveToFile(self):
+        with open(tempDir.join(["query.json"]), "w+") as f:
+            json.dump(self.getDict(), f, indent=3)
+
+    @staticmethod
+    def getFromFile():
+        with open(tempDir.join(["query.json"]), "r") as f:
+            dictQuery = json.load(f)
+
+        query = OverpassQuery(dictQuery["outputSet"])
+        query.config = dictQuery["configuration"]
+        for name, request in dictQuery["request"]:
+            query.addRequest(name, OverpassRequest.getRequestFromDict(request))
+        for name, op in dictQuery["operations"]:
+            if op["type"] == "Union":
+                query.addSetsOp(name, OverpassUnion.getOpFromDict(op))
+            elif op["type"] == "Intersection":
+                query.addSetsOp(name, OverpassIntersection.getOpFromDict(op))
+            elif op["type"] == "Difference":
+                query.addSetsOp(name, OverpassDiff.getOpFromDict(op))
+        return query

@@ -47,3 +47,22 @@ class OverpassRequest(object):
         elif self.surrounding == Surround.ADJACENT:
             ql += ";>;way(bn);>;)"
         return ql
+
+    def getDict(self):
+        return {"type": self.type.value,
+                "filters": [singleFilter.getDict() for singleFilter in self.filters],
+                "surrounding": self.surrounding.value,
+                "aroundRadius": self.aroundRadius,
+                "polygon": self.polygon,
+                "location": self.locationId}
+
+    @staticmethod
+    def getRequestFromDict(dict):
+        request = OverpassRequest(OsmType(dict["type"]),
+                                  Surround(dict["surrounding"]),
+                                  dict["aroundRadius"])
+        request.addPolygon(dict["polygon"])
+        request.setLocationId("location")
+        for singleFilter in dict["filters"]:
+            request.addFilter(OverpassFilter.getFilterFromDict(singleFilter))
+        return request
