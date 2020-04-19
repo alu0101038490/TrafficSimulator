@@ -227,6 +227,19 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
+        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
+        if key != "" and key in currentKeys.keys():
+            filter = currentKeys[key]
+            logging.warning("Some filters have been modified.")
+        else:
+            filter = FilterWidget(self.filtersWidget, self.keyValues)
+            self.filtersLayout.addWidget(filter)
+        filter.setKey(key)
+        filter.setValue(value)
+        filter.setExactValue(accuracy)
+        filter.setNegate(negate)
+
     def __getLocationId__(self):
         if self.locationNameWidget.text() == "":
             return None
@@ -254,6 +267,21 @@ class RequestWidget(QWidget):
         selectedSurrounding = [b for b in self.surroundGB.findChildren(QRadioButton) if b.isChecked()][0]
         return switcher.get(selectedSurrounding.objectName())
 
+    def getRequest(self):
+        surroundType = self.__getSelectedSurrounding__()
+        aroundRadius = 100
+        if surroundType == Surround.AROUND and len(self.aroundRadiusEdit.text()) > 0:
+            aroundRadius = int(self.aroundRadiusEdit.text())
+
+        request = OverpassRequest(self.__getType__(), surroundType, aroundRadius)
+        request.setLocationId(self.__getLocationId__())
+        request.addPolygon(self.__getPolygon__())
+        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
+            request.addFilter(filterWidget.getFilter())
+        return request
+
+    # =================== POLYGON ===================
+
     @pyqtSlot(QJsonValue)
     def __setPolygons__(self, val):
         self.polygonSettings = []
@@ -272,33 +300,6 @@ class RequestWidget(QWidget):
 
         self.polygonPage.setHtml(str(soup))
 
-    def showTableSelection(self):
-        try:
-            self.changePage(buildHTMLWithNetworkx(self.getSelectedRowNetworkx()))
-        except (OverpassRequestException, OsmnxException) as e:
-            logging.error(str(e))
-            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
-        except ox.EmptyOverpassResponse:
-            logging.error("There are no elements with the given row.")
-        except OSError:
-            logging.error("There was a problem creating the file with the row selection.")
-        except Exception:
-            logging.error(traceback.format_exc())
-        logging.debug("LINE")
-
-    def getRequest(self):
-        surroundType = self.__getSelectedSurrounding__()
-        aroundRadius = 100
-        if surroundType == Surround.AROUND and len(self.aroundRadiusEdit.text()) > 0:
-            aroundRadius = int(self.aroundRadiusEdit.text())
-
-        request = OverpassRequest(self.__getType__(), surroundType, aroundRadius)
-        request.setLocationId(self.__getLocationId__())
-        request.addPolygon(self.__getPolygon__())
-        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getFilter())
-        return request
-
     def getMap(self):
         return self.polygonPage
 
@@ -311,22 +312,11 @@ class RequestWidget(QWidget):
         else:
             self.polygonPage.runJavaScript("disablePolygon();")
 
+    # ============= DISAMBIGUATION TABLE =============
+
     def showTable(self):
         query = OverpassQuery(self.objectName())
-
-        switcher = {
-            "Adjacent": Surround.ADJACENT,
-            "Around": Surround.AROUND,
-            "None": Surround.NONE
-        }
-
-        selectedSurrounding = [b for b in self.findChildren(QRadioButton) if b.isChecked()][0]
-        request = OverpassRequest(self.getType(), switcher.get(selectedSurrounding.objectName()))
-        for filterWidget in self.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
-                              filterWidget.isNegateSelected())
-
-        query.addRequest(self.objectName(), request)
+        query.addRequest(self.objectName(), self.getRequest())
 
         try:
             writeXMLResponse(query.getQL(), tableDir)
@@ -352,6 +342,20 @@ class RequestWidget(QWidget):
 
         self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
 
+    def showTableSelection(self):
+        try:
+            self.changePage(buildHTMLWithNetworkx(self.getSelectedRowNetworkx()))
+        except (OverpassRequestException, OsmnxException) as e:
+            logging.error(str(e))
+            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
+        except ox.EmptyOverpassResponse:
+            logging.error("There are no elements with the given row.")
+        except OSError:
+            logging.error("There was a problem creating the file with the row selection.")
+        except Exception:
+            logging.error(traceback.format_exc())
+        logging.debug("LINE")
+
     def showHideOnlyDisconnected(self):
         if self.onlyDisconnectedCB.isChecked():
             self.tableView.setModel(self.disconnectedWaysTable)
@@ -365,19 +369,6 @@ class RequestWidget(QWidget):
 
     def showLess(self):
         self.tableView.model().showLess()
-
-    def addFilter(self, key="", value="", accuracy=False, negate=False):
-        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
-        if key != "" and key in currentKeys.keys():
-            filter = currentKeys[key]
-            logging.warning("Some filters have been modified.")
-        else:
-            filter = FilterWidget(self.filtersWidget, self.keyValues)
-            self.filtersLayout.addWidget(filter)
-        filter.setKey(key)
-        filter.setValue(value)
-        filter.setExactValue(accuracy)
-        filter.setNegate(negate)
 
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
