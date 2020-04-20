@@ -137,6 +137,11 @@ class POSM(QMainWindow):
         playAct.setShortcut('Ctrl+P')
         runMenu.addAction(playAct)
 
+        playTableRowAct = QAction('Play row selection', self)
+        playTableRowAct.triggered.connect(self.playTableRow)
+        playTableRowAct.setShortcut('Ctrl+T')
+        runMenu.addAction(playTableRowAct)
+
         self.requestMenu = menubar.addMenu('Request')
 
         addRequestAct = QAction('Add request', self)
@@ -450,6 +455,22 @@ class POSM(QMainWindow):
                 logging.error(str(e))
                 return
         self.loadMap()
+
+    def playTableRow(self):
+        try:
+            self.mapRenderer.setPage(self.queryUI.updateMapFromRow())
+        except (OverpassRequestException, OsmnxException) as e:
+            logging.error(str(e))
+            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
+        except ox.EmptyOverpassResponse:
+            logging.error("There are no elements with the given row.")
+        except OSError:
+            logging.error("There was a problem creating the file with the row selection.")
+        except RuntimeError as e:
+            logging.error(str(e))
+        except Exception:
+            logging.error(traceback.format_exc())
+        logging.debug("LINE")
 
     # EVENTS
     def closeEvent(self, event):

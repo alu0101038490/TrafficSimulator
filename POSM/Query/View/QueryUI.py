@@ -1,6 +1,5 @@
 import logging
 import os
-import pathlib
 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QTabWidget, QToolBox, QAbstractButton
@@ -115,6 +114,10 @@ class QueryUI(QWidget):
             requestWidget.changePage(html)
 
         return self.getCurrentMap()
+
+    def updateMapFromRow(self):
+        currentRequest = self.requestTabs.currentWidget()
+        return self.updateMaps(currentRequest.getHtmlFromSelectedRow())
 
     def getCurrentMap(self):
         return self.requestTabs.currentWidget().getMap()

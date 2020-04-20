@@ -342,19 +342,12 @@ class RequestWidget(QWidget):
 
         self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
 
-    def showTableSelection(self):
-        try:
-            self.changePage(buildHTMLWithNetworkx(self.getSelectedRowNetworkx()))
-        except (OverpassRequestException, OsmnxException) as e:
-            logging.error(str(e))
-            logging.warning("Before open NETEDIT you must run a query with the row filters applied.")
-        except ox.EmptyOverpassResponse:
-            logging.error("There are no elements with the given row.")
-        except OSError:
-            logging.error("There was a problem creating the file with the row selection.")
-        except Exception:
-            logging.error(traceback.format_exc())
-        logging.debug("LINE")
+    def getHtmlFromSelectedRow(self):
+        selectedRows = self.getSelectedRowNetworkx()
+        if selectedRows:
+            return buildHTMLWithNetworkx(selectedRows)
+        else:
+            raise RuntimeError("No row is selected")
 
     def showHideOnlyDisconnected(self):
         if self.onlyDisconnectedCB.isChecked():

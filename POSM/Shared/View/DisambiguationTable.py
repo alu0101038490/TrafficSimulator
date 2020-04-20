@@ -94,6 +94,8 @@ class DisconnectedWaysTable(DisambiguationTable):
             for i in indexes[1:]:
                 G = nx.union(self.subgraphs[i.row()], G)
             return G
+        else:
+            return None
 
     def data(self, index, role=Qt.DisplayRole):
         column = index.column()
@@ -167,6 +169,8 @@ class SimilarWaysTable(DisambiguationTable):
             for i in indexes:
                 result["elements"] += self.alt[i.row()][2]
             return ox.create_graph([result], retain_all=True)
+        else:
+            return None
 
     def data(self, index, role=Qt.DisplayRole):
         column = index.column()
