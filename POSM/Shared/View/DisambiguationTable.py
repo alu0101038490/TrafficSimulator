@@ -77,6 +77,10 @@ class DisconnectedWaysTable(DisambiguationTable):
 
     def __init__(self, jsonData):
         super().__init__(jsonData)
+        self.allKeys = frozenset([])
+        for i in self.data:
+            self.allKeys |= frozenset(i["tags"].keys())
+
         self.subgraphs = []
 
         self.updateAlt()
@@ -86,7 +90,7 @@ class DisconnectedWaysTable(DisambiguationTable):
         return self.headerItems
 
     def getDictData(self, index):
-        return {k: self.alt[index][0].get(k) for k in self.headerItems}
+        return
 
     def getRowJson(self, indexes):
         if len(indexes) > 0:
@@ -102,7 +106,7 @@ class DisconnectedWaysTable(DisambiguationTable):
         row = index.row()
 
         if role == Qt.DisplayRole:
-            return self.alt[row].get(self.headerItems[column])
+            return ", ".join(self.alt[row][self.headerItems[column]])
         elif role == Qt.BackgroundRole:
             return QColor(Qt.white)
         elif role == Qt.TextAlignmentRole:
@@ -119,15 +123,15 @@ class DisconnectedWaysTable(DisambiguationTable):
         for nodes in nx.weakly_connected_components(G):
             subgraph = nx.induced_subgraph(G, nodes)
             self.subgraphs.append(subgraph)
-            edgesKeys = [frozenset(e[2].keys()) for e in G.edges(data=True)]
-            edgeAttr = edgesKeys[0].intersection(*edgesKeys[1:]) - frozenset(["osmid", "length"])
+
             altAppend = {}
-            for attr in edgeAttr:
-                valuesSet = frozenset(nx.get_edge_attributes(subgraph, attr).values())
-                if len(valuesSet) == 1:
-                    altAppend[attr] = list(valuesSet)[0]
+            for key in self.allKeys:
+                values = []
+                for edge in subgraph.edges(data=True):
+                    values.append(edge[2].get(key))
+                altAppend["key"] = frozenset(values)
+                updatedHeader |= frozenset(["key"])
             self.alt.append(altAppend)
-            updatedHeader |= altAppend.keys()
         self.headerItems = list(updatedHeader)
 
 
