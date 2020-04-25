@@ -29,6 +29,7 @@ class RequestWidget(QWidget):
         super().__init__(parent)
         self.keyValues = keyValues
         self.polygonSettings = []
+        self.html = ""
         self.webChannel = QWebChannel()
         self.webChannel.registerObject('request', self)
         self.polygonPage = QWebEnginePage()
@@ -270,7 +271,12 @@ class RequestWidget(QWidget):
     def __getPolygon__(self):
         return self.polygonSettings
 
+    def changePolygon(self, coors):
+        self.polygonSettings = coors
+        self.changePage(self.html)
+
     def changePage(self, html):
+        self.html = html
         soup = bs4.BeautifulSoup(html, features="html.parser")
         js = soup.new_tag("script")
         js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.drawPolButton.isChecked()).lower()))
@@ -310,7 +316,6 @@ class RequestWidget(QWidget):
         return request
 
     def setRequest(self, request):
-        self.__setPolygons__(request.polygon)
         self.__setType__(request.type)
         self.setAroundRadius(request.aroundRadius)
         self.__setSelectedSurrounding__(request.surrounding)
@@ -319,6 +324,7 @@ class RequestWidget(QWidget):
         for filter in request.filters:
             self.addFilter(filter)
         self.__setLocationName__(request.locationName)
+        self.changePolygon(request.polygon)
 
     def getMap(self):
         return self.polygonPage
