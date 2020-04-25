@@ -73,9 +73,9 @@ class OverpassFilter(object):
                 "exactValue": self.__exactValue}
 
     @staticmethod
-    def getFilterFromDict(dict):
-        return OverpassFilter(dict["key"],
-                              TagComparison(dict["comparison"]),
-                              dict["value"],
-                              dict["negated"],
-                              dict["exactValue"])
+    def getFilterFromDict(filterDict):
+        return OverpassFilter(filterDict["key"],
+                              TagComparison(filterDict["comparison"]),
+                              filterDict["value"],
+                              filterDict["negated"],
+                              filterDict["exactValue"])
