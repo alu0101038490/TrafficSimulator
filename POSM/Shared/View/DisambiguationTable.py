@@ -80,6 +80,8 @@ class DisconnectedWaysTable(DisambiguationTable):
         self.allKeys = frozenset([])
         for i in self.data:
             self.allKeys |= frozenset(i["tags"].keys())
+        self.allKeys -= frozenset(["osmid", "length"])
+        ox.config(useful_tags_path=list(self.allKeys))
 
         self.subgraphs = []
 
@@ -90,7 +92,22 @@ class DisconnectedWaysTable(DisambiguationTable):
         return self.headerItems
 
     def getDictData(self, index):
-        return
+        result = {}
+        unselectedEdges = [e[2] for e in self.subgraphs[index].edges(data=True)]
+        for key in self.allKeys:
+            prevSize = len(unselectedEdges)
+            alternatives = [self.alt[i][key] for i in list(range(len(self.alt))) if i != index]
+            includedValues = self.alt[index][key].difference(*alternatives)
+            if includedValues == self.alt[index][key]:
+                return {key: includedValues}, []
+            elif len(includedValues) != 0:
+                unselectedEdges = list(filter(lambda edge: edge[key] not in list(includedValues), unselectedEdges))
+                if prevSize != len(unselectedEdges):
+                    result[key] = includedValues
+                    if len(unselectedEdges) == 0:
+                        return result, []
+        ids = [edge["osmid"] for edge in unselectedEdges]
+        return result, ids
 
     def getRowJson(self, indexes):
         if len(indexes) > 0:
@@ -106,7 +123,7 @@ class DisconnectedWaysTable(DisambiguationTable):
         row = index.row()
 
         if role == Qt.DisplayRole:
-            return ", ".join(self.alt[row][self.headerItems[column]])
+            return ", ".join([str(value) for value in self.alt[row][self.headerItems[column]]])
         elif role == Qt.BackgroundRole:
             return QColor(Qt.white)
         elif role == Qt.TextAlignmentRole:
@@ -127,10 +144,12 @@ class DisconnectedWaysTable(DisambiguationTable):
             altAppend = {}
             for key in self.allKeys:
                 values = []
-                for edge in subgraph.edges(data=True):
+                edges = subgraph.edges(data=True)
+                for edge in edges:
                     values.append(edge[2].get(key))
-                altAppend["key"] = frozenset(values)
-                updatedHeader |= frozenset(["key"])
+                altAppend[key] = frozenset(values)
+                if len(altAppend[key]) == 1 and values[0] is not None:
+                    updatedHeader |= frozenset([key])
             self.alt.append(altAppend)
         self.headerItems = list(updatedHeader)
 
@@ -142,6 +161,8 @@ class SimilarWaysTable(DisambiguationTable):
         self.allKeys = frozenset([])
         for i in self.data:
             self.allKeys |= frozenset(i["tags"].keys())
+        self.allKeys -= frozenset(["osmid", "length"])
+        ox.config(useful_tags_path=list(self.allKeys))
 
         self.headerItems = list(frozenset(["highway", "name", "maxspeed", "ref", "lanes", "oneway"]) & self.allKeys)
 
