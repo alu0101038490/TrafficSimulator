@@ -5,7 +5,7 @@ import traceback
 import bs4
 import osmnx as ox
 from PyQt5.QtCore import Qt, pyqtSlot, QJsonValue
-from PyQt5.QtGui import QIcon, QDoubleValidator, QIntValidator
+from PyQt5.QtGui import QIcon, QIntValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineEdit, QSizePolicy, QHBoxLayout, \
@@ -95,7 +95,7 @@ class RequestWidget(QWidget):
                                           filtersButtons.height())
         self.addFilterButton.setToolTip("Add filter")
         self.addFilterButton.setFlat(True)
-        self.addFilterButton.clicked.connect(lambda b: self.addFilter())
+        self.addFilterButton.clicked.connect(lambda b: self.addFilterByValues())
 
         filtersButtonsLayout.addWidget(self.addFilterButton)
 
@@ -227,23 +227,22 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
-    def __getLocationId__(self):
-        if self.locationNameWidget.text() == "":
-            return None
-        item = next((x for x in ox.nominatim_request({"q": self.locationNameWidget.text(), 'format': 'json'})
-                     if x['osm_type'] != 'node'), None)
-        if item is None:
-            return item
-        id = item['osm_id']
-        if item['osm_type'] == 'relation':
-            id += 3600000000
-        elif item['osm_type'] == 'node':
-            id += 2400000000
-        return id
+    def __getLocationName__(self):
+        return self.locationNameWidget.text()
+
+    def __setLocationName__(self, locationName):
+        self.locationNameWidget.setText(locationName)
 
     def __getType__(self):
         return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),
                                self.relCB.isChecked(), self.areasCB.isChecked())
+
+    def __setType__(self, requestType):
+        typeConfig = OsmType.getConfig(requestType)
+        self.waysCB.setChecked(typeConfig["way"])
+        self.nodesCB.setChecked(typeConfig["node"])
+        self.relCB.setChecked(typeConfig["rel"])
+        self.areasCB.setChecked(typeConfig["area"])
 
     def __getSelectedSurrounding__(self):
         switcher = {
@@ -253,6 +252,14 @@ class RequestWidget(QWidget):
         }
         selectedSurrounding = [b for b in self.surroundGB.findChildren(QRadioButton) if b.isChecked()][0]
         return switcher.get(selectedSurrounding.objectName())
+
+    def __setSelectedSurrounding__(self, surroundValue):
+        if surroundValue == Surround.ADJACENT:
+            self.surroundGB.findChild(QRadioButton, "Adjacent").setChecked(True)
+        elif surroundValue == Surround.AROUND:
+            self.surroundGB.findChild(QRadioButton, "Around").setChecked(True)
+        elif surroundValue == Surround.NONE:
+            self.surroundGB.findChild(QRadioButton, "None").setChecked(True)
 
     @pyqtSlot(QJsonValue)
     def __setPolygons__(self, val):
@@ -286,18 +293,32 @@ class RequestWidget(QWidget):
             logging.error(traceback.format_exc())
         logging.debug("LINE")
 
-    def getRequest(self):
-        surroundType = self.__getSelectedSurrounding__()
-        aroundRadius = 100
-        if surroundType == Surround.AROUND and len(self.aroundRadiusEdit.text()) > 0:
-            aroundRadius = int(self.aroundRadiusEdit.text())
+    def getAroundRadius(self):
+        return int(self.aroundRadiusEdit.text()) if len(self.aroundRadiusEdit.text()) > 0 else 100
 
-        request = OverpassRequest(self.__getType__(), surroundType, aroundRadius)
-        request.setLocationId(self.__getLocationId__())
+    def setAroundRadius(self, radius):
+        return self.aroundRadiusEdit.setText(str(radius))
+
+    def getRequest(self):
+        request = OverpassRequest(self.__getType__(),
+                                  self.__getSelectedSurrounding__(),
+                                  self.getAroundRadius())
+        request.setLocationName(self.__getLocationName__())
         request.addPolygon(self.__getPolygon__())
         for filterWidget in self.filtersWidget.findChildren(FilterWidget):
             request.addFilter(filterWidget.getFilter())
         return request
+
+    def setRequest(self, request):
+        self.__setPolygons__(request.polygon)
+        self.__setType__(request.type)
+        self.setAroundRadius(request.aroundRadius)
+        self.__setSelectedSurrounding__(request.surrounding)
+        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
+            filterWidget.deleteLater()
+        for filter in request.filters:
+            self.addFilter(filter)
+        self.__setLocationName__(request.locationName)
 
     def getMap(self):
         return self.polygonPage
@@ -366,7 +387,7 @@ class RequestWidget(QWidget):
     def showLess(self):
         self.tableView.model().showLess()
 
-    def addFilter(self, key="", value="", accuracy=False, negate=False):
+    def addFilterByValues(self, key="", value="", accuracy=False, negate=False):
         currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
         if key != "" and key in currentKeys.keys():
             filter = currentKeys[key]
@@ -379,15 +400,18 @@ class RequestWidget(QWidget):
         filter.setExactValue(accuracy)
         filter.setNegate(negate)
 
+    def addFilter(self, filter):
+        self.addFilterByValues(filter.key, filter.value, filter.isExactValue, filter.isNegated)
+
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
         value = self.tableView.model().itemData(signal).get(0)
-        self.addFilter(key, value, True)
+        self.addFilterByValues(key, value, True)
 
     def addFiltersFromRow(self, index):
         row = self.tableView.model().getDictData(index)
         for k, v in row.items():
-            self.addFilter(k, v, True)
+            self.addFilterByValues(k, v, True)
 
     def getSelectedRowNetworkx(self):
         indexes = self.tableView.selectionModel().selectedRows()

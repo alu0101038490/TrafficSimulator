@@ -1,6 +1,6 @@
 import re
-
 from PyQt5.QtGui import QSyntaxHighlighter, QTextCharFormat, QColor
+import osmnx as ox
 
 
 class OverpassQLHighlighter(QSyntaxHighlighter):
@@ -46,3 +46,18 @@ class OverpassQLHighlighter(QSyntaxHighlighter):
                 self.setFormat(match.start(group), match.end(group) - match.start(group), format)
 
         self.setCurrentBlockState(0)
+
+
+def getIdFromLocationName(name):
+    if name == "":
+        return None
+    item = next((x for x in ox.nominatim_request({"q": name, 'format': 'json'})
+                 if x['osm_type'] != 'node'), None)
+    if item is None:
+        return item
+    id = item['osm_id']
+    if item['osm_type'] == 'relation':
+        id += 3600000000
+    elif item['osm_type'] == 'node':
+        id += 2400000000
+    return id

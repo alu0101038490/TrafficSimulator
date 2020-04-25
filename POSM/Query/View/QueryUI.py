@@ -86,9 +86,9 @@ class QueryUI(QWidget):
 
         if filters is not None:
             for key, value, accuracy, negate in filters:
-                requestWidget.addFilter(key, value, accuracy, negate)
+                requestWidget.addFilterByValues(key, value, accuracy, negate)
         else:
-            requestWidget.addFilter()
+            requestWidget.addFilterByValues()
 
     def removeRequest(self):
         self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())

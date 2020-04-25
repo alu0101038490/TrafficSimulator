@@ -1,3 +1,4 @@
+from Shared.Utils.OverpassUtils import getIdFromLocationName
 from Shared.constants import OsmType, Surround
 from Tag.Model.OverpassFilter import OverpassFilter
 
@@ -6,15 +7,45 @@ class OverpassRequest(object):
 
     def __init__(self, requestType, surrounding, aroundRadius=100):
         super().__init__()
-        self.type = requestType
-        self.filters = []
-        self.surrounding = surrounding
-        self.aroundRadius = aroundRadius
-        self.polygon = []
-        self.locationId = None
+        self.__type = requestType
+        self.__filters = []
+        self.__surrounding = surrounding
+        self.__aroundRadius = aroundRadius
+        self.__polygon = []
+        self.__locationId = None
+        self.__locationName = ""
 
-    def setLocationId(self, locationID):
-        self.locationId = locationID
+    @property
+    def type(self):
+        return self.type
+
+    @property
+    def filters(self):
+        return self.filters
+
+    @property
+    def surrounding(self):
+        return self.surrounding
+
+    @property
+    def aroundRadius(self):
+        return self.aroundRadius
+
+    @property
+    def polygon(self):
+        return self.polygon
+
+    @property
+    def locationId(self):
+        return self.locationId
+
+    @property
+    def locationName(self):
+        return self.__locationName
+
+    def setLocationName(self, locationName):
+        self.__locationName = locationName
+        self.__locationId = getIdFromLocationName(locationName)
 
     def addFilterByValues(self, key, value, exactValue, negated):
         self.filters.append(OverpassFilter(key, value, exactValue, negated))
@@ -23,7 +54,7 @@ class OverpassRequest(object):
         self.filters.append(filter)
 
     def addPolygon(self, coords):
-        self.polygon = coords
+        self.__polygon = coords
 
     def getQL(self):
         if len(self.filters) == 0 and len(self.polygon) == 0 and self.locationId is None:
@@ -57,12 +88,12 @@ class OverpassRequest(object):
                 "location": self.locationId}
 
     @staticmethod
-    def getRequestFromDict(dict):
-        request = OverpassRequest(OsmType(dict["type"]),
-                                  Surround(dict["surrounding"]),
-                                  dict["aroundRadius"])
-        request.addPolygon(dict["polygon"])
-        request.setLocationId("location")
-        for singleFilter in dict["filters"]:
+    def getRequestFromDict(requestDict):
+        request = OverpassRequest(OsmType(requestDict["type"]),
+                                  Surround(requestDict["surrounding"]),
+                                  requestDict["aroundRadius"])
+        request.addPolygon(requestDict["polygon"])
+        request.setLocationName("location")
+        for singleFilter in requestDict["filters"]:
             request.addFilter(OverpassFilter.getFilterFromDict(singleFilter))
         return request

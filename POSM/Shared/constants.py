@@ -31,7 +31,7 @@ class OsmType(Enum):
     NWR = "nwr"
 
     @classmethod
-    def getType(self, node, way, rel, area):
+    def getType(cls, node, way, rel, area):
         binaryType = (1 * node) | (2 * way) | (4 * rel)
 
         switchCase = [0, OsmType.NODES, OsmType.WAYS, OsmType.NW, OsmType.RELATIONS, OsmType.NR, OsmType.WR,
@@ -43,6 +43,25 @@ class OsmType(Enum):
             raise RuntimeError("No type selected.")
         else:
             return switchCase[binaryType]
+
+    @classmethod
+    def getConfig(cls, osmType):
+        if osmType == cls.NODES:
+            return {"node": True, "way": False, "rel": False, "area": False}
+        elif osmType == cls.WAYS:
+            return {"node": False, "way": True, "rel": False, "area": False}
+        elif osmType == cls.RELATIONS:
+            return {"node": False, "way": False, "rel": True, "area": False}
+        elif osmType == cls.AREA:
+            return {"node": False, "way": False, "rel": False, "area": True}
+        elif osmType == cls.NW:
+            return {"node": True, "way": True, "rel": False, "area": False}
+        elif osmType == cls.NR:
+            return {"node": True, "way": False, "rel": True, "area": False}
+        elif osmType == cls.WR:
+            return {"node": False, "way": True, "rel": True, "area": False}
+        elif osmType == cls.NWR:
+            return {"node": True, "way": True, "rel": True, "area": False}
 
 # ==================== STYLE =====================
 APP_STYLESHEET = """
