@@ -19,7 +19,7 @@ from Shared.View.CollapsibleList import CheckableComboBox
 from Shared.View.DisambiguationTable import DisconnectedWaysTable, SimilarWaysTable
 from Shared.View.HorizontalLine import HorizontalLine
 from Shared.View.IconButton import IconButton
-from Shared.constants import picturesDir, Surround, tableDir, JS_SCRIPT, OsmType
+from Shared.constants import picturesDir, Surround, tableDir, JS_SCRIPT, OsmType, TagComparison
 from Tag.View.FilterWidget import FilterWidget
 
 
@@ -95,7 +95,7 @@ class RequestWidget(QWidget):
                                           filtersButtons.height())
         self.addFilterButton.setToolTip("Add filter")
         self.addFilterButton.setFlat(True)
-        self.addFilterButton.clicked.connect(lambda b: self.addFilterByValues())
+        self.addFilterButton.clicked.connect(lambda b: self.addFilter())
 
         filtersButtonsLayout.addWidget(self.addFilterButton)
 
@@ -387,7 +387,7 @@ class RequestWidget(QWidget):
     def showLess(self):
         self.tableView.model().showLess()
 
-    def addFilterByValues(self, key="", value="", accuracy=False, negate=False):
+    def addFilterByValues(self, key="", value="", accuracy=False, negate=False, comparison=TagComparison.EQUAL):
         currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
         if key != "" and key in currentKeys.keys():
             filter = currentKeys[key]
@@ -396,12 +396,16 @@ class RequestWidget(QWidget):
             filter = FilterWidget(self.filtersWidget, self.keyValues)
             self.filtersLayout.addWidget(filter)
         filter.setKey(key)
+        filter.setComparison(comparison)
         filter.setValue(value)
         filter.setExactValue(accuracy)
         filter.setNegate(negate)
 
-    def addFilter(self, filter):
-        self.addFilterByValues(filter.key, filter.value, filter.isExactValue, filter.isNegated)
+    def addFilter(self, filter=None):
+        if filter is None:
+            self.addFilterByValues()
+        else:
+            self.addFilterByValues(filter.key, filter.value, filter.isExactValue, filter.isNegated, filter.comparison)
 
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)

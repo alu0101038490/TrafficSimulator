@@ -19,7 +19,8 @@ from Shared.Utils.OverpassUtils import OverpassQLHighlighter
 from Shared.Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery
 from Shared.View.Console import InformationalConsole
 from Shared.View.NumberedTextEdit import CodeEditor
-from Shared.constants import tempDir, APP_STYLESHEET, EMPTY_HTML
+from Shared.constants import tempDir, APP_STYLESHEET, EMPTY_HTML, TagComparison
+from Tag.Model.OverpassFilter import OverpassFilter
 
 
 class POSM(QMainWindow):
@@ -147,31 +148,35 @@ class POSM(QMainWindow):
         templatesMenu = self.requestMenu.addMenu("Add template")
 
         addRoadAct = QAction('Roads', self)
-        addRoadAct.triggered.connect(lambda: self.addTemplate([("highway", "", True, False),
-                                                               ("name", "", True, False),
-                                                               ("ref", "", True, False),
-                                                               ("maxspeed", "^1([01]\d|20)|\d\d?$", False, False),
-                                                               ("lanes", "", True, False),
-                                                               ("oneway", "", True, False)]))
+        addRoadAct.triggered.connect(lambda: self.addTemplate([
+            OverpassFilter("highway", TagComparison.EQUAL, "", True, False),
+            OverpassFilter("name", TagComparison.EQUAL, "", True, False),
+            OverpassFilter("ref", TagComparison.EQUAL, "", True, False),
+            OverpassFilter("maxspeed", TagComparison.AT_MOST, "120", False, False),
+            OverpassFilter("lanes", TagComparison.EQUAL, "", True, False),
+            OverpassFilter("oneway", TagComparison.EQUAL, "", True, False)]))
         templatesMenu.addAction(addRoadAct)
 
         addMainRoadAct = QAction('Main roads', self)
         mainHighways = "^(motorway|trunk|primary|secondary|residential)(_link)?$"
-        everythinButYes = "^(y(e([^s]|$|s.)|[^e]|$)|[^y]|$).*"
-        addMainRoadAct.triggered.connect(lambda: self.addTemplate([("highway", mainHighways, False, False),
-                                                                   ("construction", "", False, True),
-                                                                   ("noexit", "yes", True, True),
-                                                                   ("access", everythinButYes, False, True)]))
+        everythingButYes = "^(y(e([^s]|$|s.)|[^e]|$)|[^y]|$).*"
+        addMainRoadAct.triggered.connect(lambda: self.addTemplate([
+            OverpassFilter("highway", TagComparison.EQUAL, mainHighways, False, False),
+            OverpassFilter("construction", TagComparison.HAS_NOT_KEY, "", False, False),
+            OverpassFilter("noexit", TagComparison.EQUAL, "yes", True, True),
+            OverpassFilter("access", TagComparison.EQUAL, everythingButYes, False, True)]))
         templatesMenu.addAction(addMainRoadAct)
 
         addParkingAct = QAction('Parking', self)
-        addParkingAct.triggered.connect(lambda: self.addTemplate([("service", "parking", False, False),
-                                                                  ("highway", "", False, False)]))
+        addParkingAct.triggered.connect(lambda: self.addTemplate([
+            OverpassFilter("service", TagComparison.EQUAL, "parking", False, False),
+            OverpassFilter("highway", TagComparison.HAS_KEY, "", True, False)]))
         templatesMenu.addAction(addParkingAct)
 
         addPedestriansAct = QAction('Pedestrians', self)
-        pedestrianHighway = "^(pedestrian|footway|path|cycleway|bridleway|steps|crossing)$"
-        addPedestriansAct.triggered.connect(lambda: self.addTemplate([("highway", pedestrianHighway, False, False)]))
+        pedestrianHighway = "pedestrian footway path cycleway bridleway steps crossing"
+        addPedestriansAct.triggered.connect(lambda: self.addTemplate([
+            OverpassFilter("highway", TagComparison.IS_ONE_OF, pedestrianHighway, True, False)]))
         templatesMenu.addAction(addPedestriansAct)
 
         removeRequestAct = QAction('Remove current request', self)
