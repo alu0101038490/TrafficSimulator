@@ -40,3 +40,6 @@ class GlobalOverpassSettingUI(QWidget):
 
     def getDate(self):
         return self.dateEdit.selectedDate().toPyDate()
+
+    def setDate(self, date):
+        return self.dateEdit.setSelectedDate(date)

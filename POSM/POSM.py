@@ -329,13 +329,13 @@ class POSM(QMainWindow):
         logging.info("Showing 'manual mode' polygon.")
 
     def addRequest(self, filters=None):
-        self.queryUI.addRequest(filters)
+        self.queryUI.addRequestByFilters(filters)
         logging.info("Request added.")
         logging.debug("LINE")
 
     def addTemplate(self, filters):
         logging.info("Template applied.")
-        self.queryUI.addRequest(filters)
+        self.queryUI.addRequestByFilters(filters)
 
     def removeRequest(self):
         reply = QMessageBox.question(self, "Remove current request",

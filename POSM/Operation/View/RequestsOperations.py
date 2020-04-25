@@ -118,6 +118,9 @@ class RequestsOperations(QWidget):
     def outputSet(self):
         return self.outputSetSelection.currentText()
 
+    def setOutputSet(self, outputSetName):
+        self.outputSetSelection.setEditText(outputSetName)
+
     @property
     def ops(self):
         return self.__ops
@@ -128,21 +131,22 @@ class RequestsOperations(QWidget):
 
         if self.buttonUnion.isChecked():
             if len(includedSets) > 1:
-                self.__addOp(OverpassUnion(), includedSets)
+                self.addOp(OverpassUnion(), includedSets)
         elif self.buttonIntersection.isChecked():
             if len(includedSets) > 1:
-                self.__addOp(OverpassIntersection(), includedSets)
+                self.addOp(OverpassIntersection(), includedSets)
         elif self.buttonDiff.isChecked():
             excludedSets = [self.requestsModel2.item(i).text() for i in range(self.requestsModel2.rowCount()) if
                             self.requestsModel2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
 
             if len(includedSets) == 1 and len(excludedSets) > 0:
-                self.__addOp(OverpassDiff(includedSets[0]), excludedSets)
+                self.addOp(OverpassDiff(includedSets[0]), excludedSets)
 
-    def __addOp(self, op, sets):
+    def addOp(self, op, sets=None):
         setName = OverpassQuery.getUniqueSetName()
         self.__ops[setName] = op
-        self.__ops[setName].addSets(sets)
+        if sets is not None:
+            self.__ops[setName].addSets(sets)
         self.resultingSets.model().addOp(setName, self.__ops[setName])
         self.addRequest(setName)
         self.cleanRequestList()
@@ -202,6 +206,10 @@ class RequestsOperations(QWidget):
             del self.__ops[setName]
 
         return dependencies
+
+    def reset(self):
+        while len(self.ops) > 0:
+            self.removeSetAndDependencies(list(self.ops.keys())[0])
 
     def cleanRequestList(self):
         for i in range(self.requestsModel.rowCount()):

@@ -1,6 +1,6 @@
 import logging
 import os
-import pathlib
+from datetime import datetime
 
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QTabWidget, QToolBox, QAbstractButton
@@ -76,7 +76,7 @@ class QueryUI(QWidget):
     def setOnRequestChanged(self, f):
         self.requestTabs.currentChanged.connect(f)
 
-    def addRequest(self, filters=None):
+    def addRequestByFilters(self, filters=None):
         requestWidget = RequestWidget(self, self.keyValues)
         setName = OverpassQuery.getUniqueSetName()
         requestWidget.setObjectName(setName)
@@ -89,6 +89,15 @@ class QueryUI(QWidget):
                 requestWidget.addFilter(filter)
         else:
             requestWidget.addFilter()
+
+    def addRequest(self, request):
+        requestWidget = RequestWidget(self, self.keyValues)
+        requestWidget.setRequest(request)
+        setName = OverpassQuery.getUniqueSetName()
+        requestWidget.setObjectName(setName)
+        requestWidget.changePage(self.currentHtml)
+        self.requestTabs.addTab(requestWidget, setName)
+        self.requestOps.addRequest(setName)
 
     def removeRequest(self):
         self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
@@ -108,6 +117,20 @@ class QueryUI(QWidget):
             query.addSetsOp(name, op)
 
         return query
+
+    def setQuery(self, query):
+        self.reset()
+        for request in query.requests:
+            self.addRequest(request)
+        for name, op in query.ops.items():
+            self.requestOps.addOp(op)
+        self.generalConfig.setDate(datetime.strptime(query.config["date"], "%Y-%m-%dT00:00:00Z"))
+        self.requestOps.setOutputSet(query.outputSet)
+
+    def reset(self):
+        while self.requestTabs.count() > 0:
+            self.removeRequest()
+        self.requestOps.reset()
 
     def updateMaps(self, html):
         self.currentHtml = html
