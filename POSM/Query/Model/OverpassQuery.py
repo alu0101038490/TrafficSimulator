@@ -3,18 +3,16 @@ from datetime import datetime
 
 from Operation.Model.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
 from Request.Model.OverpassRequest import OverpassRequest
-from Shared.Utils.GenericUtils import nextString
 from Shared.constants import tempDir
 
 
 class OverpassQuery(object):
-    setName = "a"
 
     def __init__(self, outputSet):
         super().__init__()
-        self.__requests = {}
+        self.__requests = []
         self.__outputSet = outputSet
-        self.__ops = {}
+        self.__ops = []
         self.__config = {}
 
     @property
@@ -37,23 +35,14 @@ class OverpassQuery(object):
         if date != datetime.today().date():
             self.__config["date"] = date.strftime("%Y-%m-%dT00:00:00Z")
 
-    @classmethod
-    def getUniqueSetName(cls):
-        lastSetName = cls.setName
-        cls.setName = nextString(lastSetName)
-        return lastSetName
-
-    def addRequest(self, name, request):
-        self.__requests[name] = request
+    def addRequest(self, request):
+        self.__requests.append(request)
 
     def changeOutputSet(self, name):
         self.__outputSet = name
 
-    def addSetsOp(self, name, op):
-        self.__ops[name] = op
-
-    def addPolygon(self, i, polygon):
-        self.__requests[list(self.__requests.keys())[i]].addPolygon(polygon)
+    def addSetsOp(self, op):
+        self.__ops.append(op)
 
     def getQL(self):
         if len(self.__requests) == 0:
@@ -66,18 +55,18 @@ class OverpassQuery(object):
                 statement += "[{}:\"{}\"]".format(key, value)
             statement += ";\n"
 
-        for name, request in self.__requests.items():
-            statement += request.getQL() + "->." + name + ";\n"
+        for request in self.__requests:
+            statement += request.getQL()
 
-        for name, op in self.__ops.items():
-            statement += op.getQL() + "->." + name + ";\n"
+        for op in self.__ops:
+            statement += op.getQL()
 
         return "%s(.%s;>;);\nout meta;" % (statement, self.__outputSet)
 
     def getDict(self):
-        return {"requests": {key: value.getDict() for key, value in self.__requests.items()},
+        return {"requests": [request.getDict() for request in self.__requests],
                 "outputSet": self.__outputSet,
-                "operations": {key: value.getDict() for key, value in self.__ops.items()},
+                "operations": [op.getDict() for op in self.__ops],
                 "configuration": self.__config}
 
     def saveToFile(self):
@@ -91,8 +80,8 @@ class OverpassQuery(object):
 
         query = OverpassQuery(dictQuery["outputSet"])
         query.__config = dictQuery["configuration"]
-        for name, request in dictQuery["request"]:
-            query.addRequest(name, OverpassRequest.getRequestFromDict(request))
+        for request in dictQuery["request"]:
+            query.addRequest(OverpassRequest.getRequestFromDict(request))
         for name, op in dictQuery["operations"]:
             if op["type"] == "Union":
                 query.addSetsOp(name, OverpassUnion.getOpFromDict(op))

@@ -1,11 +1,13 @@
 import logging
 from abc import ABC, abstractmethod
 
+from Shared.Model.OverpassSet import OverpassSet
 
-class OverpassSetOp(ABC):
 
-    def __init__(self):
-        super().__init__()
+class OverpassSetOp(ABC, OverpassSet):
+
+    def __init__(self, name=""):
+        super().__init__(name)
         self.__sets = []
 
     @property
@@ -40,8 +42,8 @@ class OverpassSetOp(ABC):
 
 class OverpassUnion(OverpassSetOp):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name=""):
+        super().__init__(name)
 
     @staticmethod
     def getOpFromDict(opDict):
@@ -57,7 +59,7 @@ class OverpassUnion(OverpassSetOp):
             raise RuntimeError("Union without sets")
         if len(self.sets) == 1:
             logging.warning("Getting query with invalid union.")
-        return "(.%s;)" % ";.".join(self.sets)
+        return "(.%s;)->.%s;\n" % (";.".join(self.sets), self.setName)
 
     def isValid(self):
         return len(self.sets) > 1
@@ -65,8 +67,8 @@ class OverpassUnion(OverpassSetOp):
 
 class OverpassIntersection(OverpassSetOp):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, name=""):
+        super().__init__(name)
 
     @staticmethod
     def getOpFromDict(opDict):
@@ -82,7 +84,7 @@ class OverpassIntersection(OverpassSetOp):
             raise RuntimeError("Intersection without sets")
         if len(self.sets) == 1:
             logging.warning("Getting query with invalid intersection.")
-        return "way.%s" % ".".join(self.sets)
+        return "way.%s->.%s;\n" % (".".join(self.sets), self.setName)
 
     def isValid(self):
         return len(self.sets) > 1
@@ -90,8 +92,8 @@ class OverpassIntersection(OverpassSetOp):
 
 class OverpassDiff(OverpassSetOp):
 
-    def __init__(self, includedSet):
-        super().__init__()
+    def __init__(self, includedSet, name=""):
+        super().__init__(name)
         self.__includedSet = includedSet
 
     @property
@@ -124,7 +126,7 @@ class OverpassDiff(OverpassSetOp):
     def getQL(self):
         if not self.isValid():
             raise RuntimeError("Difference without excluded sets nor included set.")
-        return "(.%s;- .%s;)" % (self.includedSet, ";- .".join(self.sets))
+        return "(.%s;- .%s;)->.%s;\n" % (self.includedSet, ";- .".join(self.sets), self.setName)
 
     def isValid(self):
         return len(self.sets) > 0 and self.includedSet != ""

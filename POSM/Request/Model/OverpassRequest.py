@@ -1,12 +1,13 @@
+from Shared.Model.OverpassSet import OverpassSet
 from Shared.Utils.OverpassUtils import getIdFromLocationName
 from Shared.constants import OsmType, Surround
 from Tag.Model.OverpassFilter import OverpassFilter
 
 
-class OverpassRequest(object):
+class OverpassRequest(OverpassSet):
 
-    def __init__(self, requestType, surrounding, aroundRadius=100):
-        super().__init__()
+    def __init__(self, requestType, surrounding, aroundRadius=100, name=""):
+        super().__init__(name)
         self.__type = requestType
         self.__filters = []
         self.__surrounding = surrounding
@@ -77,7 +78,7 @@ class OverpassRequest(object):
             ql += ";{}(around:{});)".format(self.type.value, str(self.aroundRadius))
         elif self.surrounding == Surround.ADJACENT:
             ql += ";>;way(bn);>;)"
-        return ql
+        return ql + "->." + self.setName + ";\n"
 
     def getDict(self):
         return {"type": self.type.value,
