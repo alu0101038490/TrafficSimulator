@@ -14,6 +14,7 @@ from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineE
 from Query.Model.OverpassQuery import OverpassQuery
 from Request.Model.OverpassRequest import OverpassRequest
 from Shared.Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
+from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.Utils.SumoUtils import buildHTMLWithNetworkx, writeXMLResponse
 from Shared.View.CollapsibleList import CheckableComboBox
 from Shared.View.DisambiguationTable import DisconnectedWaysTable, SimilarWaysTable
@@ -25,8 +26,13 @@ from Tag.View.FilterWidget import FilterWidget
 
 class RequestWidget(QWidget):
 
-    def __init__(self, parent, keyValues):
+    def __init__(self, parent, keyValues, request=None):
         super().__init__(parent)
+
+        if request is None:
+            self.requestName = SetNameManagement.getUniqueSetName()
+        else:
+            self.__setRequest__(request)
         self.keyValues = keyValues
         self.polygonSettings = []
         self.html = ""
@@ -299,6 +305,9 @@ class RequestWidget(QWidget):
             logging.error(traceback.format_exc())
         logging.debug("LINE")
 
+    def getName(self):
+        return self.requestName
+
     def getAroundRadius(self):
         return int(self.aroundRadiusEdit.text()) if len(self.aroundRadiusEdit.text()) > 0 else 100
 
@@ -308,6 +317,7 @@ class RequestWidget(QWidget):
     def getRequest(self):
         request = OverpassRequest(self.__getType__(),
                                   self.__getSelectedSurrounding__(),
+                                  self.requestName,
                                   self.getAroundRadius())
         request.setLocationName(self.__getLocationName__())
         request.addPolygon(self.__getPolygon__())
@@ -315,7 +325,8 @@ class RequestWidget(QWidget):
             request.addFilter(filterWidget.getFilter())
         return request
 
-    def setRequest(self, request):
+    def __setRequest__(self, request):
+        self.requestName = request.name
         self.__setType__(request.type)
         self.setAroundRadius(request.aroundRadius)
         self.__setSelectedSurrounding__(request.surrounding)
@@ -339,21 +350,8 @@ class RequestWidget(QWidget):
             self.polygonPage.runJavaScript("disablePolygon();")
 
     def showTable(self):
-        query = OverpassQuery(self.objectName())
-
-        switcher = {
-            "Adjacent": Surround.ADJACENT,
-            "Around": Surround.AROUND,
-            "None": Surround.NONE
-        }
-
-        selectedSurrounding = [b for b in self.findChildren(QRadioButton) if b.isChecked()][0]
-        request = OverpassRequest(self.getType(), switcher.get(selectedSurrounding.objectName()))
-        for filterWidget in self.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getKey(), filterWidget.getValue(), filterWidget.isExactValueSelected(),
-                              filterWidget.isNegateSelected())
-
-        query.addRequest(self.objectName(), request)
+        query = OverpassQuery(self.getName())
+        query.addRequest(self.getRequest())
 
         try:
             writeXMLResponse(query.getQL(), tableDir)
@@ -426,3 +424,7 @@ class RequestWidget(QWidget):
     def getSelectedRowNetworkx(self):
         indexes = self.tableView.selectionModel().selectedRows()
         return self.tableView.model().getRowJson(indexes)
+
+    def __del__(self):
+        super(RequestWidget, self).__del__()
+        SetNameManagement.releaseName(self.requestName)

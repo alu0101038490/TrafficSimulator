@@ -6,7 +6,7 @@ from Shared.Model.OverpassSet import OverpassSet
 
 class OverpassSetOp(ABC, OverpassSet):
 
-    def __init__(self, name=""):
+    def __init__(self, name):
         super().__init__(name)
         self.__sets = []
 
@@ -42,7 +42,7 @@ class OverpassSetOp(ABC, OverpassSet):
 
 class OverpassUnion(OverpassSetOp):
 
-    def __init__(self, name=""):
+    def __init__(self, name):
         super().__init__(name)
 
     @staticmethod
@@ -67,7 +67,7 @@ class OverpassUnion(OverpassSetOp):
 
 class OverpassIntersection(OverpassSetOp):
 
-    def __init__(self, name=""):
+    def __init__(self, name):
         super().__init__(name)
 
     @staticmethod
@@ -92,7 +92,7 @@ class OverpassIntersection(OverpassSetOp):
 
 class OverpassDiff(OverpassSetOp):
 
-    def __init__(self, includedSet, name=""):
+    def __init__(self, includedSet, name):
         super().__init__(name)
         self.__includedSet = includedSet
 

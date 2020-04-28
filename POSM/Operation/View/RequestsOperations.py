@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QWidget, QFormLayout, QHBoxLayout, QGraphicsDropShad
     QVBoxLayout, QRadioButton, QSizePolicy, QPushButton, QTableView, QHeaderView, QComboBox, QMessageBox
 
 from Operation.Model.OverpassOperations import OverpassUnion, OverpassIntersection, OverpassDiff
-from Query.Model.OverpassQuery import OverpassQuery
+from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.View.HorizontalLine import HorizontalLine
 from Shared.View.OperationsTableModel import OperationsTableModel
 
@@ -14,7 +14,7 @@ class RequestsOperations(QWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.initUI()
-        self.__ops = {}
+        self.__ops = []
 
     def initUI(self):
         self.layout = QFormLayout()
@@ -131,24 +131,26 @@ class RequestsOperations(QWidget):
 
         if self.buttonUnion.isChecked():
             if len(includedSets) > 1:
-                self.addOp(OverpassUnion(), includedSets)
+                opName = SetNameManagement.getUniqueSetName()
+                self.addOp(OverpassUnion(opName), includedSets)
         elif self.buttonIntersection.isChecked():
             if len(includedSets) > 1:
-                self.addOp(OverpassIntersection(), includedSets)
+                opName = SetNameManagement.getUniqueSetName()
+                self.addOp(OverpassIntersection(opName), includedSets)
         elif self.buttonDiff.isChecked():
             excludedSets = [self.requestsModel2.item(i).text() for i in range(self.requestsModel2.rowCount()) if
                             self.requestsModel2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
 
             if len(includedSets) == 1 and len(excludedSets) > 0:
-                self.addOp(OverpassDiff(includedSets[0]), excludedSets)
+                opName = SetNameManagement.getUniqueSetName()
+                self.addOp(OverpassDiff(includedSets[0], opName), excludedSets)
 
     def addOp(self, op, sets=None):
-        setName = OverpassQuery.getUniqueSetName()
-        self.__ops[setName] = op
+        self.__ops.append(op)
         if sets is not None:
-            self.__ops[setName].addSets(sets)
-        self.resultingSets.model().addOp(setName, self.__ops[setName])
-        self.addRequest(setName)
+            op.addSets(sets)
+        self.resultingSets.model().addOp(op.name, op)
+        self.addRequest(op.name)
         self.cleanRequestList()
 
     def __enableSecondRequestList(self):
@@ -183,10 +185,10 @@ class RequestsOperations(QWidget):
 
     def __removeSet(self, setName):
         dependencies = []
-        for opName in self.__ops.keys():
-            self.__ops[opName].removeSet(setName)
-            if not self.__ops[opName].isValid():
-                dependencies.append(opName)
+        for op in self.__ops:
+            op.removeSet(setName)
+            if not op.isValid():
+                dependencies.append(op.name)
 
         for i in range(self.requestsModel.rowCount()):
             if self.requestsModel.item(i).text() == setName:
@@ -201,15 +203,19 @@ class RequestsOperations(QWidget):
                 self.outputSetSelection.removeItem(i)
                 break
 
-        if setName in self.__ops.keys():
-            self.resultingSets.model().removeOp(setName)
-            del self.__ops[setName]
+        for op in self.__ops:
+            if op.name == setName:
+                self.resultingSets.model().removeOp(setName)
+                del op
+                break
+
+        SetNameManagement.releaseName(setName)
 
         return dependencies
 
     def reset(self):
         while len(self.ops) > 0:
-            self.removeSetAndDependencies(list(self.ops.keys())[0])
+            self.removeSetAndDependencies(self.ops[0].name)
 
     def cleanRequestList(self):
         for i in range(self.requestsModel.rowCount()):

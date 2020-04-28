@@ -6,7 +6,7 @@ from Tag.Model.OverpassFilter import OverpassFilter
 
 class OverpassRequest(OverpassSet):
 
-    def __init__(self, requestType, surrounding, aroundRadius=100, name=""):
+    def __init__(self, requestType, surrounding, name, aroundRadius=100):
         super().__init__(name)
         self.__type = requestType
         self.__filters = []

@@ -2,11 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5e036036-5583-4bb9-813f-405db159198a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/POSM/Shared/Utils/SetNameGenerator.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/POSM/Shared/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Shared/constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/POSM/Tag/Model/OverpassFilter.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Tag/Model/OverpassFilter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/POSM/Tag/View/FilterWidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Tag/View/FilterWidget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Views/QueryUI.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Operation/Model/OverpassOperations.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Operation/Model/OverpassOperations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Operation/View/RequestsOperations.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Operation/View/RequestsOperations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Query/View/QueryUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Query/View/QueryUI.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Request/Model/OverpassRequest.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Request/Model/OverpassRequest.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Request/View/RequestWidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Request/View/RequestWidget.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Shared/Model/OverpassSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Shared/Model/OverpassSet.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -88,6 +91,8 @@
       <workItem from="1587053051392" duration="1100000" />
       <workItem from="1587055063802" duration="1706000" />
       <workItem from="1587056911662" duration="3631000" />
+      <workItem from="1588084137499" duration="4097000" />
+      <workItem from="1588088588162" duration="3570000" />
     </task>
     <servers />
   </component>
@@ -171,14 +176,14 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state width="640" height="400" key="XDebugger.FullValuePopup/0.0.1280.800@0.0.1280.800" timestamp="1586964732255" />
-    <state x="317" y="223" key="com.intellij.ide.util.TipDialog" timestamp="1587056911694">
+    <state x="317" y="223" key="com.intellij.ide.util.TipDialog" timestamp="1588088625519">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="317" y="223" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1587056911694" />
-    <state x="298" y="157" width="683" height="486" key="find.popup" timestamp="1586962071104">
+    <state x="317" y="223" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1588088625519" />
+    <state x="298" y="157" width="683" height="486" key="find.popup" timestamp="1588086726040">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="298" y="157" width="683" height="486" key="find.popup/0.0.1280.800@0.0.1280.800" timestamp="1586962071104" />
+    <state x="298" y="157" width="683" height="486" key="find.popup/0.0.1280.800@0.0.1280.800" timestamp="1588086726040" />
     <state x="305" y="124" width="670" height="676" key="search.everywhere.popup" timestamp="1586970995357">
       <screen x="0" y="0" width="1280" height="800" />
     </state>

@@ -10,6 +10,7 @@ from Operation.View.RequestsOperations import RequestsOperations
 from Query.Model.OverpassQuery import OverpassQuery
 from Query.View.GlobalOverpassSettingUI import GlobalOverpassSettingUI
 from Request.View.RequestWidget import RequestWidget
+from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.Utils.TaginfoUtils import getOfficialKeys
 from Shared.constants import EMPTY_HTML, picturesDir
 
@@ -78,8 +79,7 @@ class QueryUI(QWidget):
 
     def addRequestByFilters(self, filters=None):
         requestWidget = RequestWidget(self, self.keyValues)
-        setName = OverpassQuery.getUniqueSetName()
-        requestWidget.setObjectName(setName)
+        setName = requestWidget.requestName
         requestWidget.changePage(self.currentHtml)
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
@@ -91,16 +91,18 @@ class QueryUI(QWidget):
             requestWidget.addFilter()
 
     def addRequest(self, request):
-        requestWidget = RequestWidget(self, self.keyValues)
-        requestWidget.setRequest(request)
-        setName = OverpassQuery.getUniqueSetName()
-        requestWidget.setObjectName(setName)
+        if not SetNameManagement.isAvailable(request.name):
+            raise ValueError("There is another request with the same name.")
+
+        requestWidget = RequestWidget(self, self.keyValues, request)
+        requestWidget.__setRequest__(request)
         requestWidget.changePage(self.currentHtml)
-        self.requestTabs.addTab(requestWidget, setName)
-        self.requestOps.addRequest(setName)
+        self.requestTabs.addTab(requestWidget, request.name)
+        self.requestOps.addRequest(request.name)
 
     def removeRequest(self):
-        self.requestOps.removeSetAndDependencies(self.requestTabs.currentWidget().objectName())
+        requestName = self.requestTabs.currentWidget().getName()
+        self.requestOps.removeSetAndDependencies(requestName)
         self.requestTabs.currentWidget().deleteLater()
 
     def requestsCount(self):
@@ -111,10 +113,10 @@ class QueryUI(QWidget):
         query.addDate(self.generalConfig.getDate())
 
         for requestWidget in self.findChildren(RequestWidget):
-            query.addRequest(requestWidget.objectName(), requestWidget.getRequest())
+            query.addRequest(requestWidget.getRequest())
 
-        for name, op in self.requestOps.ops.items():
-            query.addSetsOp(name, op)
+        for op in self.requestOps.ops:
+            query.addSetsOp(op)
 
         return query
 
