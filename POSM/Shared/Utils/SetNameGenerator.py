@@ -20,6 +20,11 @@ class SetNameManagement(object):
         return name not in cls.usedNames
 
     @classmethod
+    def assign(cls, name):
+        if name not in cls.usedNames:
+            cls.usedNames.append(name)
+
+    @classmethod
     def releaseName(cls, name):
         try:
             cls.usedNames.remove(name)

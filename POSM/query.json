@@ -1,10 +1,12 @@
 {
-   "requests": {
-      "a": {
+   "requests": [
+      {
+         "name": "a",
          "type": "way",
          "filters": [
             {
                "key": "ref",
+               "comparison": 1,
                "value": "TF-5",
                "negated": false,
                "exactValue": true
@@ -15,8 +17,8 @@
          "polygon": [],
          "location": null
       }
-   },
+   ],
    "outputSet": "a",
-   "operations": {},
+   "operations": [],
    "configuration": {}
 }

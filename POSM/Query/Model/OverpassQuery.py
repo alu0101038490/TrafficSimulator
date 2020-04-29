@@ -80,13 +80,13 @@ class OverpassQuery(object):
 
         query = OverpassQuery(dictQuery["outputSet"])
         query.__config = dictQuery["configuration"]
-        for request in dictQuery["request"]:
+        for request in dictQuery["requests"]:
             query.addRequest(OverpassRequest.getRequestFromDict(request))
-        for name, op in dictQuery["operations"]:
+        for op in dictQuery["operations"]:
             if op["type"] == "Union":
-                query.addSetsOp(name, OverpassUnion.getOpFromDict(op))
+                query.addSetsOp(OverpassUnion.getOpFromDict(op))
             elif op["type"] == "Intersection":
-                query.addSetsOp(name, OverpassIntersection.getOpFromDict(op))
+                query.addSetsOp(OverpassIntersection.getOpFromDict(op))
             elif op["type"] == "Difference":
-                query.addSetsOp(name, OverpassDiff.getOpFromDict(op))
+                query.addSetsOp(OverpassDiff.getOpFromDict(op))
         return query

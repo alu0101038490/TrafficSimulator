@@ -70,9 +70,10 @@ class QueryUI(QWidget):
             if i != index:
                 self.requestTabs.widget(i).setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
 
-        self.requestTabs.widget(index).setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-        self.requestTabs.widget(index).resize(self.requestTabs.widget(index).minimumSizeHint())
-        self.requestTabs.widget(index).adjustSize()
+        if index >= 0:
+            self.requestTabs.widget(index).setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            self.requestTabs.widget(index).resize(self.requestTabs.widget(index).minimumSizeHint())
+            self.requestTabs.widget(index).adjustSize()
 
     def setOnRequestChanged(self, f):
         self.requestTabs.currentChanged.connect(f)
@@ -93,9 +94,10 @@ class QueryUI(QWidget):
     def addRequest(self, request):
         if not SetNameManagement.isAvailable(request.name):
             raise ValueError("There is another request with the same name.")
+        else:
+            SetNameManagement.assign(request.name)
 
         requestWidget = RequestWidget(self, self.keyValues, request)
-        requestWidget.__setRequest__(request)
         requestWidget.changePage(self.currentHtml)
         self.requestTabs.addTab(requestWidget, request.name)
         self.requestOps.addRequest(request.name)
@@ -124,9 +126,10 @@ class QueryUI(QWidget):
         self.reset()
         for request in query.requests:
             self.addRequest(request)
-        for name, op in query.ops.items():
+        for op in query.ops:
             self.requestOps.addOp(op)
-        self.generalConfig.setDate(datetime.strptime(query.config["date"], "%Y-%m-%dT00:00:00Z"))
+        if query.config.get("date") is not None:
+            self.generalConfig.setDate(datetime.strptime(query.config["date"], "%Y-%m-%dT00:00:00Z"))
         self.requestOps.setOutputSet(query.outputSet)
 
     def reset(self):
@@ -142,4 +145,7 @@ class QueryUI(QWidget):
         return self.getCurrentMap()
 
     def getCurrentMap(self):
-        return self.requestTabs.currentWidget().getMap()
+        if self.requestTabs.currentWidget() is None:
+            return None
+        else:
+            return self.requestTabs.currentWidget().getMap()

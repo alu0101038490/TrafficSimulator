@@ -13,6 +13,7 @@ from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QAction, \
     QFileDialog, QSplitter, QHBoxLayout, QMessageBox, QLabel, QVBoxLayout, QSizePolicy, QWIDGETSIZE_MAX
 
+from Query.Model.OverpassQuery import OverpassQuery
 from Query.View.QueryUI import QueryUI
 from Shared.Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Shared.Utils.OverpassUtils import OverpassQLHighlighter
@@ -355,13 +356,8 @@ class POSM(QMainWindow):
         if filename != "":
             if self.queryText.isReadOnly():
                 try:
-                    query = self.queryUI.getQuery().getQL()
-                    f = open(filename, "w+")
-                    f.seek(0)
-                    f.truncate()
-                    f.write(query)
-                    f.close()
-
+                    query = self.queryUI.getQuery()
+                    query.saveToFile()
                     logging.info("Query saved successfully.")
                 except RuntimeError as e:
                     logging.error(str(e))
@@ -384,17 +380,11 @@ class POSM(QMainWindow):
         logging.debug("LINE")
 
     def openQuery(self):
-        filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.txt"),
-                                                               "Text files (*.txt)")
+        filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.txt"))
 
         if filename != "":
             try:
-                f = open(filename, "w+")
-                self.queryText.setPlainText(f.read())
-                f.close()
-                logging.info("File read successfully.")
-                if self.queryText.isReadOnly():
-                    self.switchManualMode()
+                self.queryUI.setQuery(OverpassQuery.getFromFile())
             except OSError:
                 logging.error("There was a problem opening the query file.")
         else:
@@ -429,7 +419,10 @@ class POSM(QMainWindow):
 
     #POLYGONS
     def changeCurrentMap(self, i):
-        self.mapRenderer.setPage(self.queryUI.getCurrentMap())
+        if self.queryUI.getCurrentMap() is None:
+            self.mapRenderer.setPage(self.emptyMapUrl)
+        else:
+            self.mapRenderer.setPage(self.queryUI.getCurrentMap())
 
     def loadMap(self):
         try:

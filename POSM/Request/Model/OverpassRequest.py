@@ -18,27 +18,27 @@ class OverpassRequest(OverpassSet):
 
     @property
     def type(self):
-        return self.type
+        return self.__type
 
     @property
     def filters(self):
-        return self.filters
+        return self.__filters
 
     @property
     def surrounding(self):
-        return self.surrounding
+        return self.__surrounding
 
     @property
     def aroundRadius(self):
-        return self.aroundRadius
+        return self.__aroundRadius
 
     @property
     def polygon(self):
-        return self.polygon
+        return self.__polygon
 
     @property
     def locationId(self):
-        return self.locationId
+        return self.__locationId
 
     @property
     def locationName(self):
@@ -81,7 +81,8 @@ class OverpassRequest(OverpassSet):
         return ql + "->." + self.setName + ";\n"
 
     def getDict(self):
-        return {"type": self.type.value,
+        return {"name": self.name,
+                "type": self.type.value,
                 "filters": [singleFilter.getDict() for singleFilter in self.filters],
                 "surrounding": self.surrounding.value,
                 "aroundRadius": self.aroundRadius,
@@ -92,9 +93,10 @@ class OverpassRequest(OverpassSet):
     def getRequestFromDict(requestDict):
         request = OverpassRequest(OsmType(requestDict["type"]),
                                   Surround(requestDict["surrounding"]),
+                                  requestDict["name"],
                                   requestDict["aroundRadius"])
         request.addPolygon(requestDict["polygon"])
-        request.setLocationName("location")
+        request.setLocationName(requestDict["location"])
         for singleFilter in requestDict["filters"]:
             request.addFilter(OverpassFilter.getFilterFromDict(singleFilter))
         return request

@@ -2,14 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5e036036-5583-4bb9-813f-405db159198a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/POSM/Shared/Utils/SetNameGenerator.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/POSM/Operation/Model/OverpassOperations.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Operation/Model/OverpassOperations.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/POSM/Operation/View/RequestsOperations.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Operation/View/RequestsOperations.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/POSM.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/POSM.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Query/Model/OverpassQuery.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Query/Model/OverpassQuery.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/POSM/Query/View/QueryUI.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Query/View/QueryUI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/POSM/Request/Model/OverpassRequest.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Request/Model/OverpassRequest.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/POSM/Request/View/RequestWidget.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Request/View/RequestWidget.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/POSM/Shared/Model/OverpassSet.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Shared/Model/OverpassSet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/Shared/Utils/SetNameGenerator.py" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/Shared/Utils/SetNameGenerator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/POSM/query.json" beforeDir="false" afterPath="$PROJECT_DIR$/POSM/query.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,7 +93,8 @@
       <workItem from="1587055063802" duration="1706000" />
       <workItem from="1587056911662" duration="3631000" />
       <workItem from="1588084137499" duration="4097000" />
-      <workItem from="1588088588162" duration="3570000" />
+      <workItem from="1588088588162" duration="8228000" />
+      <workItem from="1588169252891" duration="10136000" />
     </task>
     <servers />
   </component>
@@ -120,50 +122,54 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="434" y="134" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/0.0.1280.800@0.0.1280.800" timestamp="1586963672416" />
+    <state x="179" y="232" width="602" height="568" key="#xdebugger.evaluate" timestamp="1588186284428">
+      <screen x="0" y="0" width="1280" height="800" />
+    </state>
+    <state x="179" y="232" width="602" height="568" key="#xdebugger.evaluate/0.0.1280.800@0.0.1280.800" timestamp="1588186284428" />
     <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1" timestamp="1582798776101">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="385" y="263" key="ANALYSIS_DLG_com.intellij.analysis.BaseAnalysisAction$1/0.0.1280.800@0.0.1280.800" timestamp="1582798776101" />
-    <state width="1238" height="249" key="GridCell.Tab.0.bottom" timestamp="1587060993818">
+    <state width="1238" height="244" key="GridCell.Tab.0.bottom" timestamp="1588186331696">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="249" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1587060993818" />
-    <state width="1238" height="118" key="GridCell.Tab.0.bottom/0.23.1280.688@0.23.1280.688" timestamp="1587059507665" />
-    <state width="1238" height="249" key="GridCell.Tab.0.center" timestamp="1587060993815">
+    <state width="1238" height="244" key="GridCell.Tab.0.bottom/0.0.1280.800@0.0.1280.800" timestamp="1588186331696" />
+    <state width="1238" height="189" key="GridCell.Tab.0.bottom/0.23.1280.688@0.23.1280.688" timestamp="1588143671481" />
+    <state width="1238" height="244" key="GridCell.Tab.0.center" timestamp="1588186331694">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="249" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1587060993815" />
-    <state width="1238" height="118" key="GridCell.Tab.0.center/0.23.1280.688@0.23.1280.688" timestamp="1587059507661" />
-    <state width="1238" height="249" key="GridCell.Tab.0.left" timestamp="1587060993814">
+    <state width="1238" height="244" key="GridCell.Tab.0.center/0.0.1280.800@0.0.1280.800" timestamp="1588186331694" />
+    <state width="1238" height="189" key="GridCell.Tab.0.center/0.23.1280.688@0.23.1280.688" timestamp="1588143671479" />
+    <state width="1238" height="244" key="GridCell.Tab.0.left" timestamp="1588186331693">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="249" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1587060993814" />
-    <state width="1238" height="118" key="GridCell.Tab.0.left/0.23.1280.688@0.23.1280.688" timestamp="1587059507660" />
-    <state width="1238" height="249" key="GridCell.Tab.0.right" timestamp="1587060993817">
+    <state width="1238" height="244" key="GridCell.Tab.0.left/0.0.1280.800@0.0.1280.800" timestamp="1588186331693" />
+    <state width="1238" height="189" key="GridCell.Tab.0.left/0.23.1280.688@0.23.1280.688" timestamp="1588143671478" />
+    <state width="1238" height="244" key="GridCell.Tab.0.right" timestamp="1588186331695">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="249" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1587060993817" />
-    <state width="1238" height="118" key="GridCell.Tab.0.right/0.23.1280.688@0.23.1280.688" timestamp="1587059507664" />
-    <state width="1238" height="183" key="GridCell.Tab.1.bottom" timestamp="1586973499732">
+    <state width="1238" height="244" key="GridCell.Tab.0.right/0.0.1280.800@0.0.1280.800" timestamp="1588186331695" />
+    <state width="1238" height="189" key="GridCell.Tab.0.right/0.23.1280.688@0.23.1280.688" timestamp="1588143671480" />
+    <state width="1238" height="244" key="GridCell.Tab.1.bottom" timestamp="1588186331702">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="183" key="GridCell.Tab.1.bottom/0.0.1280.800@0.0.1280.800" timestamp="1586973499732" />
-    <state width="1238" height="244" key="GridCell.Tab.1.bottom/0.23.1280.688@0.23.1280.688" timestamp="1586973240304" />
-    <state width="1238" height="183" key="GridCell.Tab.1.center" timestamp="1586973499730">
+    <state width="1238" height="244" key="GridCell.Tab.1.bottom/0.0.1280.800@0.0.1280.800" timestamp="1588186331702" />
+    <state width="1238" height="276" key="GridCell.Tab.1.bottom/0.23.1280.688@0.23.1280.688" timestamp="1588185008293" />
+    <state width="1238" height="244" key="GridCell.Tab.1.center" timestamp="1588186331700">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="183" key="GridCell.Tab.1.center/0.0.1280.800@0.0.1280.800" timestamp="1586973499730" />
-    <state width="1238" height="244" key="GridCell.Tab.1.center/0.23.1280.688@0.23.1280.688" timestamp="1586973240302" />
-    <state width="1238" height="183" key="GridCell.Tab.1.left" timestamp="1586973499720">
+    <state width="1238" height="244" key="GridCell.Tab.1.center/0.0.1280.800@0.0.1280.800" timestamp="1588186331700" />
+    <state width="1238" height="276" key="GridCell.Tab.1.center/0.23.1280.688@0.23.1280.688" timestamp="1588185008292" />
+    <state width="1238" height="244" key="GridCell.Tab.1.left" timestamp="1588186331698">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="183" key="GridCell.Tab.1.left/0.0.1280.800@0.0.1280.800" timestamp="1586973499720" />
-    <state width="1238" height="244" key="GridCell.Tab.1.left/0.23.1280.688@0.23.1280.688" timestamp="1586973240301" />
-    <state width="1238" height="183" key="GridCell.Tab.1.right" timestamp="1586973499731">
+    <state width="1238" height="244" key="GridCell.Tab.1.left/0.0.1280.800@0.0.1280.800" timestamp="1588186331698" />
+    <state width="1238" height="276" key="GridCell.Tab.1.left/0.23.1280.688@0.23.1280.688" timestamp="1588185008292" />
+    <state width="1238" height="244" key="GridCell.Tab.1.right" timestamp="1588186331701">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state width="1238" height="183" key="GridCell.Tab.1.right/0.0.1280.800@0.0.1280.800" timestamp="1586973499731" />
-    <state width="1238" height="244" key="GridCell.Tab.1.right/0.23.1280.688@0.23.1280.688" timestamp="1586973240303" />
+    <state width="1238" height="244" key="GridCell.Tab.1.right/0.0.1280.800@0.0.1280.800" timestamp="1588186331701" />
+    <state width="1238" height="276" key="GridCell.Tab.1.right/0.23.1280.688@0.23.1280.688" timestamp="1588185008293" />
     <state x="386" y="118" key="RollbackChangesDialog" timestamp="1586960021463">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
@@ -176,14 +182,14 @@
       <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state width="640" height="400" key="XDebugger.FullValuePopup/0.0.1280.800@0.0.1280.800" timestamp="1586964732255" />
-    <state x="317" y="223" key="com.intellij.ide.util.TipDialog" timestamp="1588088625519">
+    <state x="317" y="223" key="com.intellij.ide.util.TipDialog" timestamp="1588169252307">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="317" y="223" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1588088625519" />
-    <state x="298" y="157" width="683" height="486" key="find.popup" timestamp="1588086726040">
+    <state x="317" y="223" key="com.intellij.ide.util.TipDialog/0.0.1280.800@0.0.1280.800" timestamp="1588169252307" />
+    <state x="298" y="100" width="683" height="543" key="find.popup" timestamp="1588173490899">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
-    <state x="298" y="157" width="683" height="486" key="find.popup/0.0.1280.800@0.0.1280.800" timestamp="1588086726040" />
+    <state x="298" y="100" width="683" height="543" key="find.popup/0.0.1280.800@0.0.1280.800" timestamp="1588173490899" />
     <state x="305" y="124" width="670" height="676" key="search.everywhere.popup" timestamp="1586970995357">
       <screen x="0" y="0" width="1280" height="800" />
     </state>
@@ -197,11 +203,31 @@
           <line>429</line>
           <option name="timeStamp" value="12" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/POSM/Shared/View/Console.py</url>
+          <line>25</line>
+          <option name="timeStamp" value="30" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/POSM/Query/View/QueryUI.py</url>
+          <line>126</line>
+          <option name="timeStamp" value="40" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/POSM/Request/View/RequestWidget.py</url>
+          <line>398</line>
+          <option name="timeStamp" value="41" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/POSM/Request/View/RequestWidget.py</url>
+          <line>410</line>
+          <option name="timeStamp" value="43" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/TrafficSimulator$main.coverage" NAME="main Coverage Results" MODIFIED="1582801719943" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/Views" />
-    <SUITE FILE_PATH="coverage/TrafficSimulator$POSM.coverage" NAME="POSM Coverage Results" MODIFIED="1587060993797" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/POSM" />
+    <SUITE FILE_PATH="coverage/TrafficSimulator$POSM.coverage" NAME="POSM Coverage Results" MODIFIED="1588186331663" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/POSM" />
   </component>
 </project>

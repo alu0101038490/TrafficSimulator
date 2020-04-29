@@ -29,10 +29,6 @@ class RequestWidget(QWidget):
     def __init__(self, parent, keyValues, request=None):
         super().__init__(parent)
 
-        if request is None:
-            self.requestName = SetNameManagement.getUniqueSetName()
-        else:
-            self.__setRequest__(request)
         self.keyValues = keyValues
         self.polygonSettings = []
         self.html = ""
@@ -41,6 +37,11 @@ class RequestWidget(QWidget):
         self.polygonPage = QWebEnginePage()
         self.polygonPage.setWebChannel(self.webChannel)
         self.initUI()
+
+        if request is None:
+            self.requestName = SetNameManagement.getUniqueSetName()
+        else:
+            self.__setRequest__(request)
 
     def __onAreaSelected(self):
         self.nodesCB.setChecked(False)
@@ -279,7 +280,8 @@ class RequestWidget(QWidget):
 
     def changePolygon(self, coors):
         self.polygonSettings = coors
-        self.changePage(self.html)
+        if self.html != "":
+            self.changePage(self.html)
 
     def changePage(self, html):
         self.html = html
@@ -426,5 +428,4 @@ class RequestWidget(QWidget):
         return self.tableView.model().getRowJson(indexes)
 
     def __del__(self):
-        super(RequestWidget, self).__del__()
         SetNameManagement.releaseName(self.requestName)

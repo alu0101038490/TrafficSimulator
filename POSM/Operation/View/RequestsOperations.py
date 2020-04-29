@@ -146,6 +146,7 @@ class RequestsOperations(QWidget):
                 self.addOp(OverpassDiff(includedSets[0], opName), excludedSets)
 
     def addOp(self, op, sets=None):
+        SetNameManagement.assign(op.name)
         self.__ops.append(op)
         if sets is not None:
             op.addSets(sets)
