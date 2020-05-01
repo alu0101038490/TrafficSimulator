@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from PyQt5.QtCore import Qt, QDate
@@ -41,5 +42,5 @@ class GlobalOverpassSettingUI(QWidget):
     def getDate(self):
         return self.dateEdit.selectedDate().toPyDate()
 
-    def setDate(self, date):
+    def setDate(self, date=datetime.datetime.now()):
         return self.dateEdit.setSelectedDate(date)

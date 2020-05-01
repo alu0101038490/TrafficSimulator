@@ -133,6 +133,8 @@ class QueryUI(QWidget):
             self.requestOps.addOp(op)
         if query.config.get("date") is not None:
             self.generalConfig.setDate(datetime.strptime(query.config["date"], "%Y-%m-%dT00:00:00Z"))
+        else:
+            self.generalConfig.setDate()
         self.requestOps.setOutputSet(query.outputSet)
 
     def reset(self):
