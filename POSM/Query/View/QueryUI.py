@@ -105,7 +105,8 @@ class QueryUI(QWidget):
     def removeRequest(self):
         requestName = self.requestTabs.currentWidget().getName()
         self.requestOps.removeSetAndDependencies(requestName)
-        self.requestTabs.currentWidget().deleteLater()
+        SetNameManagement.releaseName(self.requestTabs.currentWidget().requestName)
+        self.requestTabs.removeTab(self.requestTabs.currentIndex())
 
     def requestsCount(self):
         return self.requestTabs.count()
