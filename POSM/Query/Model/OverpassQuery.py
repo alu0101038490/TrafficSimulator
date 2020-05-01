@@ -69,13 +69,13 @@ class OverpassQuery(object):
                 "operations": [op.getDict() for op in self.__ops],
                 "configuration": self.__config}
 
-    def saveToFile(self):
-        with open(tempDir.join(["query.json"]), "w+") as f:
+    def saveToFile(self, filename):
+        with open(filename, "w+") as f:
             json.dump(self.getDict(), f, indent=3)
 
     @staticmethod
-    def getFromFile():
-        with open(tempDir.join(["query.json"]), "r") as f:
+    def getFromFile(filename):
+        with open(filename, "r") as f:
             dictQuery = json.load(f)
 
         query = OverpassQuery(dictQuery["outputSet"])

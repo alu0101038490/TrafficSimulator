@@ -117,20 +117,32 @@ class POSM(QMainWindow):
         openAct.triggered.connect(self.openNet)
         fileMenu.addAction(openAct)
 
-        saveAct = QAction('Save output', self)
-        saveAct.triggered.connect(self.saveNet)
-        saveAct.setShortcut('Ctrl+S')
-        fileMenu.addAction(saveAct)
+        saveMenu = fileMenu.addMenu("Save")
 
-        saveQuery = QAction('Save query', self)
-        saveQuery.triggered.connect(self.saveQuery)
-        saveQuery.setShortcut('Ctrl+Shift+S')
-        fileMenu.addAction(saveQuery)
+        saveOutputAct = QAction('output', self)
+        saveOutputAct.triggered.connect(self.saveNet)
+        saveOutputAct.setShortcut('Ctrl+S')
+        saveMenu.addAction(saveOutputAct)
 
-        openQuery = QAction('Open query', self)
+        saveQueryAct = QAction('query', self)
+        saveQueryAct.triggered.connect(self.saveQuery)
+        saveQueryAct.setShortcut('Ctrl+Shift+S')
+        saveMenu.addAction(saveQueryAct)
+
+        saveInteractiveModeAct = QAction('interactive mode', self)
+        saveInteractiveModeAct.triggered.connect(self.saveInteractiveQuery)
+        saveMenu.addAction(saveInteractiveModeAct)
+
+        openMenu = fileMenu.addMenu("Open")
+
+        openQuery = QAction('query', self)
         openQuery.triggered.connect(self.openQuery)
         openQuery.setShortcut('Ctrl+O')
-        fileMenu.addAction(openQuery)
+        openMenu.addAction(openQuery)
+
+        openInteractiveMode = QAction('interactive mode', self)
+        openInteractiveMode.triggered.connect(self.openInteractiveQuery)
+        openMenu.addAction(openInteractiveMode)
 
         runMenu = menubar.addMenu('Run')
 
@@ -356,8 +368,13 @@ class POSM(QMainWindow):
         if filename != "":
             if self.queryText.isReadOnly():
                 try:
-                    query = self.queryUI.getQuery()
-                    query.saveToFile()
+                    query = self.queryUI.getQuery().getQL()
+                    f = open(filename, "w+")
+                    f.seek(0)
+                    f.truncate()
+                    f.write(query)
+                    f.close()
+
                     logging.info("Query saved successfully.")
                 except RuntimeError as e:
                     logging.error(str(e))
@@ -384,7 +401,43 @@ class POSM(QMainWindow):
 
         if filename != "":
             try:
-                self.queryUI.setQuery(OverpassQuery.getFromFile())
+                f = open(filename, "w+")
+                self.queryText.setPlainText(f.read())
+                f.close()
+                logging.info("File read successfully.")
+                if self.queryText.isReadOnly():
+                    self.switchManualMode()
+            except OSError:
+                logging.error("There was a problem opening the query file.")
+        else:
+            logging.info("\"Open query\" canceled.")
+
+        logging.debug("LINE")
+
+    def saveInteractiveQuery(self):
+        filename, selectedFilter = QFileDialog.getSaveFileName(self, 'Save query', expanduser("~/filename.json"),
+                                                               "JSON files (*.json)")
+
+        if filename != "":
+            try:
+                query = self.queryUI.getQuery()
+                query.saveToFile(filename)
+                logging.info("Query saved successfully.")
+            except RuntimeError as e:
+                logging.error(str(e))
+            except OSError:
+                logging.error("There was a problem creating the file with the query.")
+        else:
+            logging.info("\"Save query\" canceled.")
+
+        logging.debug("LINE")
+
+    def openInteractiveQuery(self):
+        filename, selectedFilter = QFileDialog.getOpenFileName(self, 'Open query', expanduser("~/filename.json"))
+
+        if filename != "":
+            try:
+                self.queryUI.setQuery(OverpassQuery.getFromFile(filename))
             except OSError:
                 logging.error("There was a problem opening the query file.")
         else:
