@@ -119,7 +119,7 @@ class RequestsOperations(QWidget):
         return self.outputSetSelection.currentText()
 
     def setOutputSet(self, outputSetName):
-        self.outputSetSelection.setEditText(outputSetName)
+        self.outputSetSelection.setCurrentText(outputSetName)
 
     @property
     def ops(self):
@@ -207,7 +207,7 @@ class RequestsOperations(QWidget):
         for op in self.__ops:
             if op.name == setName:
                 self.resultingSets.model().removeOp(setName)
-                del op
+                self.__ops.remove(op)
                 break
 
         SetNameManagement.releaseName(setName)
