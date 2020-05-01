@@ -87,7 +87,7 @@ class OverpassRequest(OverpassSet):
                 "surrounding": self.surrounding.value,
                 "aroundRadius": self.aroundRadius,
                 "polygon": self.polygon,
-                "location": self.locationId}
+                "location": self.locationName}
 
     @staticmethod
     def getRequestFromDict(requestDict):
