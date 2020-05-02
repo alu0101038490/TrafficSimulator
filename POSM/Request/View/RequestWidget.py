@@ -235,6 +235,19 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
+    def addFilter(self, key="", value="", accuracy=False, negate=False):
+        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
+        if key != "" and key in currentKeys.keys():
+            filter = currentKeys[key]
+            logging.warning("Some filters have been modified.")
+        else:
+            filter = FilterWidget(self.filtersWidget, self.keyValues)
+            self.filtersLayout.addWidget(filter)
+        filter.setKey(key)
+        filter.setValue(value)
+        filter.setExactValue(accuracy)
+        filter.setNegate(negate)
+
     def __getLocationName__(self):
         return self.locationNameWidget.text()
 
@@ -268,6 +281,21 @@ class RequestWidget(QWidget):
             self.surroundGB.findChild(QRadioButton, "Around").setChecked(True)
         elif surroundValue == Surround.NONE:
             self.surroundGB.findChild(QRadioButton, "None").setChecked(True)
+
+    def getRequest(self):
+        surroundType = self.__getSelectedSurrounding__()
+        aroundRadius = 100
+        if surroundType == Surround.AROUND and len(self.aroundRadiusEdit.text()) > 0:
+            aroundRadius = int(self.aroundRadiusEdit.text())
+
+        request = OverpassRequest(self.__getType__(), surroundType, aroundRadius)
+        request.setLocationId(self.__getLocationId__())
+        request.addPolygon(self.__getPolygon__())
+        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
+            request.addFilter(filterWidget.getFilter())
+        return request
+
+    # =================== POLYGON ===================
 
     @pyqtSlot(QJsonValue)
     def __setPolygons__(self, val):
@@ -351,6 +379,8 @@ class RequestWidget(QWidget):
         else:
             self.polygonPage.runJavaScript("disablePolygon();")
 
+    # ============= DISAMBIGUATION TABLE =============
+
     def showTable(self):
         query = OverpassQuery(self.getName())
         query.addRequest(self.getRequest())
@@ -378,6 +408,13 @@ class RequestWidget(QWidget):
             lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
 
         self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+
+    def getHtmlFromSelectedRow(self):
+        selectedRows = self.getSelectedRowNetworkx()
+        if selectedRows:
+            return buildHTMLWithNetworkx(selectedRows)
+        else:
+            raise RuntimeError("No row is selected")
 
     def showHideOnlyDisconnected(self):
         if self.onlyDisconnectedCB.isChecked():

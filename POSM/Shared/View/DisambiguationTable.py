@@ -77,6 +77,12 @@ class DisconnectedWaysTable(DisambiguationTable):
 
     def __init__(self, jsonData):
         super().__init__(jsonData)
+        self.allKeys = frozenset([])
+        for i in self.data:
+            self.allKeys |= frozenset(i["tags"].keys())
+        self.allKeys -= frozenset(["osmid", "length"])
+        ox.config(useful_tags_path=list(self.allKeys))
+
         self.subgraphs = []
 
         self.updateAlt()
@@ -86,7 +92,22 @@ class DisconnectedWaysTable(DisambiguationTable):
         return self.headerItems
 
     def getDictData(self, index):
-        return {k: self.alt[index][0].get(k) for k in self.headerItems}
+        result = {}
+        unselectedEdges = [e[2] for e in self.subgraphs[index].edges(data=True)]
+        for key in self.allKeys:
+            prevSize = len(unselectedEdges)
+            alternatives = [self.alt[i][key] for i in list(range(len(self.alt))) if i != index]
+            includedValues = self.alt[index][key].difference(*alternatives)
+            if includedValues == self.alt[index][key]:
+                return {key: includedValues}, []
+            elif len(includedValues) != 0:
+                unselectedEdges = list(filter(lambda edge: edge[key] not in list(includedValues), unselectedEdges))
+                if prevSize != len(unselectedEdges):
+                    result[key] = includedValues
+                    if len(unselectedEdges) == 0:
+                        return result, []
+        ids = [edge["osmid"] for edge in unselectedEdges]
+        return result, ids
 
     def getRowJson(self, indexes):
         if len(indexes) > 0:
@@ -94,13 +115,15 @@ class DisconnectedWaysTable(DisambiguationTable):
             for i in indexes[1:]:
                 G = nx.union(self.subgraphs[i.row()], G)
             return G
+        else:
+            return None
 
     def data(self, index, role=Qt.DisplayRole):
         column = index.column()
         row = index.row()
 
         if role == Qt.DisplayRole:
-            return self.alt[row].get(self.headerItems[column])
+            return ", ".join([str(value) for value in self.alt[row][self.headerItems[column]]])
         elif role == Qt.BackgroundRole:
             return QColor(Qt.white)
         elif role == Qt.TextAlignmentRole:
@@ -117,15 +140,17 @@ class DisconnectedWaysTable(DisambiguationTable):
         for nodes in nx.weakly_connected_components(G):
             subgraph = nx.induced_subgraph(G, nodes)
             self.subgraphs.append(subgraph)
-            edgesKeys = [frozenset(e[2].keys()) for e in G.edges(data=True)]
-            edgeAttr = edgesKeys[0].intersection(*edgesKeys[1:]) - frozenset(["osmid", "length"])
+
             altAppend = {}
-            for attr in edgeAttr:
-                valuesSet = frozenset(nx.get_edge_attributes(subgraph, attr).values())
-                if len(valuesSet) == 1:
-                    altAppend[attr] = list(valuesSet)[0]
+            for key in self.allKeys:
+                values = []
+                edges = subgraph.edges(data=True)
+                for edge in edges:
+                    values.append(edge[2].get(key))
+                altAppend[key] = frozenset(values)
+                if len(altAppend[key]) == 1 and values[0] is not None:
+                    updatedHeader |= frozenset([key])
             self.alt.append(altAppend)
-            updatedHeader |= altAppend.keys()
         self.headerItems = list(updatedHeader)
 
 
@@ -136,6 +161,8 @@ class SimilarWaysTable(DisambiguationTable):
         self.allKeys = frozenset([])
         for i in self.data:
             self.allKeys |= frozenset(i["tags"].keys())
+        self.allKeys -= frozenset(["osmid", "length"])
+        ox.config(useful_tags_path=list(self.allKeys))
 
         self.headerItems = list(frozenset(["highway", "name", "maxspeed", "ref", "lanes", "oneway"]) & self.allKeys)
 
@@ -167,6 +194,8 @@ class SimilarWaysTable(DisambiguationTable):
             for i in indexes:
                 result["elements"] += self.alt[i.row()][2]
             return ox.create_graph([result], retain_all=True)
+        else:
+            return None
 
     def data(self, index, role=Qt.DisplayRole):
         column = index.column()

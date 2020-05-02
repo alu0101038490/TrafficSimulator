@@ -149,6 +149,10 @@ class QueryUI(QWidget):
 
         return self.getCurrentMap()
 
+    def updateMapFromRow(self):
+        currentRequest = self.requestTabs.currentWidget()
+        return self.updateMaps(currentRequest.getHtmlFromSelectedRow())
+
     def getCurrentMap(self):
         if self.requestTabs.currentWidget() is None:
             return None
