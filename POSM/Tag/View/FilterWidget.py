@@ -16,11 +16,18 @@ from Tag.Model.OverpassFilter import OverpassFilter
 
 class FilterWidget(QFrame):
 
-    def __init__(self, parent, keyValues):
-        super().__init__(parent)
-        self.keyValues = keyValues
+    def __init__(self, parent, keyList=None):
+        super().__init__(parent, Qt.WindowFlags())
+        if keyList is None:
+            keyList = []
+        self.keyList = keyList
         self.initUI()
 
+        self.__makeWidgetACardView__()
+
+    # UI COMPONENTS
+
+    def __makeWidgetACardView__(self):
         self.setAutoFillBackground(True)
         effect = QGraphicsDropShadowEffect()
         effect.setBlurRadius(10)
@@ -28,13 +35,18 @@ class FilterWidget(QFrame):
         effect.setOffset(0.0)
         self.setGraphicsEffect(effect)
 
+    def __generateLayout__(self):
+        layout = QFormLayout()
+        layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setVerticalSpacing(5)
+        layout.setLabelAlignment(Qt.AlignLeft)
+        layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
+        return layout
+
     def initUI(self):
-        self.layout = QFormLayout()
-        self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-        self.layout.setContentsMargins(10, 5, 10, 5)
-        self.layout.setVerticalSpacing(5)
-        self.layout.setLabelAlignment(Qt.AlignLeft)
-        self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.layout = self.__generateLayout__()
+        self.setLayout(self.layout)
 
         topWidget = QWidget()
         topLayout = QHBoxLayout()
@@ -46,30 +58,30 @@ class FilterWidget(QFrame):
         self.keyInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.keyInput.setEditable(True)
         self.keyInput.lineEdit().setPlaceholderText("'highway', 'name'...")
-        self.keyInput.addItems(self.keyValues)
+        self.keyInput.addItems(self.keyList)
         topLayout.addWidget(self.keyInput)
 
-        self.filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")),
-                                              topWidget.windowHandle(),
-                                              self.keyInput.height())
-        self.filterOptionsButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
+        filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")),
+                                         topWidget.windowHandle(),
+                                         self.keyInput.height())
+        filterOptionsButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
 
-        self.filterOptionsMenu = QMenu()
+        filterOptionsMenu = QMenu()
 
         removeAct = QAction('Remove filter', self)
         removeAct.triggered.connect(self.deleteLater)
-        self.filterOptionsMenu.addAction(removeAct)
+        filterOptionsMenu.addAction(removeAct)
 
         helpAct = QAction('Help', self)
         helpAct.triggered.connect(self.getInfo)
-        self.filterOptionsMenu.addAction(helpAct)
+        filterOptionsMenu.addAction(helpAct)
 
-        self.filterOptionsButton.setMenu(self.filterOptionsMenu)
-        self.filterOptionsButton.setFlat(True)
-        topLayout.addWidget(self.filterOptionsButton)
+        filterOptionsButton.setMenu(filterOptionsMenu)
+        filterOptionsButton.setFlat(True)
+        topLayout.addWidget(filterOptionsButton)
 
         self.layout.addRow("Key:", topWidget)
-
+        # ===============================================================================================
         self.comparisonInput = QComboBox()
         self.comparisonInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         self.comparisonSwitch = [TagComparison.EQUAL,
@@ -90,7 +102,7 @@ class FilterWidget(QFrame):
                                        "at least one is included"])
         self.comparisonInput.currentIndexChanged.connect(self.__onComparisonSelected__)
         self.layout.addRow("", self.comparisonInput)
-
+        # ===============================================================================================
         valueEdition = QWidget()
         valueEdition.setLayout(QHBoxLayout())
         valueEdition.layout().setSpacing(0)
@@ -105,6 +117,7 @@ class FilterWidget(QFrame):
         self.layout.addRow("Value:", valueEdition)
 
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
+        # ===============================================================================================
 
         flagsWidget = QWidget()
         flagsWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -122,12 +135,58 @@ class FilterWidget(QFrame):
 
         self.layout.addRow("Flags:", flagsWidget)
 
-        line = QFrame(self)
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        self.layout.addWidget(line)
+    # TAG GETTERS
 
-        self.setLayout(self.layout)
+    def getFilter(self):
+        return OverpassFilter(self.getKey(),
+                              self.getComparison(),
+                              self.getValue(),
+                              self.isNegateSelected(),
+                              self.isExactValueSelected())
+
+    def getKey(self):
+        return self.keyInput.currentText()
+
+    def getComparison(self):
+        return self.comparisonSwitch[self.comparisonInput.currentIndex()]
+
+    def getValue(self):
+        return self.valueInput.currentText()
+
+    def isExactValueSelected(self):
+        return self.checkboxAccuracy.isChecked()
+
+    def isNegateSelected(self):
+        return self.checkboxNegate.isChecked()
+
+    # TAG SETTERS
+
+    def setFilter(self, newFilter):
+        self.setKey(newFilter.key)
+        self.setComparison(newFilter.comparison)
+        self.setValue(newFilter.value)
+        self.setNegate(newFilter.isNegated)
+        self.setExactValue(newFilter.isExactValue)
+
+    def setKey(self, key):
+        self.keyInput.setEditText(key)
+
+    def setComparison(self, tagComparison):
+        try:
+            self.comparisonInput.setCurrentIndex(self.comparisonSwitch.index(tagComparison))
+        except ValueError:
+            return
+
+    def setValue(self, value):
+        self.valueInput.setEditText(value)
+
+    def setExactValue(self, checked):
+        self.checkboxAccuracy.setChecked(checked)
+
+    def setNegate(self, checked):
+        self.checkboxNegate.setChecked(checked)
+
+    # SIGNALS
 
     def __onComparisonSelected__(self, i):
         if i > 4:
@@ -144,22 +203,8 @@ class FilterWidget(QFrame):
         else:
             self.checkboxAccuracy.show()
 
-    def getFilter(self):
-        return OverpassFilter(self.getKey(),
-                              self.getComparison(),
-                              self.getValue(),
-                              self.isNegateSelected(),
-                              self.isExactValueSelected())
-
-    def setFilter(self, newFilter):
-        self.setKey(newFilter.key)
-        self.setComparison(newFilter.comparison)
-        self.setValue(newFilter.value)
-        self.setNegate(newFilter.isNegated)
-        self.setExactValue(newFilter.isExactValue)
-
     def getInfo(self):
-        keyName = self.keyInput.currentText()
+        keyName = self.getKey()
         try:
             descriptions = getKeyDescription(keyName)
             if len(descriptions) == 0:
@@ -181,36 +226,3 @@ class FilterWidget(QFrame):
         except RequestException:
             logging.error("There was a problem with the internet connection. Can't get the possible values for the "
                           "given key.")
-
-    def getKey(self):
-        return self.keyInput.currentText()
-
-    def getComparison(self):
-        return self.comparisonSwitch[self.comparisonInput.currentIndex()]
-
-    def setComparison(self, tagComparison):
-        try:
-            self.comparisonInput.setCurrentIndex(self.comparisonSwitch.index(tagComparison))
-        except ValueError:
-            return
-
-    def getValue(self):
-        return self.valueInput.currentText()
-
-    def setKey(self, key):
-        self.keyInput.setEditText(key)
-
-    def setValue(self, value):
-        self.valueInput.setEditText(value)
-
-    def isExactValueSelected(self):
-        return self.checkboxAccuracy.isChecked()
-
-    def setExactValue(self, bool):
-        self.checkboxAccuracy.setChecked(bool)
-
-    def isNegateSelected(self):
-        return self.checkboxNegate.isChecked()
-
-    def setNegate(self, bool):
-        self.checkboxNegate.setChecked(bool)
