@@ -43,11 +43,6 @@ class RequestWidget(QWidget):
         else:
             self.__setRequest__(request)
 
-    def __onAreaSelected(self):
-        self.nodesCB.setChecked(False)
-        self.waysCB.setChecked(False)
-        self.relCB.setChecked(False)
-
     def initUI(self):
         self.layout = QFormLayout()
         self.layout.setContentsMargins(10, 10, 10, 10)
@@ -73,7 +68,7 @@ class RequestWidget(QWidget):
         elementsTypeLayout.addWidget(self.relCB)
 
         self.areasCB = QCheckBox(self.tr("&Areas"))
-        self.areasCB.stateChanged.connect(self.__onAreaSelected)
+        self.areasCB.stateChanged.connect(self.__onAreaSelected__)
         elementsTypeLayout.addWidget(self.areasCB)
 
         self.nodesCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
@@ -235,69 +230,6 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
-    def __getLocationName__(self):
-        return self.locationNameWidget.text()
-
-    def __setLocationName__(self, locationName):
-        self.locationNameWidget.setText(locationName)
-
-    def __getType__(self):
-        return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),
-                               self.relCB.isChecked(), self.areasCB.isChecked())
-
-    def __setType__(self, requestType):
-        typeConfig = OsmType.getConfig(requestType)
-        self.waysCB.setChecked(typeConfig["way"])
-        self.nodesCB.setChecked(typeConfig["node"])
-        self.relCB.setChecked(typeConfig["rel"])
-        self.areasCB.setChecked(typeConfig["area"])
-
-    def __getSelectedSurrounding__(self):
-        switcher = {
-            "Adjacent": Surround.ADJACENT,
-            "Around": Surround.AROUND,
-            "None": Surround.NONE
-        }
-        selectedSurrounding = [b for b in self.surroundGB.findChildren(QRadioButton) if b.isChecked()][0]
-        return switcher.get(selectedSurrounding.objectName())
-
-    def __setSelectedSurrounding__(self, surroundValue):
-        if surroundValue == Surround.ADJACENT:
-            self.surroundGB.findChild(QRadioButton, "Adjacent").setChecked(True)
-        elif surroundValue == Surround.AROUND:
-            self.surroundGB.findChild(QRadioButton, "Around").setChecked(True)
-        elif surroundValue == Surround.NONE:
-            self.surroundGB.findChild(QRadioButton, "None").setChecked(True)
-
-    # =================== POLYGON ===================
-
-    @pyqtSlot(QJsonValue)
-    def __setPolygons__(self, val):
-        self.polygonSettings = []
-        for point in val.toArray():
-            self.polygonSettings.append([point["lat"].toDouble(), point["lng"].toDouble()])
-
-    def __getPolygon__(self):
-        return self.polygonSettings
-
-    def changePolygon(self, coors):
-        self.polygonSettings = coors
-        if self.html != "":
-            self.changePage(self.html)
-
-    def changePage(self, html):
-        self.html = html
-        soup = bs4.BeautifulSoup(html, features="html.parser")
-        js = soup.new_tag("script")
-        js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.drawPolButton.isChecked()).lower()))
-        soup.append(js)
-        soup.head.append(soup.new_tag("script", src="qrc:///qtwebchannel/qwebchannel.js"))
-        htmlFileName = os.path.join(tempDir, "{}.html".format(self.requestName))
-        with open(htmlFileName, "w+") as f:
-            f.write(str(soup))
-
-        self.polygonPage.load(QUrl.fromLocalFile(htmlFileName))
-
     def showTableSelection(self):
         try:
             self.changePage(buildHTMLWithNetworkx(self.getSelectedRowNetworkx()))
@@ -311,50 +243,6 @@ class RequestWidget(QWidget):
         except Exception:
             logging.error(traceback.format_exc())
         logging.debug("LINE")
-
-    def getName(self):
-        return self.requestName
-
-    def getAroundRadius(self):
-        return int(self.aroundRadiusEdit.text()) if len(self.aroundRadiusEdit.text()) > 0 else 100
-
-    def setAroundRadius(self, radius):
-        return self.aroundRadiusEdit.setText(str(radius))
-
-    def getRequest(self):
-        request = OverpassRequest(self.__getType__(),
-                                  self.__getSelectedSurrounding__(),
-                                  self.requestName,
-                                  self.getAroundRadius())
-        request.setLocationName(self.__getLocationName__())
-        request.addPolygon(self.__getPolygon__())
-        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getFilter())
-        return request
-
-    def __setRequest__(self, request):
-        self.requestName = request.name
-        self.__setType__(request.type)
-        self.setAroundRadius(request.aroundRadius)
-        self.__setSelectedSurrounding__(request.surrounding)
-        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
-            filterWidget.deleteLater()
-        for filter in request.filters:
-            self.addFilter(filter)
-        self.__setLocationName__(request.locationName)
-        self.changePolygon(request.polygon)
-
-    def getMap(self):
-        return self.polygonPage
-
-    def clearPolygon(self):
-        self.polygonPage.runJavaScript("cleanPolygon();", lambda x: logging.debug("LINE"))
-
-    def enableDisablePolygon(self):
-        if self.drawPolButton.isChecked():
-            self.polygonPage.runJavaScript("enablePolygon();")
-        else:
-            self.polygonPage.runJavaScript("disablePolygon();")
 
     # ============= DISAMBIGUATION TABLE =============
 
@@ -443,3 +331,119 @@ class RequestWidget(QWidget):
 
     def __del__(self):
         SetNameManagement.releaseName(self.requestName)
+
+    # REQUEST GETTERS
+
+    def __getLocationName__(self):
+        return self.locationNameWidget.text()
+
+    def __getType__(self):
+        return OsmType.getType(self.nodesCB.isChecked(), self.waysCB.isChecked(),
+                               self.relCB.isChecked(), self.areasCB.isChecked())
+
+    def __getSelectedSurrounding__(self):
+        switcher = {
+            "Adjacent": Surround.ADJACENT,
+            "Around": Surround.AROUND,
+            "None": Surround.NONE
+        }
+        selectedSurrounding = [b for b in self.surroundGB.findChildren(QRadioButton) if b.isChecked()][0]
+        return switcher.get(selectedSurrounding.objectName())
+
+    @pyqtSlot(QJsonValue)
+    def __setPolygons__(self, val):
+        self.polygonSettings = []
+        for point in val.toArray():
+            self.polygonSettings.append([point["lat"].toDouble(), point["lng"].toDouble()])
+
+    def __getPolygon__(self):
+        return self.polygonSettings
+
+    def getAroundRadius(self):
+        return int(self.aroundRadiusEdit.text()) if len(self.aroundRadiusEdit.text()) > 0 else 100
+
+    def getRequest(self):
+        request = OverpassRequest(self.__getType__(),
+                                  self.__getSelectedSurrounding__(),
+                                  self.requestName,
+                                  self.getAroundRadius())
+        request.setLocationName(self.__getLocationName__())
+        request.addPolygon(self.__getPolygon__())
+        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
+            request.addFilter(filterWidget.getFilter())
+        return request
+
+    def getName(self):
+        return self.requestName
+
+    def getMap(self):
+        return self.polygonPage
+
+    # REQUEST SETTERS
+
+    def __setLocationName__(self, locationName):
+        self.locationNameWidget.setText(locationName)
+
+    def __setType__(self, requestType):
+        typeConfig = OsmType.getConfig(requestType)
+        self.waysCB.setChecked(typeConfig["way"])
+        self.nodesCB.setChecked(typeConfig["node"])
+        self.relCB.setChecked(typeConfig["rel"])
+        self.areasCB.setChecked(typeConfig["area"])
+
+    def __setSelectedSurrounding__(self, surroundValue):
+        if surroundValue == Surround.ADJACENT:
+            self.surroundGB.findChild(QRadioButton, "Adjacent").setChecked(True)
+        elif surroundValue == Surround.AROUND:
+            self.surroundGB.findChild(QRadioButton, "Around").setChecked(True)
+        elif surroundValue == Surround.NONE:
+            self.surroundGB.findChild(QRadioButton, "None").setChecked(True)
+
+    def changePolygon(self, coors):
+        self.polygonSettings = coors
+        if self.html != "":
+            self.changePage(self.html)
+
+    def setAroundRadius(self, radius):
+        return self.aroundRadiusEdit.setText(str(radius))
+
+    def __setRequest__(self, request):
+        self.requestName = request.name
+        self.__setType__(request.type)
+        self.setAroundRadius(request.aroundRadius)
+        self.__setSelectedSurrounding__(request.surrounding)
+        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
+            filterWidget.deleteLater()
+        for filter in request.filters:
+            self.addFilter(filter)
+        self.__setLocationName__(request.locationName)
+        self.changePolygon(request.polygon)
+
+    def changePage(self, html):
+        self.html = html
+        soup = bs4.BeautifulSoup(html, features="html.parser")
+        js = soup.new_tag("script")
+        js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.drawPolButton.isChecked()).lower()))
+        soup.append(js)
+        soup.head.append(soup.new_tag("script", src="qrc:///qtwebchannel/qwebchannel.js"))
+        htmlFileName = os.path.join(tempDir, "{}.html".format(self.requestName))
+        with open(htmlFileName, "w+") as f:
+            f.write(str(soup))
+
+        self.polygonPage.load(QUrl.fromLocalFile(htmlFileName))
+
+    # SIGNALS
+
+    def __onAreaSelected__(self):
+        self.nodesCB.setChecked(False)
+        self.waysCB.setChecked(False)
+        self.relCB.setChecked(False)
+
+    def clearPolygon(self):
+        self.polygonPage.runJavaScript("cleanPolygon();", lambda x: logging.debug("LINE"))
+
+    def enableDisablePolygon(self):
+        if self.drawPolButton.isChecked():
+            self.polygonPage.runJavaScript("enablePolygon();")
+        else:
+            self.polygonPage.runJavaScript("disablePolygon();")
