@@ -4,7 +4,7 @@ import traceback
 
 import bs4
 import osmnx as ox
-from PyQt5.QtCore import Qt, pyqtSlot, QJsonValue
+from PyQt5.QtCore import Qt, pyqtSlot, QJsonValue, QUrl
 from PyQt5.QtGui import QIcon, QIntValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
@@ -20,7 +20,7 @@ from Shared.View.CollapsibleList import CheckableComboBox
 from Shared.View.DisambiguationTable import DisconnectedWaysTable, SimilarWaysTable
 from Shared.View.HorizontalLine import HorizontalLine
 from Shared.View.IconButton import IconButton
-from Shared.constants import picturesDir, Surround, tableDir, JS_SCRIPT, OsmType, TagComparison
+from Shared.constants import picturesDir, Surround, tableDir, JS_SCRIPT, OsmType, TagComparison, resDir, tempDir
 from Tag.View.FilterWidget import FilterWidget
 
 
@@ -235,19 +235,6 @@ class RequestWidget(QWidget):
 
         self.setLayout(self.layout)
 
-    def addFilter(self, key="", value="", accuracy=False, negate=False):
-        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
-        if key != "" and key in currentKeys.keys():
-            filter = currentKeys[key]
-            logging.warning("Some filters have been modified.")
-        else:
-            filter = FilterWidget(self.filtersWidget, self.keyValues)
-            self.filtersLayout.addWidget(filter)
-        filter.setKey(key)
-        filter.setValue(value)
-        filter.setExactValue(accuracy)
-        filter.setNegate(negate)
-
     def __getLocationName__(self):
         return self.locationNameWidget.text()
 
@@ -282,19 +269,6 @@ class RequestWidget(QWidget):
         elif surroundValue == Surround.NONE:
             self.surroundGB.findChild(QRadioButton, "None").setChecked(True)
 
-    def getRequest(self):
-        surroundType = self.__getSelectedSurrounding__()
-        aroundRadius = 100
-        if surroundType == Surround.AROUND and len(self.aroundRadiusEdit.text()) > 0:
-            aroundRadius = int(self.aroundRadiusEdit.text())
-
-        request = OverpassRequest(self.__getType__(), surroundType, aroundRadius)
-        request.setLocationId(self.__getLocationId__())
-        request.addPolygon(self.__getPolygon__())
-        for filterWidget in self.filtersWidget.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getFilter())
-        return request
-
     # =================== POLYGON ===================
 
     @pyqtSlot(QJsonValue)
@@ -318,8 +292,11 @@ class RequestWidget(QWidget):
         js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.drawPolButton.isChecked()).lower()))
         soup.append(js)
         soup.head.append(soup.new_tag("script", src="qrc:///qtwebchannel/qwebchannel.js"))
+        htmlFileName = os.path.join(tempDir, "{}.html".format(self.requestName))
+        with open(htmlFileName, "w+") as f:
+            f.write(str(soup))
 
-        self.polygonPage.setHtml(str(soup))
+        self.polygonPage.load(QUrl.fromLocalFile(htmlFileName))
 
     def showTableSelection(self):
         try:
