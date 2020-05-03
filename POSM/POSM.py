@@ -182,7 +182,7 @@ class POSM(QMainWindow):
             OverpassFilter("highway", TagComparison.EQUAL, mainHighways, False, False),
             OverpassFilter("construction", TagComparison.HAS_NOT_KEY, "", False, False),
             OverpassFilter("noexit", TagComparison.EQUAL, "yes", True, True),
-            OverpassFilter("access", TagComparison.EQUAL, everythingButYes, False, True)]))
+            OverpassFilter("access", TagComparison.EQUAL, everythingButYes, True, False)]))
         templatesMenu.addAction(addMainRoadAct)
 
         addParkingAct = QAction('Parking', self)
