@@ -60,8 +60,7 @@ class OverpassRequest(OverpassSet):
         if len(self.polygon) > 0:
             ql += "(poly:\"%s\")" % " ".join([str(c) for point in self.polygon for c in point])
 
-        for filter in self.filters:
-            ql += filter.getQL()
+        ql += "".join([f.getQL() for f in self.filters])
 
         if self.surrounding == Surround.AROUND:
             ql += ";{}(around:{});)".format(self.type.value, str(self.aroundRadius))
@@ -75,8 +74,8 @@ class OverpassRequest(OverpassSet):
         self.__locationName = locationName
         self.__locationId = getIdFromLocationName(locationName)
 
-    def addFilter(self, filter):
-        self.filters.append(filter)
+    def addFilter(self, newFilter):
+        self.filters.append(newFilter)
 
     def addPolygon(self, coords):
         self.__polygon = coords
