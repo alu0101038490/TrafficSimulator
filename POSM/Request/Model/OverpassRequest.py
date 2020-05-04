@@ -66,7 +66,7 @@ class OverpassRequest(OverpassSet):
             ql += ";{}(around:{});)".format(self.type.value, str(self.aroundRadius))
         elif self.surrounding == Surround.ADJACENT:
             ql += ";>;way(bn);>;)"
-        return ql + "->." + self.setName + ";\n"
+        return ql + "->." + self.name + ";\n"
 
     # REQUEST SETTERS
 

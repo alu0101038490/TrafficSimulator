@@ -64,7 +64,7 @@ class OverpassUnion(OverpassSetOp):
             raise RuntimeError("Union without sets")
         if len(self.sets) == 1:
             logging.warning("Getting query with invalid union.")
-        return "(.%s;)->.%s;\n" % (";.".join(self.sets), self.setName)
+        return "(.%s;)->.%s;\n" % (";.".join(self.sets), self.name)
 
     def isValid(self):
         return len(self.sets) > 1
@@ -89,7 +89,7 @@ class OverpassIntersection(OverpassSetOp):
             raise RuntimeError("Intersection without sets")
         if len(self.sets) == 1:
             logging.warning("Getting query with invalid intersection.")
-        return "way.%s->.%s;\n" % (".".join(self.sets), self.setName)
+        return "way.%s->.%s;\n" % (".".join(self.sets), self.name)
 
     def isValid(self):
         return len(self.sets) > 1
@@ -131,7 +131,7 @@ class OverpassDiff(OverpassSetOp):
     def getQL(self):
         if not self.isValid():
             raise RuntimeError("Difference without excluded sets nor included set.")
-        return "(.%s;- .%s;)->.%s;\n" % (self.includedSet, ";- .".join(self.sets), self.setName)
+        return "(.%s;- .%s;)->.%s;\n" % (self.includedSet, ";- .".join(self.sets), self.name)
 
     def isValid(self):
         return len(self.sets) > 0 and self.includedSet != ""
