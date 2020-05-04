@@ -26,91 +26,78 @@ from Tag.View.FilterWidget import FilterWidget
 
 class RequestWidget(QWidget):
 
-    def __init__(self, parent, keyValues, request=None):
+    def __init__(self, parent, keyList, request=None):
         super().__init__(parent)
 
-        self.keyValues = keyValues
+        self.keyList = keyList
+
+        # INITIALIZE POLYGON MANAGEMENT
+
         self.polygonSettings = []
         self.html = ""
         self.webChannel = QWebChannel()
         self.webChannel.registerObject('request', self)
         self.polygonPage = QWebEnginePage()
         self.polygonPage.setWebChannel(self.webChannel)
-        self.initUI()
+
+        # INITIALIZE UI
+
+        self.layout = self.__generateLayout__()
+        self.setLayout(self.layout)
+
+        elementsTypeGB, self.nodesCB, self.waysCB, self.relCB, self.areasCB = self.__generateTypeWidget__()
+        self.layout.addRow("ELEMENTS TYPE", elementsTypeGB)
+        self.layout.addRow(HorizontalLine(self))
+
+        self.locationNameWidget = self.__generateLocationWidget__()
+        self.layout.addRow("LOCATION", self.locationNameWidget)
+        self.layout.addRow(HorizontalLine(self))
+
+        filtersButtons, self.filtersWidget, self.filtersLayout = self.__generateFiltersWidget__()
+        self.layout.addRow("FILTERS", filtersButtons)
+        self.layout.addRow(self.filtersWidget)
+        self.layout.addRow(HorizontalLine(self))
+
+        polygonButtons, self.drawPolButton, self.buttonClearPol = self.__generatePolygonWidget__()
+        self.layout.addRow("POLYGON", polygonButtons)
+        self.layout.addRow(HorizontalLine(self))
+
+        self.surroundGB, self.aroundRadiusEdit = self.__generateSurroundingWidget__()
+        self.layout.addRow("SURROUNDINGS", self.surroundGB)
+        self.layout.addRow(HorizontalLine(self))
+
+        columnSelectionWidget, self.onlyDisconnectedCB, self.tableView, tableButtons = self.__generateDisambiguationTable__()
+        self.layout.addRow("DISAMBIGUATION", columnSelectionWidget)
+        self.layout.addRow("", self.onlyDisconnectedCB)
+        self.layout.addRow(self.tableView)
+        self.layout.addRow(tableButtons)
+
+        # SETTING DATA
 
         if request is None:
             self.requestName = SetNameManagement.getUniqueSetName()
         else:
             self.__setRequest__(request)
 
-    def initUI(self):
-        self.layout = QFormLayout()
-        self.layout.setContentsMargins(10, 10, 10, 10)
+    # UI COMPONENTS
 
-        self.layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-        self.layout.setLabelAlignment(Qt.AlignLeft)
-        self.layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
+    def __generateLayout__(self):
+        layout = QFormLayout()
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        elementsTypeGB = QWidget()
-        elementsTypeLayout = QVBoxLayout()
-        elementsTypeGB.setLayout(elementsTypeLayout)
-        elementsTypeLayout.setContentsMargins(10, 0, 0, 0)
-        elementsTypeLayout.setSpacing(0)
+        layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+        layout.setLabelAlignment(Qt.AlignLeft)
+        layout.setFormAlignment(Qt.AlignLeft | Qt.AlignTop)
 
-        self.nodesCB = QCheckBox(self.tr("&Nodes"))
-        elementsTypeLayout.addWidget(self.nodesCB)
+        return layout
 
-        self.waysCB = QCheckBox(self.tr("&Ways"))
-        self.waysCB.setChecked(True)
-        elementsTypeLayout.addWidget(self.waysCB)
+    def __generateLocationWidget__(self):
+        locationNameWidget = QLineEdit()
+        locationNameWidget.setPlaceholderText("Areas: 'New York', 'Italy'...")
+        locationNameWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        return locationNameWidget
 
-        self.relCB = QCheckBox(self.tr("&Relations"))
-        elementsTypeLayout.addWidget(self.relCB)
-
-        self.areasCB = QCheckBox(self.tr("&Areas"))
-        self.areasCB.stateChanged.connect(self.__onAreaSelected__)
-        elementsTypeLayout.addWidget(self.areasCB)
-
-        self.nodesCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
-        self.waysCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
-        self.relCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
-
-        self.layout.addRow("ELEMENTS TYPE", elementsTypeGB)
-        self.layout.addRow(HorizontalLine(self))
-
-        self.locationNameWidget = QLineEdit()
-        self.locationNameWidget.setPlaceholderText("Areas: 'New York', 'Italy'...")
-        self.locationNameWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-
-        self.layout.addRow("LOCATION", self.locationNameWidget)
-        self.layout.addRow(HorizontalLine(self))
-
-        filtersButtons = QWidget()
-        filtersButtonsLayout = QHBoxLayout()
-        filtersButtons.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        filtersButtonsLayout.setAlignment(Qt.AlignRight)
-        filtersButtonsLayout.setSpacing(0)
-        filtersButtonsLayout.setContentsMargins(0, 0, 0, 0)
-        filtersButtons.setLayout(filtersButtonsLayout)
-
-        self.addFilterButton = IconButton(QIcon(os.path.join(picturesDir, "add.png")),
-                                          filtersButtons.windowHandle(),
-                                          filtersButtons.height())
-        self.addFilterButton.setToolTip("Add filter")
-        self.addFilterButton.setFlat(True)
-        self.addFilterButton.clicked.connect(lambda b: self.addFilter())
-
-        filtersButtonsLayout.addWidget(self.addFilterButton)
-
-        self.layout.addRow("FILTERS", filtersButtons)
-
-        self.filtersWidget = QWidget(self)
-        self.filtersLayout = QVBoxLayout()
-        self.filtersLayout.setContentsMargins(10, 10, 10, 10)
-        self.filtersWidget.setLayout(self.filtersLayout)
-        self.layout.addRow(self.filtersWidget)
-        self.layout.addRow(HorizontalLine(self))
-
+    def __generatePolygonWidget__(self):
         polygonButtons = QWidget()
         polygonButtonsLayout = QHBoxLayout()
         polygonButtons.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
@@ -119,28 +106,55 @@ class RequestWidget(QWidget):
         polygonButtonsLayout.setContentsMargins(0, 0, 0, 0)
         polygonButtons.setLayout(polygonButtonsLayout)
 
-        self.drawPolButton = IconButton(QIcon(os.path.join(picturesDir, "polygon.png")), polygonButtons.windowHandle(),
-                                        polygonButtons.height())
-        self.drawPolButton.setToolTip("Draw polygon")
-        self.drawPolButton.setFlat(True)
-        self.drawPolButton.setCheckable(True)
-        self.drawPolButton.toggled.connect(self.enableDisablePolygon)
+        drawPolButton = IconButton(QIcon(os.path.join(picturesDir, "polygon.png")), polygonButtons.windowHandle(),
+                                   polygonButtons.height())
+        drawPolButton.setToolTip("Draw polygon")
+        drawPolButton.setFlat(True)
+        drawPolButton.setCheckable(True)
+        drawPolButton.toggled.connect(self.enableDisablePolygon)
 
-        polygonButtonsLayout.addWidget(self.drawPolButton)
+        polygonButtonsLayout.addWidget(drawPolButton)
 
-        self.buttonClearPol = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), polygonButtons.windowHandle(),
-                                         polygonButtons.height())
-        self.buttonClearPol.setToolTip("Remove polygon")
-        self.buttonClearPol.setFlat(True)
-        self.buttonClearPol.clicked.connect(self.clearPolygon)
+        buttonClearPol = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), polygonButtons.windowHandle(),
+                                    polygonButtons.height())
+        buttonClearPol.setToolTip("Remove polygon")
+        buttonClearPol.setFlat(True)
+        buttonClearPol.clicked.connect(self.clearPolygon)
 
-        polygonButtonsLayout.addWidget(self.buttonClearPol)
+        polygonButtonsLayout.addWidget(buttonClearPol)
 
-        self.layout.addRow("POLYGON", polygonButtons)
-        self.layout.addRow(HorizontalLine(self))
+        return polygonButtons, drawPolButton, buttonClearPol
 
-        self.surroundGB = QGroupBox()
-        self.surroundGB.setFlat(True)
+    def __generateTypeWidget__(self):
+        elementsTypeGB = QWidget()
+        elementsTypeLayout = QVBoxLayout()
+        elementsTypeGB.setLayout(elementsTypeLayout)
+        elementsTypeLayout.setContentsMargins(10, 0, 0, 0)
+        elementsTypeLayout.setSpacing(0)
+
+        nodesCB = QCheckBox(self.tr("&Nodes"))
+        elementsTypeLayout.addWidget(nodesCB)
+
+        waysCB = QCheckBox(self.tr("&Ways"))
+        waysCB.setChecked(True)
+        elementsTypeLayout.addWidget(waysCB)
+
+        relCB = QCheckBox(self.tr("&Relations"))
+        elementsTypeLayout.addWidget(relCB)
+
+        areasCB = QCheckBox(self.tr("&Areas"))
+        areasCB.stateChanged.connect(self.__onAreaSelected__)
+        elementsTypeLayout.addWidget(areasCB)
+
+        nodesCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
+        waysCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
+        relCB.stateChanged.connect(lambda b: self.areasCB.setChecked(False) if b else None)
+
+        return elementsTypeGB, nodesCB, waysCB, relCB, areasCB
+
+    def __generateSurroundingWidget__(self):
+        surroundGB = QGroupBox()
+        surroundGB.setFlat(True)
         surroundLayout = QVBoxLayout()
         surroundLayout.setContentsMargins(0, 0, 0, 0)
 
@@ -157,48 +171,73 @@ class RequestWidget(QWidget):
         aroundRB.setObjectName("Around")
         surroundLayout.addWidget(aroundRB)
 
-        self.aroundRadiusEdit = QLineEdit("")
-        self.aroundRadiusEdit.hide()
-        self.aroundRadiusEdit.setPlaceholderText("Radius in meters")
-        self.aroundRadiusEdit.setValidator(QIntValidator(0, 10000000, self.surroundGB))
-        aroundRB.toggled.connect(lambda b: self.aroundRadiusEdit.show() if b else self.aroundRadiusEdit.hide())
-        surroundLayout.addWidget(self.aroundRadiusEdit)
+        aroundRadiusEdit = QLineEdit("")
+        aroundRadiusEdit.hide()
+        aroundRadiusEdit.setPlaceholderText("Radius in meters")
+        aroundRadiusEdit.setValidator(QIntValidator(0, 10000000, surroundGB))
+        aroundRB.toggled.connect(lambda b: aroundRadiusEdit.show() if b else aroundRadiusEdit.hide())
+        surroundLayout.addWidget(aroundRadiusEdit)
 
-        self.surroundGB.setLayout(surroundLayout)
+        surroundGB.setLayout(surroundLayout)
 
-        self.layout.addRow("SURROUNDINGS", self.surroundGB)
-        self.layout.addRow(HorizontalLine(self))
+        return surroundGB, aroundRadiusEdit
 
-        self.onlyDisconnectedCB = QCheckBox()
-        self.onlyDisconnectedCB.setText("Only disconnected ways")
+    def __generateFiltersWidget__(self):
+        filtersButtons = QWidget()
+        filtersButtonsLayout = QHBoxLayout()
+        filtersButtons.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        filtersButtonsLayout.setAlignment(Qt.AlignRight)
+        filtersButtonsLayout.setSpacing(0)
+        filtersButtonsLayout.setContentsMargins(0, 0, 0, 0)
+        filtersButtons.setLayout(filtersButtonsLayout)
 
-        self.columnSelectionWidget = QWidget()
-        self.columnSelectionLayout = QHBoxLayout()
-        self.columnSelectionLayout.setContentsMargins(0, 0, 0, 0)
-        self.columnSelectionWidget.setLayout(self.columnSelectionLayout)
-        self.columnSelection = CheckableComboBox("Keys")
-        self.columnSelection.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        self.columnSelectionLayout.addWidget(self.columnSelection)
+        addFilterButton = IconButton(QIcon(os.path.join(picturesDir, "add.png")),
+                                     filtersButtons.windowHandle(),
+                                     filtersButtons.height())
+        addFilterButton.setToolTip("Add filter")
+        addFilterButton.setFlat(True)
+        addFilterButton.clicked.connect(lambda b: self.addFilter())
+
+        filtersButtonsLayout.addWidget(addFilterButton)
+
+        filtersWidget = QWidget(self)
+        filtersLayout = QVBoxLayout()
+        filtersLayout.setContentsMargins(10, 10, 10, 10)
+        filtersWidget.setLayout(filtersLayout)
+
+        return filtersButtons, filtersWidget, filtersLayout
+
+    def __generateDisambiguationTable__(self):
+        onlyDisconnectedCB = QCheckBox()
+        onlyDisconnectedCB.setText("Only disconnected ways")
+
+        columnSelectionWidget = QWidget()
+        columnSelectionLayout = QHBoxLayout()
+        columnSelectionLayout.setContentsMargins(0, 0, 0, 0)
+        columnSelectionWidget.setLayout(columnSelectionLayout)
+        columnSelection = CheckableComboBox("Keys")
+        columnSelection.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        columnSelectionLayout.addWidget(self.columnSelection)
         buttonTable = IconButton(QIcon(os.path.join(picturesDir, "reset.png")),
-                                 self.columnSelectionWidget.windowHandle(),
-                                 self.columnSelectionWidget.height())
+                                 columnSelectionWidget.windowHandle(),
+                                 columnSelectionWidget.height())
         buttonTable.setToolTip("Show table")
         buttonTable.setFlat(True)
         buttonTable.clicked.connect(self.showTable)
 
-        self.columnSelectionLayout.addWidget(buttonTable)
+        columnSelectionLayout.addWidget(buttonTable)
 
-        self.tableView = QTableView()
-        self.tableView.doubleClicked.connect(self.addFilterFromCell)
+        tableView = QTableView()
+        tableView.doubleClicked.connect(self.addFilterFromCell)
 
-        self.horizontalHeader = self.tableView.horizontalHeader()
-        self.horizontalHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.horizontalHeader.setStretchLastSection(True)
+        horizontalHeader = tableView.horizontalHeader()
+        horizontalHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
+        horizontalHeader.setStretchLastSection(True)
 
-        self.verticalHeader = self.tableView.verticalHeader()
-        self.verticalHeader.sectionDoubleClicked.connect(self.addFiltersFromRow)
+        verticalHeader = tableView.verticalHeader()
+        verticalHeader.sectionDoubleClicked.connect(self.addFiltersFromRow)
 
-        self.tableView.setMinimumHeight(300)
+        tableView.setMinimumHeight(300)
 
         tableButtons = QWidget()
         tableButtonsLayout = QHBoxLayout()
@@ -223,12 +262,7 @@ class RequestWidget(QWidget):
 
         tableButtonsLayout.addWidget(buttonLess)
 
-        self.layout.addRow("DISAMBIGUATION", self.columnSelectionWidget)
-        self.layout.addRow("", self.onlyDisconnectedCB)
-        self.layout.addRow(self.tableView)
-        self.layout.addRow(tableButtons)
-
-        self.setLayout(self.layout)
+        return columnSelectionWidget, onlyDisconnectedCB, tableView, tableButtons
 
     def showTableSelection(self):
         try:
@@ -301,7 +335,7 @@ class RequestWidget(QWidget):
             filter = currentKeys[key]
             logging.warning("Some filters have been modified.")
         else:
-            filter = FilterWidget(self.filtersWidget, self.keyValues)
+            filter = FilterWidget(self.filtersWidget, self.keyList)
             self.filtersLayout.addWidget(filter)
         filter.setKey(key)
         filter.setComparison(comparison)
