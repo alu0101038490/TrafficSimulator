@@ -126,7 +126,7 @@ def getIntersections():
 
 def buildHTMLWithNetworkx(G):
     try:
-        graphMap = ox.plot_graph_folium(G, popup_attribute='name', edge_width=2)
+        graphMap = ox.plot_graph_folium(G, edge_width=2)
     except (ValueError, KeyError):
         raise OsmnxException("Probably there are elements without all its nodes. It is not possible to show the "
                              "results but you can use the option 'Open netedit'.")
