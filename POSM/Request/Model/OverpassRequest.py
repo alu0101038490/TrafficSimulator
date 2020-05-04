@@ -16,6 +16,8 @@ class OverpassRequest(OverpassSet):
         self.__locationId = None
         self.__locationName = ""
 
+    # REQUEST GETTERS
+
     @property
     def type(self):
         return self.__type
@@ -44,19 +46,6 @@ class OverpassRequest(OverpassSet):
     def locationName(self):
         return self.__locationName
 
-    def setLocationName(self, locationName):
-        self.__locationName = locationName
-        self.__locationId = getIdFromLocationName(locationName)
-
-    def addFilterByValues(self, key, value, exactValue, negated):
-        self.filters.append(OverpassFilter(key, value, exactValue, negated))
-
-    def addFilter(self, filter):
-        self.filters.append(filter)
-
-    def addPolygon(self, coords):
-        self.__polygon = coords
-
     def getQL(self):
         if len(self.filters) == 0 and len(self.polygon) == 0 and self.locationId is None:
             raise RuntimeError("Empty request.")
@@ -79,6 +68,20 @@ class OverpassRequest(OverpassSet):
         elif self.surrounding == Surround.ADJACENT:
             ql += ";>;way(bn);>;)"
         return ql + "->." + self.setName + ";\n"
+
+    # REQUEST SETTERS
+
+    def setLocationName(self, locationName):
+        self.__locationName = locationName
+        self.__locationId = getIdFromLocationName(locationName)
+
+    def addFilter(self, filter):
+        self.filters.append(filter)
+
+    def addPolygon(self, coords):
+        self.__polygon = coords
+
+    # EQUIVALENT JSON
 
     def getDict(self):
         return {"name": self.name,
