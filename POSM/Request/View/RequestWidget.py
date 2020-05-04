@@ -66,7 +66,7 @@ class RequestWidget(QWidget):
         self.layout.addRow("SURROUNDINGS", self.surroundGB)
         self.layout.addRow(HorizontalLine(self))
 
-        columnSelectionWidget, self.onlyDisconnectedCB, self.tableView, tableButtons = self.__generateDisambiguationTable__()
+        columnSelectionWidget, self.onlyDisconnectedCB, self.tableView, tableButtons, self.columnSelection = self.__generateDisambiguationTable__()
         self.layout.addRow("DISAMBIGUATION", columnSelectionWidget)
         self.layout.addRow("", self.onlyDisconnectedCB)
         self.layout.addRow(self.tableView)
@@ -217,7 +217,7 @@ class RequestWidget(QWidget):
         columnSelectionWidget.setLayout(columnSelectionLayout)
         columnSelection = CheckableComboBox("Keys")
         columnSelection.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        columnSelectionLayout.addWidget(self.columnSelection)
+        columnSelectionLayout.addWidget(columnSelection)
         buttonTable = IconButton(QIcon(os.path.join(picturesDir, "reset.png")),
                                  columnSelectionWidget.windowHandle(),
                                  columnSelectionWidget.height())
@@ -262,7 +262,7 @@ class RequestWidget(QWidget):
 
         tableButtonsLayout.addWidget(buttonLess)
 
-        return columnSelectionWidget, onlyDisconnectedCB, tableView, tableButtons
+        return columnSelectionWidget, onlyDisconnectedCB, tableView, tableButtons, columnSelection
 
     def showTableSelection(self):
         try:
