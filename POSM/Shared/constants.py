@@ -63,6 +63,7 @@ class OsmType(Enum):
         elif osmType == cls.NWR:
             return {"node": True, "way": True, "rel": True, "area": False}
 
+
 # ==================== STYLE =====================
 APP_STYLESHEET = """
 
@@ -99,10 +100,11 @@ APP_STYLESHEET = """
         background-color: #2A2A2A;
     }
 
-    QCalendarWidget QToolButton::menu-indicator{image: none;}
+    QCalendarWidget QToolButton::menu-indicator {
+        image: none;
+    }
 
-    QCalendarWidget QWidget#qt_calendar_navigationbar
-    { 
+    QCalendarWidget QWidget#qt_calendar_navigationbar { 
         background-color: #2A2A2A; 
     }
 
