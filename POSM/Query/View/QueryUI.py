@@ -12,6 +12,7 @@ from Query.View.GlobalOverpassSettingUI import GlobalOverpassSettingUI
 from Request.View.RequestWidget import RequestWidget
 from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.Utils.TaginfoUtils import getOfficialKeys
+from Shared.View.DisambiguationTableWidget import DisambiguationWidget
 from Shared.constants import EMPTY_HTML, picturesDir
 
 
@@ -48,6 +49,9 @@ class QueryUI(QWidget):
         self.generalConfig = GlobalOverpassSettingUI(self)
         self.requestAreaWidget.addItem(self.generalConfig, "General")
 
+        self.disambiguationWidget = DisambiguationWidget(self.__getRequestByName__, self)
+        self.requestAreaWidget.addItem(self.disambiguationWidget, "Disambiguation")
+
         self.headers = self.requestAreaWidget.findChildren(QAbstractButton, "qt_toolbox_toolboxbutton")
         self.requestAreaWidget.currentChanged.connect(self.__onToolTabChanged__)
         self.headers[0].setIcon(QIcon(os.path.join(picturesDir, "arrowUp.png")))
@@ -57,6 +61,11 @@ class QueryUI(QWidget):
         self.layout.addWidget(self.requestAreaWidget)
 
         self.setLayout(self.layout)
+
+    def __getRequestByName__(self, requestName):
+        for requestWidget in self.findChildren(RequestWidget):
+            if requestWidget.getName() == requestName:
+                return requestWidget.getRequest()
 
     def __onToolTabChanged__(self, i):
         for h in range(len(self.headers)):
@@ -84,6 +93,7 @@ class QueryUI(QWidget):
         requestWidget.changePage(self.currentHtml)
         self.requestTabs.addTab(requestWidget, setName)
         self.requestOps.addRequest(setName)
+        self.disambiguationWidget.addSet(setName)
 
         if filters is not None:
             for filter in filters:
@@ -101,10 +111,12 @@ class QueryUI(QWidget):
         requestWidget.changePage(self.currentHtml)
         self.requestTabs.addTab(requestWidget, request.name)
         self.requestOps.addRequest(request.name)
+        self.disambiguationWidget.addSet(request.name)
 
     def removeRequest(self):
         requestName = self.requestTabs.currentWidget().getName()
         self.requestOps.removeSetAndDependencies(requestName)
+        self.disambiguationWidget.removeSet(requestName)
         currentRequestWidget = self.requestTabs.currentWidget()
         SetNameManagement.releaseName(currentRequestWidget.requestName)
         self.requestTabs.removeTab(self.requestTabs.currentIndex())
