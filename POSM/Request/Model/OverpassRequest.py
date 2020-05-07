@@ -13,6 +13,7 @@ class OverpassRequest(OverpassSet):
         self.__surrounding = surrounding
         self.__aroundRadius = aroundRadius
         self.__polygon = []
+        self.__ids = []
         self.__locationId = None
         self.__locationName = ""
 
@@ -39,6 +40,10 @@ class OverpassRequest(OverpassSet):
         return self.__polygon
 
     @property
+    def ids(self):
+        return self.__ids
+
+    @property
     def locationId(self):
         return self.__locationId
 
@@ -56,6 +61,9 @@ class OverpassRequest(OverpassSet):
 
         if self.locationId is not None:
             ql += "(area:{})".format(self.locationId)
+
+        if len(self.ids) > 0:
+            ql += "(id:{})".format(", ".join(self.ids))
 
         if len(self.polygon) > 0:
             ql += "(poly:\"%s\")" % " ".join([str(c) for point in self.polygon for c in point])
@@ -80,6 +88,9 @@ class OverpassRequest(OverpassSet):
     def addPolygon(self, coords):
         self.__polygon = coords
 
+    def setIds(self, ids):
+        self.__ids = ids
+
     # EQUIVALENT JSON
 
     def getDict(self):
@@ -89,6 +100,7 @@ class OverpassRequest(OverpassSet):
                 "surrounding": self.surrounding.value,
                 "aroundRadius": self.aroundRadius,
                 "polygon": self.polygon,
+                "ids": self.ids,
                 "location": self.locationName}
 
     @staticmethod
@@ -98,6 +110,7 @@ class OverpassRequest(OverpassSet):
                                   requestDict["name"],
                                   requestDict["aroundRadius"])
         request.addPolygon(requestDict["polygon"])
+        request.setIds(requestDict["ids"])
         request.setLocationName(requestDict["location"])
         for singleFilter in requestDict["filters"]:
             request.addFilter(OverpassFilter.getFilterFromDict(singleFilter))
