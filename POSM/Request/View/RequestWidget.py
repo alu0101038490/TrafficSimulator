@@ -2,8 +2,8 @@ import logging
 import os
 
 import bs4
-from PyQt5.QtCore import Qt, pyqtSlot, QJsonValue, QUrl
-from PyQt5.QtGui import QIcon, QIntValidator
+from PyQt5.QtCore import Qt, pyqtSlot, QJsonValue, QUrl, QRegularExpression
+from PyQt5.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineEdit, QSizePolicy, QHBoxLayout, \
@@ -57,6 +57,27 @@ class RequestWidget(QWidget):
 
         self.surroundGB, self.aroundRadiusEdit = self.__generateSurroundingWidget__()
         self.layout.addRow("SURROUNDINGS", self.surroundGB)
+        self.layout.addRow(HorizontalLine(self))
+
+        self.idsWidget, self.idsWidgetLayout = self.__generateIdsWidget__()
+        self.layout.addRow("IDS", self.idsWidget)
+
+        self.idsButtons = QWidget()
+        idsButtonsLayout = QHBoxLayout()
+        idsButtonsLayout.setAlignment(Qt.AlignRight)
+        self.idsButtons.setLayout(idsButtonsLayout)
+        idsButtonsLayout.setSpacing(0)
+        idsButtonsLayout.setContentsMargins(0, 0, 0, 0)
+
+        buttonAdd = IconButton(QIcon(os.path.join(picturesDir, "add.png")), self.idsButtons.windowHandle(),
+                                self.idsButtons.height())
+        buttonAdd.setToolTip("Add ID")
+        buttonAdd.setFlat(True)
+        buttonAdd.clicked.connect(self.addId)
+
+        idsButtonsLayout.addWidget(buttonAdd)
+
+        self.layout.addWidget(self.idsButtons)
 
         # SETTING DATA
 
@@ -193,6 +214,15 @@ class RequestWidget(QWidget):
 
         return filtersButtons, filtersWidget, filtersLayout
 
+    def __generateIdsWidget__(self):
+        idsWidget = QWidget()
+        idsWidgetLayout = QVBoxLayout()
+        idsWidgetLayout.setSpacing(0)
+        idsWidgetLayout.setContentsMargins(0, 0, 0, 0)
+        idsWidget.setLayout(idsWidgetLayout)
+
+        return idsWidget, idsWidgetLayout
+
     # REQUEST GETTERS
 
     def __getLocationName__(self):
@@ -230,6 +260,7 @@ class RequestWidget(QWidget):
                                   self.getAroundRadius())
         request.setLocationName(self.__getLocationName__())
         request.addPolygon(self.__getPolygon__())
+        request.setIds(self.__getIds__())
         for filterWidget in self.filtersWidget.findChildren(FilterWidget):
             request.addFilter(filterWidget.getFilter())
         return request
@@ -239,6 +270,9 @@ class RequestWidget(QWidget):
 
     def getMap(self):
         return self.polygonPage
+
+    def __getIds__(self):
+        return [lineEdit.text() for lineEdit in self.idsWidget.findChildren(QLineEdit)]
 
     # REQUEST SETTERS
 
@@ -298,6 +332,7 @@ class RequestWidget(QWidget):
         for filter in request.filters:
             self.addFilter(filter)
         self.__setLocationName__(request.locationName)
+        self.setIds(request.ids)
         self.changePolygon(request.polygon)
 
     def changePage(self, html):
@@ -312,6 +347,37 @@ class RequestWidget(QWidget):
             f.write(str(soup))
 
         self.polygonPage.load(QUrl.fromLocalFile(htmlFileName))
+
+    def setIds(self, ids=None):
+        if ids is None:
+            ids = []
+        for lineEdit in self.idsWidget.findChildren(QLineEdit):
+            lineEdit.deleteLater()
+        for newId in ids:
+            self.addId(newId)
+
+    def addId(self, newId=0):
+        idWidget = QWidget()
+        idWidgetLayout = QHBoxLayout()
+        idWidgetLayout.setContentsMargins(0, 0, 0, 0)
+        idWidget.setLayout(idWidgetLayout)
+        idInput = QLineEdit()
+        if newId != 0:
+            idInput.setText(str(newId))
+        idInput.setPlaceholderText("Numeric element id")
+        idInput.setValidator(QRegularExpressionValidator(QRegularExpression("^[0-9]+$")))
+        idInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        idWidgetLayout.addWidget(idInput)
+        removeIdButton = IconButton(QIcon(os.path.join(picturesDir, "remove.png")),
+                                 idWidget.windowHandle(),
+                                 idWidget.height())
+        removeIdButton.setToolTip("Show table")
+        removeIdButton.setFlat(True)
+        removeIdButton.clicked.connect(idWidget.deleteLater)
+
+        idWidgetLayout.addWidget(removeIdButton)
+
+        self.idsWidgetLayout.addWidget(idWidget)
 
     def __del__(self):
         SetNameManagement.releaseName(self.requestName)
