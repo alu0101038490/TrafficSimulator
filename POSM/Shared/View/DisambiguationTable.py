@@ -6,6 +6,9 @@ import osmnx as ox
 from PyQt5.QtCore import QAbstractTableModel, QModelIndex, Qt
 from PyQt5.QtGui import QColor
 
+from Shared.constants import TagComparison
+from Tag.Model.OverpassFilter import OverpassFilter
+
 
 class DisambiguationTable(QAbstractTableModel):
 
@@ -92,21 +95,52 @@ class DisconnectedWaysTable(DisambiguationTable):
         return self.headerItems
 
     def getDictData(self, index):
-        result = {}
-        unselectedEdges = [e[2] for e in self.subgraphs[index].edges(data=True)]
+        result = []
+        selectedEdges = [edge[2] for i in range(len(self.subgraphs)) if i != index for edge in self.subgraphs[i].edges(data=True)]
         for key in self.allKeys:
-            prevSize = len(unselectedEdges)
+            if key in ["source", "note"]:
+                continue
+            prevSize = len(selectedEdges)
             alternatives = [self.alt[i][key] for i in list(range(len(self.alt))) if i != index]
-            includedValues = self.alt[index][key].difference(*alternatives)
-            if includedValues == self.alt[index][key]:
-                return {key: includedValues}, []
-            elif len(includedValues) != 0:
-                unselectedEdges = list(filter(lambda edge: edge[key] not in list(includedValues), unselectedEdges))
-                if prevSize != len(unselectedEdges):
-                    result[key] = includedValues
-                    if len(unselectedEdges) == 0:
+            if len(alternatives) == 1:
+                alternativesUnion = alternatives[0]
+            else:
+                alternativesUnion = alternatives[0].union(*alternatives[1:])
+            excludedValues = alternativesUnion.difference(self.alt[index][key])
+            if excludedValues == alternativesUnion:
+                result = []
+                if len(excludedValues) == 1:
+                    if None in excludedValues:
+                        result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
+                    else:
+                        result.append(
+                            OverpassFilter(key, TagComparison.EQUAL, " ".join([str(i) for i in excludedValues]), True, True))
+
+                else:
+                    if None in excludedValues:
+                        result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
+                        excludedValues = excludedValues.difference(frozenset([None]))
+                    result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, " ".join([str(i) for i in excludedValues]), True, True))
+                return result, []
+            elif len(excludedValues) != 0:
+                selectedEdges = list(filter(lambda edge: edge.get(key) not in list(excludedValues), selectedEdges))
+                if prevSize != len(selectedEdges):
+                    if len(excludedValues) == 1:
+                        if None in excludedValues:
+                            result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
+                        else:
+                            a = [str(i) for i in excludedValues]
+                            result.append(
+                                OverpassFilter(key, TagComparison.EQUAL, " ".join([str(i) for i in excludedValues]), True, True))
+
+                    else:
+                        if None in excludedValues:
+                            result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
+                            excludedValues = excludedValues.difference(frozenset([None]))
+                        result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, " ".join([str(i) for i in excludedValues]), True, True))
+                    if len(selectedEdges) == 0:
                         return result, []
-        ids = [edge["osmid"] for edge in unselectedEdges]
+        ids = list(frozenset([edge["osmid"] for edge in selectedEdges]))
         return result, ids
 
     def getRowJson(self, indexes):
@@ -185,7 +219,7 @@ class SimilarWaysTable(DisambiguationTable):
         return self.allKeys
 
     def getDictData(self, index):
-        return {k: self.alt[index][0].get(k) for k in self.headerItems}
+        return [OverpassFilter(k, TagComparison.EQUAL, self.alt[index][0].get(k), False, True) for k in self.headerItems], []
 
     def getRowJson(self, indexes):
         if len(indexes) > 0:

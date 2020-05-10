@@ -6,14 +6,16 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QSizePolicy, QTabWidget, QToolBox, QAbstractButton
 from requests import RequestException
 
+from Operation.Model.OverpassOperations import OverpassDiff
 from Operation.View.RequestsOperations import RequestsOperations
 from Query.Model.OverpassQuery import OverpassQuery
 from Query.View.GlobalOverpassSettingUI import GlobalOverpassSettingUI
+from Request.Model.OverpassRequest import OverpassRequest
 from Request.View.RequestWidget import RequestWidget
 from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.Utils.TaginfoUtils import getOfficialKeys
 from Shared.View.DisambiguationTableWidget import DisambiguationWidget
-from Shared.constants import EMPTY_HTML, picturesDir
+from Shared.constants import EMPTY_HTML, picturesDir, OsmType, Surround
 
 
 class QueryUI(QWidget):
@@ -49,7 +51,7 @@ class QueryUI(QWidget):
         self.generalConfig = GlobalOverpassSettingUI(self)
         self.requestAreaWidget.addItem(self.generalConfig, "General")
 
-        self.disambiguationWidget = DisambiguationWidget(self.__getRequestByName__, self)
+        self.disambiguationWidget = DisambiguationWidget(self.__getRequestByName__, self.__applyTableRow__, self)
         self.requestAreaWidget.addItem(self.disambiguationWidget, "Disambiguation")
 
         self.headers = self.requestAreaWidget.findChildren(QAbstractButton, "qt_toolbox_toolboxbutton")
@@ -66,6 +68,25 @@ class QueryUI(QWidget):
         for requestWidget in self.findChildren(RequestWidget):
             if requestWidget.getName() == requestName:
                 return requestWidget.getRequest()
+
+    def __applyTableRow__(self, name, data):
+        filters, ids = data
+        for requestWidget in self.findChildren(RequestWidget):
+            if requestWidget.getName() == name:
+                for newFilter in filters:
+                    requestWidget.addFilter(newFilter)
+                break
+
+        if len(ids) > 0:
+            idsRequestName = SetNameManagement.getUniqueSetName()
+            request = OverpassRequest(OsmType.WAYS, Surround.NONE, idsRequestName)
+            request.setIds(ids)
+            self.addRequest(request)
+
+            differenceOpName = SetNameManagement.getUniqueSetName()
+            self.requestOps.addOp(OverpassDiff(name, differenceOpName), [idsRequestName])
+            self.requestOps.setOutputSet(differenceOpName)
+
 
     def __onToolTabChanged__(self, i):
         for h in range(len(self.headers)):

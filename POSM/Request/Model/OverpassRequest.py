@@ -52,7 +52,7 @@ class OverpassRequest(OverpassSet):
         return self.__locationName
 
     def getQL(self):
-        if len(self.filters) == 0 and len(self.polygon) == 0 and self.locationId is None:
+        if len(self.filters) == 0 and len(self.polygon) == 0 and self.locationId is None and len(self.ids) == 0:
             raise RuntimeError("Empty request.")
         if not isinstance(self.type, OsmType):
             raise RuntimeError("Invalid osm type.")

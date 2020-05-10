@@ -19,10 +19,11 @@ from Shared.constants import picturesDir, tableDir
 
 class DisambiguationWidget(QWidget):
 
-    def __init__(self, getRequestFunction, parent=None):
+    def __init__(self, getRequestFunction, setFiltersFunction, parent=None):
         super().__init__(parent)
 
         self.getRequestFunction = getRequestFunction
+        self.setFiltersFunction = setFiltersFunction
 
         # LAYOUT
 
@@ -52,7 +53,7 @@ class DisambiguationWidget(QWidget):
         horizontalHeader.setStretchLastSection(True)
 
         verticalHeader = self.tableView.verticalHeader()
-        verticalHeader.sectionDoubleClicked.connect(self.addFiltersFromRow)
+        verticalHeader.sectionDoubleClicked.connect(lambda i: self.setFiltersFunction(self.setSelection.currentText(), self.tableView.model().getDictData(i)))
 
         self.tableView.setMinimumHeight(300)
 
@@ -96,11 +97,6 @@ class DisambiguationWidget(QWidget):
 
     def showLess(self):
         self.tableView.model().showLess()
-
-    def addFiltersFromRow(self, index):
-        row = self.tableView.model().getDictData(index)
-        for k, v in row.items():
-            self.addFilterByValues(k, v, True)
 
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)

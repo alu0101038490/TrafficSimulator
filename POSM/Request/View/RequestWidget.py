@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineEdit, QSizePolicy, QHBoxLayout, \
-    QGroupBox, QRadioButton
+    QGroupBox, QRadioButton, QScrollArea
 
 from Request.Model.OverpassRequest import OverpassRequest
 from Shared.Utils.SetNameGenerator import SetNameManagement
@@ -59,8 +59,8 @@ class RequestWidget(QWidget):
         self.layout.addRow("SURROUNDINGS", self.surroundGB)
         self.layout.addRow(HorizontalLine(self))
 
-        self.idsWidget, self.idsWidgetLayout = self.__generateIdsWidget__()
-        self.layout.addRow("IDS", self.idsWidget)
+        idsArea, self.idsWidget, self.idsWidgetLayout = self.__generateIdsWidget__()
+        self.layout.addRow("IDS", idsArea)
 
         self.idsButtons = QWidget()
         idsButtonsLayout = QHBoxLayout()
@@ -215,13 +215,16 @@ class RequestWidget(QWidget):
         return filtersButtons, filtersWidget, filtersLayout
 
     def __generateIdsWidget__(self):
+        idsArea = QScrollArea()
+        idsArea.setWidgetResizable(True)
         idsWidget = QWidget()
+        idsArea.setWidget(idsWidget)
         idsWidgetLayout = QVBoxLayout()
         idsWidgetLayout.setSpacing(0)
         idsWidgetLayout.setContentsMargins(0, 0, 0, 0)
         idsWidget.setLayout(idsWidgetLayout)
 
-        return idsWidget, idsWidgetLayout
+        return idsArea, idsWidget, idsWidgetLayout
 
     # REQUEST GETTERS
 
@@ -279,16 +282,14 @@ class RequestWidget(QWidget):
     def addFilterByValues(self, key="", value="", accuracy=False, negate=False, comparison=TagComparison.EQUAL):
         currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
         if key != "" and key in currentKeys.keys():
-            filter = currentKeys[key]
-            logging.warning("Some filters have been modified.")
-        else:
-            filter = FilterWidget(self.filtersWidget, self.keyList)
-            self.filtersLayout.addWidget(filter)
-        filter.setKey(key)
-        filter.setComparison(comparison)
-        filter.setValue(value)
-        filter.setExactValue(accuracy)
-        filter.setNegate(negate)
+            logging.warning("The key {} is used more than once in the set {}.".format(key, self.getName()))
+        newFilterWidget = FilterWidget(self.filtersWidget, self.keyList)
+        self.filtersLayout.addWidget(newFilterWidget)
+        newFilterWidget.setKey(key)
+        newFilterWidget.setComparison(comparison)
+        newFilterWidget.setValue(value)
+        newFilterWidget.setExactValue(accuracy)
+        newFilterWidget.setNegate(negate)
 
     def addFilter(self, filter=None):
         if filter is None:
@@ -364,7 +365,7 @@ class RequestWidget(QWidget):
         idInput = QLineEdit()
         if newId != 0:
             idInput.setText(str(newId))
-        idInput.setPlaceholderText("Numeric element id")
+        idInput.setPlaceholderText("Numeric id")
         idInput.setValidator(QRegularExpressionValidator(QRegularExpression("^[0-9]+$")))
         idInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         idWidgetLayout.addWidget(idInput)
