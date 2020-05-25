@@ -7,7 +7,7 @@ class OverpassFilter(object):
 
     def __init__(self, key, comparison, value, negated, exactValue):
         super().__init__()
-        self.__key = key.replace()
+        self.__key = key
         self.__comparison = comparison
         self.__value = value
         self.__negated = negated
@@ -37,28 +37,29 @@ class OverpassFilter(object):
         if TagComparison.EQUAL == self.comparison:
             negation = "!" if self.__negated else ""
             accuracy = "=" if self.__exactValue else "~"
-            return '["{}"{}{}"{}"]'.format(self.key, negation, accuracy, self.value)
+            return '[{}{}{}{}]'.format(repr(self.key), negation, accuracy, repr(self.value))
         elif TagComparison.CONTAIN_ALL == self.comparison:
             ql = ""
             negation = "!" if self.__negated else ""
             for word in self.value:
-                ql += '["{}"{}~"{}"]'.format(self.key, negation, re.escape(word) if self.__exactValue else word)
+                ql += '[{}{}~{}]'.format(repr(self.key), negation, repr(re.escape(word) if self.__exactValue else word))
             return ql
         elif TagComparison.IS_ONE_OF == self.comparison:
             negation = "!" if self.__negated else ""
-            return '["{}"{}~"^({})$"]'.format(self.key, negation, "|".join([re.escape(word) if self.__exactValue else word for word in self.value]))
+            return '[{}{}~^({})$]'.format(repr(self.key), negation, repr("|".join([re.escape(word) if self.__exactValue else word for word in self.value])))
         elif TagComparison.HAS_KEY == self.comparison:
-            return ('["{}"]' if self.__exactValue else '[~"{}"~".*",i]').format(self.key)
+            return ('[{}]' if self.__exactValue else '[~{}~".*",i]').format(repr(self.key))
         elif TagComparison.HAS_NOT_KEY == self.comparison:
-            return '[!"{}"]'.format(self.key)
+            return '[!{}]'.format(repr(self.key))
         elif TagComparison.HAS_ONE_KEY == self.comparison:
-            return '[~"^({})$"~".*"]'.format("|".join([re.escape(word) if self.__exactValue else word for word in self.key]))
+            return '[~^({})$~".*"]'.format(repr("|".join([re.escape(word) if self.__exactValue else word for word in self.key])))
         else:
             comparisonSelection = (1 * self.__negated) | (2 * (TagComparison.AT_LEAST == self.comparison))
             comparisonSymbol = ["<=", ">", ">=", "<"][comparisonSelection]
-            return '(if: is_number(t["{0}"]) && number(t["{0}"]) {1} {2})'.format(self.key,
+            # ERROR: is too weak, Overpass does not allow a query that has only this tag
+            return '(if: is_number(t[{0}]) && number(t[{0}]) {1} {2})'.format(repr(self.key),
                                                                                   comparisonSymbol,
-                                                                                  self.value)
+                                                                                  repr(self.value))
 
     def getDict(self):
         return {"key": self.key,
@@ -74,3 +75,4 @@ class OverpassFilter(object):
                               filterDict["value"],
                               filterDict["negated"],
                               filterDict["exactValue"])
+
