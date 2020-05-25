@@ -1,3 +1,5 @@
+import re
+
 from Shared.constants import TagComparison
 
 
@@ -5,7 +7,7 @@ class OverpassFilter(object):
 
     def __init__(self, key, comparison, value, negated, exactValue):
         super().__init__()
-        self.__key = key
+        self.__key = key.replace()
         self.__comparison = comparison
         self.__value = value
         self.__negated = negated
@@ -39,25 +41,18 @@ class OverpassFilter(object):
         elif TagComparison.CONTAIN_ALL == self.comparison:
             ql = ""
             negation = "!" if self.__negated else ""
-            insensitive = "" if self.__exactValue else ",i"
-            for word in self.value.split():
-                ql += '["{}"{}~"{}"{}]'.format(self.key, negation, word, insensitive)
+            for word in self.value:
+                ql += '["{}"{}~"{}"]'.format(self.key, negation, re.escape(word) if self.__exactValue else word)
             return ql
         elif TagComparison.IS_ONE_OF == self.comparison:
             negation = "!" if self.__negated else ""
-            words = [word for word in self.value.split()]
-            insensitive = "" if self.__exactValue else ",i"
-            return '["{}"{}~"^({})$"{}]'.format(self.key, negation, "|".join(words), insensitive)
+            return '["{}"{}~"^({})$"]'.format(self.key, negation, "|".join([re.escape(word) if self.__exactValue else word for word in self.value]))
         elif TagComparison.HAS_KEY == self.comparison:
-            return ('["{}"]' if self.__exactValue else '[~{}~".*",i]').format(self.key)
+            return ('["{}"]' if self.__exactValue else '[~"{}"~".*",i]').format(self.key)
         elif TagComparison.HAS_NOT_KEY == self.comparison:
             return '[!"{}"]'.format(self.key)
         elif TagComparison.HAS_ONE_KEY == self.comparison:
-            keys = [key for key in self.key.split()]
-            if self.__exactValue:
-                return '[~"^({})$"~".*"]'.format("|".join(keys))
-            else:
-                return '[~"({})"~".*",i]'.format("|".join(keys))
+            return '[~"^({})$"~".*"]'.format("|".join([re.escape(word) if self.__exactValue else word for word in self.key]))
         else:
             comparisonSelection = (1 * self.__negated) | (2 * (TagComparison.AT_LEAST == self.comparison))
             comparisonSymbol = ["<=", ">", ">=", "<"][comparisonSelection]

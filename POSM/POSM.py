@@ -327,10 +327,12 @@ class POSM(QMainWindow):
 
             if reply == QMessageBox.Yes:
                 try:
-                    self.queryText.setPlainText(self.queryUI.getQuery().getQL())
+                    self.queryText.clear()
+                    self.queryText.appendHtml(self.queryUI.getQuery().getQL())
                 except RuntimeError:
                     logging.warning("Failed to write query.")
-                    self.queryText.setPlainText("")
+                    self.queryText.clear()
+                    self.queryText.appendHtml("")
 
                 self.queryText.setReadOnly(True)
 
@@ -407,7 +409,8 @@ class POSM(QMainWindow):
         if filename != "":
             try:
                 f = open(filename, "w+")
-                self.queryText.setPlainText(f.read())
+                self.queryText.clear()
+                self.queryText.appendHtml(f.read())
                 f.close()
                 logging.info("File read successfully.")
                 if self.queryText.isReadOnly():
@@ -501,7 +504,8 @@ class POSM(QMainWindow):
         if self.queryText.isReadOnly():
             try:
                 query = self.queryUI.getQuery()
-                self.queryText.setPlainText(query.getQL())
+                self.queryText.clear()
+                self.queryText.appendHtml(query.getQL())
             except RuntimeError as e:
                 logging.error(str(e))
                 return

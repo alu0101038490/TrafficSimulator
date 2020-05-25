@@ -119,8 +119,6 @@ class QueryUI(QWidget):
         if filters is not None:
             for filter in filters:
                 requestWidget.addFilter(filter)
-        else:
-            requestWidget.addFilter()
 
     def addRequest(self, request):
         if not SetNameManagement.isAvailable(request.name):

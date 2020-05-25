@@ -7,7 +7,7 @@ from PyQt5.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineEdit, QSizePolicy, QHBoxLayout, \
-    QGroupBox, QRadioButton, QScrollArea
+    QGroupBox, QRadioButton, QScrollArea, QMenu, QAction
 
 from Request.Model.OverpassRequest import OverpassRequest
 from Shared.Utils.SetNameGenerator import SetNameManagement
@@ -203,7 +203,42 @@ class RequestWidget(QWidget):
                                      filtersButtons.height())
         addFilterButton.setToolTip("Add filter")
         addFilterButton.setFlat(True)
-        addFilterButton.clicked.connect(lambda b: self.addFilter())
+
+        filtersMenu = QMenu()
+
+        equalAct = QAction('Equal', self)
+        equalAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.EQUAL))
+        filtersMenu.addAction(equalAct)
+
+        maxAct = QAction('Maximum', self)
+        maxAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.AT_MOST))
+        filtersMenu.addAction(maxAct)
+
+        minAct = QAction('Minimum', self)
+        minAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.AT_LEAST))
+        filtersMenu.addAction(minAct)
+
+        containAllAct = QAction('Contain all', self)
+        containAllAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.CONTAIN_ALL))
+        filtersMenu.addAction(containAllAct)
+
+        oneOfAct = QAction('Is one of', self)
+        oneOfAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.IS_ONE_OF))
+        filtersMenu.addAction(oneOfAct)
+
+        hasKeyAct = QAction('Has key', self)
+        hasKeyAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.HAS_KEY))
+        filtersMenu.addAction(hasKeyAct)
+
+        hasOneKeyAct = QAction('Has one key', self)
+        hasOneKeyAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.HAS_ONE_KEY))
+        filtersMenu.addAction(hasOneKeyAct)
+
+        hasNotKeyAct = QAction('Has not key', self)
+        hasNotKeyAct.triggered.connect(lambda: self.addFilterByComparison(comparison=TagComparison.HAS_NOT_KEY))
+        filtersMenu.addAction(hasNotKeyAct)
+
+        addFilterButton.setMenu(filtersMenu)
 
         filtersButtonsLayout.addWidget(addFilterButton)
 
@@ -279,23 +314,17 @@ class RequestWidget(QWidget):
 
     # REQUEST SETTERS
 
-    def addFilterByValues(self, key="", value="", accuracy=False, negate=False, comparison=TagComparison.EQUAL):
-        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
-        if key != "" and key in currentKeys.keys():
-            logging.warning("The key {} is used more than once in the set {}.".format(key, self.getName()))
-        newFilterWidget = FilterWidget(self.filtersWidget, self.keyList)
+    def addFilterByComparison(self, comparison):
+        newFilterWidget = FilterWidget(self.filtersWidget, comparison, self.keyList)
         self.filtersLayout.addWidget(newFilterWidget)
-        newFilterWidget.setKey(key)
-        newFilterWidget.setComparison(comparison)
-        newFilterWidget.setValue(value)
-        newFilterWidget.setExactValue(accuracy)
-        newFilterWidget.setNegate(negate)
 
-    def addFilter(self, filter=None):
-        if filter is None:
-            self.addFilterByValues()
-        else:
-            self.addFilterByValues(filter.key, filter.value, filter.isExactValue, filter.isNegated, filter.comparison)
+    def addFilter(self, filter):
+        currentKeys = {filter.getKey(): filter for filter in self.findChildren(FilterWidget)}
+        if filter.key != "" and filter.key in currentKeys.keys():
+            logging.warning("The key {} is used more than once in the set {}.".format(filter.key, self.getName()))
+        newFilterWidget = FilterWidget(self.filtersWidget, filter.comparison, self.keyList)
+        self.filtersLayout.addWidget(newFilterWidget)
+        newFilterWidget.setFilter(filter)
 
     def __setLocationName__(self, locationName):
         self.locationNameWidget.setText(locationName)
