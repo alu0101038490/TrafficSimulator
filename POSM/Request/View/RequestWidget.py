@@ -13,6 +13,7 @@ from Request.Model.OverpassRequest import OverpassRequest
 from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.View.HorizontalLine import HorizontalLine
 from Shared.View.IconButton import IconButton
+from Shared.View.VariableInputList import VariableInputList
 from Shared.constants import picturesDir, Surround, JS_SCRIPT, OsmType, TagComparison, tempDir
 from Tag.View.FilterWidget import FilterWidget
 
@@ -59,25 +60,8 @@ class RequestWidget(QWidget):
         self.layout.addRow("SURROUNDINGS", self.surroundGB)
         self.layout.addRow(HorizontalLine(self))
 
-        idsArea, self.idsWidget, self.idsWidgetLayout = self.__generateIdsWidget__()
-        self.layout.addRow("IDS", idsArea)
-
-        self.idsButtons = QWidget()
-        idsButtonsLayout = QHBoxLayout()
-        idsButtonsLayout.setAlignment(Qt.AlignRight)
-        self.idsButtons.setLayout(idsButtonsLayout)
-        idsButtonsLayout.setSpacing(0)
-        idsButtonsLayout.setContentsMargins(0, 0, 0, 0)
-
-        buttonAdd = IconButton(QIcon(os.path.join(picturesDir, "add.png")), self.idsButtons.windowHandle(),
-                                self.idsButtons.height())
-        buttonAdd.setToolTip("Add ID")
-        buttonAdd.setFlat(True)
-        buttonAdd.clicked.connect(self.addId)
-
-        idsButtonsLayout.addWidget(buttonAdd)
-
-        self.layout.addWidget(self.idsButtons)
+        self.idsWidget = self.__generateIdsWidget__()
+        self.layout.addRow("IDS", self.idsWidget)
 
         # SETTING DATA
 
@@ -250,16 +234,7 @@ class RequestWidget(QWidget):
         return filtersButtons, filtersWidget, filtersLayout
 
     def __generateIdsWidget__(self):
-        idsArea = QScrollArea()
-        idsArea.setWidgetResizable(True)
-        idsWidget = QWidget()
-        idsArea.setWidget(idsWidget)
-        idsWidgetLayout = QVBoxLayout()
-        idsWidgetLayout.setSpacing(0)
-        idsWidgetLayout.setContentsMargins(0, 0, 0, 0)
-        idsWidget.setLayout(idsWidgetLayout)
-
-        return idsArea, idsWidget, idsWidgetLayout
+        return VariableInputList(0, "Numeric id", QRegularExpressionValidator(QRegularExpression("^[0-9]+$")))
 
     # REQUEST GETTERS
 
@@ -310,7 +285,7 @@ class RequestWidget(QWidget):
         return self.polygonPage
 
     def __getIds__(self):
-        return [lineEdit.text() for lineEdit in self.idsWidget.findChildren(QLineEdit)]
+        return self.idsWidget.getItems()
 
     # REQUEST SETTERS
 
@@ -379,35 +354,10 @@ class RequestWidget(QWidget):
         self.polygonPage.load(QUrl.fromLocalFile(htmlFileName))
 
     def setIds(self, ids=None):
-        if ids is None:
-            ids = []
-        for lineEdit in self.idsWidget.findChildren(QLineEdit):
-            lineEdit.deleteLater()
-        for newId in ids:
-            self.addId(newId)
+        self.idsWidget.setItems(ids)
 
     def addId(self, newId=0):
-        idWidget = QWidget()
-        idWidgetLayout = QHBoxLayout()
-        idWidgetLayout.setContentsMargins(0, 0, 0, 0)
-        idWidget.setLayout(idWidgetLayout)
-        idInput = QLineEdit()
-        if newId != 0:
-            idInput.setText(str(newId))
-        idInput.setPlaceholderText("Numeric id")
-        idInput.setValidator(QRegularExpressionValidator(QRegularExpression("^[0-9]+$")))
-        idInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        idWidgetLayout.addWidget(idInput)
-        removeIdButton = IconButton(QIcon(os.path.join(picturesDir, "remove.png")),
-                                 idWidget.windowHandle(),
-                                 idWidget.height())
-        removeIdButton.setToolTip("Show table")
-        removeIdButton.setFlat(True)
-        removeIdButton.clicked.connect(idWidget.deleteLater)
-
-        idWidgetLayout.addWidget(removeIdButton)
-
-        self.idsWidgetLayout.addWidget(idWidget)
+        self.idsWidget.addItem(newId)
 
     def __del__(self):
         SetNameManagement.releaseName(self.requestName)

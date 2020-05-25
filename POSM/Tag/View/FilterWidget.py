@@ -10,6 +10,7 @@ from requests import RequestException
 
 from Shared.Utils.TaginfoUtils import getKeyDescription, getValuesByKey
 from Shared.View.IconButton import IconButton
+from Shared.View.VariableInputList import VariableInputList
 from Shared.constants import picturesDir, TagComparison
 from Tag.Model.OverpassFilter import OverpassFilter
 
@@ -228,33 +229,8 @@ class FilterWidget(QFrame):
         self.layout.addRow("Value:", valueEdition)
 
     def __generateMultiValueWidget__(self):
-        valuesArea = QScrollArea()
-        valuesArea.setWidgetResizable(True)
-        self.valuesWidget = QWidget()
-        valuesArea.setWidget(self.valuesWidget)
-        valuesWidgetLayout = QVBoxLayout()
-        valuesWidgetLayout.setSpacing(0)
-        valuesWidgetLayout.setContentsMargins(0, 0, 0, 0)
-        self.valuesWidget.setLayout(valuesWidgetLayout)
-
-        self.layout.addRow("Values:", valuesArea)
-
-        valuesButtons = QWidget()
-        valuesButtonsLayout = QHBoxLayout()
-        valuesButtonsLayout.setAlignment(Qt.AlignRight)
-        valuesButtons.setLayout(valuesButtonsLayout)
-        valuesButtonsLayout.setSpacing(0)
-        valuesButtonsLayout.setContentsMargins(0, 0, 0, 0)
-
-        buttonAdd = IconButton(QIcon(os.path.join(picturesDir, "add.png")), valuesButtons.windowHandle(),
-                               valuesButtons.height())
-        buttonAdd.setToolTip("Add value")
-        buttonAdd.setFlat(True)
-        buttonAdd.clicked.connect(self.addValue)
-
-        valuesButtonsLayout.addWidget(buttonAdd)
-
-        self.layout.addWidget(valuesButtons)
+        self.valuesWidget = VariableInputList(placeHolder="Value")
+        self.layout.addRow("Values:", self.valuesWidget)
 
     def __generateFlagsWidget__(self):
         flagsWidget = QWidget()
@@ -376,34 +352,10 @@ class FilterWidget(QFrame):
             pass
 
     def setMultipleValues(self, values=None):
-        if values is None:
-            values = []
-        for lineEdit in self.valuesWidget.findChildren(QLineEdit):
-            lineEdit.deleteLater()
-        for newValue in values:
-            self.addValue(newValue)
+        self.valuesWidget.setItems(values)
 
-    def addValue(self, newValue=0):
-        valueWidget = QWidget()
-        valueWidgetLayout = QHBoxLayout()
-        valueWidgetLayout.setContentsMargins(0, 0, 0, 0)
-        valueWidget.setLayout(valueWidgetLayout)
-        valueInput = QLineEdit()
-        if newValue != 0:
-            valueInput.setText(str(newValue))
-        valueInput.setPlaceholderText("Value")
-        valueInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        valueWidgetLayout.addWidget(valueInput)
-        removeIdButton = IconButton(QIcon(os.path.join(picturesDir, "remove.png")),
-                                 valueWidget.windowHandle(),
-                                 valueWidget.height())
-        removeIdButton.setToolTip("Show table")
-        removeIdButton.setFlat(True)
-        removeIdButton.clicked.connect(valueWidget.deleteLater)
-
-        valueWidgetLayout.addWidget(removeIdButton)
-
-        self.valuesWidget.layout().addWidget(valueWidget)
+    def addValue(self, newValue=""):
+        self.valuesWidget.addItem(newValue)
 
     def setExactValue(self, checked):
         try:
