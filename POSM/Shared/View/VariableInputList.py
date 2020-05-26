@@ -2,7 +2,7 @@ import os
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QScrollArea, QVBoxLayout, QHBoxLayout, QLineEdit, QSizePolicy, QFrame
 
 from Shared.View.IconButton import IconButton
 from Shared.constants import picturesDir
@@ -46,6 +46,11 @@ class VariableInputList(QWidget):
         self.setLayout(self.layout)
 
         scrollArea = QScrollArea()
+        scrollArea.setFrameStyle(QFrame.NoFrame)
+        scrollArea.setStyleSheet("""
+            QScrollArea { background: transparent; }
+            QScrollArea > QWidget > QWidget { background: transparent; }
+        """)
         scrollArea.setWidgetResizable(True)
         self.layout.addWidget(scrollArea)
 
