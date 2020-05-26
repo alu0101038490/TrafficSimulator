@@ -3,8 +3,8 @@ import os
 
 import requests
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QIcon
-from PyQt5.QtWidgets import QFrame, QGraphicsDropShadowEffect, QFormLayout, QWidget, QHBoxLayout, QComboBox, \
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QFormLayout, QWidget, QHBoxLayout, QComboBox, \
     QSizePolicy, QMenu, QAction, QCheckBox, QScrollArea, QVBoxLayout, QLabel, QLineEdit
 from requests import RequestException
 
@@ -205,19 +205,13 @@ class FilterWidget(CardView):
         return self.comparisonLabel
 
     def __generateValueWidget__(self):
-        valueEdition = QWidget()
-        valueEdition.setLayout(QHBoxLayout())
-        valueEdition.layout().setSpacing(0)
-        valueEdition.layout().setContentsMargins(0, 0, 0, 0)
-
         self.valueInput = QComboBox()
         self.valueInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.valueInput.setEditable(True)
         self.valueInput.lineEdit().setPlaceholderText("'service', 'motorway'...")
-        valueEdition.layout().addWidget(self.valueInput)
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
 
-        self.layout.addRow("Value:", valueEdition)
+        self.layout.addRow("Value:", self.valueInput)
 
     def __generateMultiValueWidget__(self):
         self.valuesWidget = VariableInputList(placeHolder="Value")
