@@ -9,13 +9,14 @@ from PyQt5.QtWidgets import QFrame, QGraphicsDropShadowEffect, QFormLayout, QWid
 from requests import RequestException
 
 from Shared.Utils.TaginfoUtils import getKeyDescription, getValuesByKey
+from Shared.View.CardView import CardView
 from Shared.View.IconButton import IconButton
 from Shared.View.VariableInputList import VariableInputList
 from Shared.constants import picturesDir, TagComparison
 from Tag.Model.OverpassFilter import OverpassFilter
 
 
-class FilterWidget(QFrame):
+class FilterWidget(CardView):
 
     attributesByComparison = {
         TagComparison.AT_LEAST: {
@@ -70,7 +71,7 @@ class FilterWidget(QFrame):
     }
 
     def __init__(self, parent, comparison, keyList=None):
-        super().__init__(parent, Qt.WindowFlags())
+        super().__init__(parent)
         self.comparison = comparison
         if keyList is None:
             keyList = []
@@ -97,17 +98,7 @@ class FilterWidget(QFrame):
             self.__generateFlagsWidget__()
             self.__addNegateFlag__()
 
-        self.__makeWidgetACardView__()
-
     # UI COMPONENTS
-
-    def __makeWidgetACardView__(self):
-        self.setAutoFillBackground(True)
-        effect = QGraphicsDropShadowEffect()
-        effect.setBlurRadius(10)
-        effect.setColor(QColor(0, 0, 0, 160))
-        effect.setOffset(0.0)
-        self.setGraphicsEffect(effect)
 
     def __generateLayout__(self):
         layout = QFormLayout()
