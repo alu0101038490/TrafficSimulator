@@ -7,13 +7,14 @@ from PyQt5.QtGui import QIcon, QIntValidator, QRegularExpressionValidator
 from PyQt5.QtWebChannel import QWebChannel
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QWidget, QFormLayout, QVBoxLayout, QCheckBox, QLineEdit, QSizePolicy, QHBoxLayout, \
-    QGroupBox, QRadioButton, QScrollArea, QMenu, QAction
+    QGroupBox, QRadioButton, QMenu, QAction
 
 from Request.Model.OverpassRequest import OverpassRequest
 from Shared.Utils.SetNameGenerator import SetNameManagement
 from Shared.View.HorizontalLine import HorizontalLine
 from Shared.View.IconButton import IconButton
 from Shared.View.VariableInputList import VariableInputList
+from Shared.View.WidgetsFactory import WidgetFactory
 from Shared.constants import picturesDir, Surround, JS_SCRIPT, OsmType, TagComparison, tempDir
 from Tag.View.FilterWidget import FilterWidget
 
@@ -28,6 +29,7 @@ class RequestWidget(QWidget):
         # INITIALIZE POLYGON MANAGEMENT
 
         self.polygonSettings = []
+        self.polygonActivated = False
         self.html = ""
         self.webChannel = QWebChannel()
         self.webChannel.registerObject('request', self)
@@ -52,7 +54,7 @@ class RequestWidget(QWidget):
         self.layout.addRow(self.filtersWidget)
         self.layout.addRow(HorizontalLine(self))
 
-        polygonButtons, self.drawPolButton, self.buttonClearPol = self.__generatePolygonWidget__()
+        polygonButtons = self.__generatePolygonWidget__()
         self.layout.addRow("POLYGON", polygonButtons)
         self.layout.addRow(HorizontalLine(self))
 
@@ -89,32 +91,10 @@ class RequestWidget(QWidget):
         return locationNameWidget
 
     def __generatePolygonWidget__(self):
-        polygonButtons = QWidget()
-        polygonButtonsLayout = QHBoxLayout()
-        polygonButtons.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        polygonButtonsLayout.setAlignment(Qt.AlignRight)
-        polygonButtonsLayout.setSpacing(0)
-        polygonButtonsLayout.setContentsMargins(0, 0, 0, 0)
-        polygonButtons.setLayout(polygonButtonsLayout)
-
-        drawPolButton = IconButton(QIcon(os.path.join(picturesDir, "polygon.png")), polygonButtons.windowHandle(),
-                                   polygonButtons.height())
-        drawPolButton.setToolTip("Draw polygon")
-        drawPolButton.setFlat(True)
-        drawPolButton.setCheckable(True)
-        drawPolButton.toggled.connect(self.enableDisablePolygon)
-
-        polygonButtonsLayout.addWidget(drawPolButton)
-
-        buttonClearPol = IconButton(QIcon(os.path.join(picturesDir, "reset.png")), polygonButtons.windowHandle(),
-                                    polygonButtons.height())
-        buttonClearPol.setToolTip("Remove polygon")
-        buttonClearPol.setFlat(True)
-        buttonClearPol.clicked.connect(self.clearPolygon)
-
-        polygonButtonsLayout.addWidget(buttonClearPol)
-
-        return polygonButtons, drawPolButton, buttonClearPol
+        return WidgetFactory.buildIconButtonGroup([
+            {"image": "polygon.png", "tooltip": "Draw polygon", "checkable": True, "action": self.enableDisablePolygon},
+            {"image": "reset.png", "tooltip": "Remove polygon", "checkable": False, "action": self.clearPolygon}
+        ])
 
     def __generateTypeWidget__(self):
         elementsTypeGB = QWidget()
@@ -344,7 +324,7 @@ class RequestWidget(QWidget):
         self.html = html
         soup = bs4.BeautifulSoup(html, features="html.parser")
         js = soup.new_tag("script")
-        js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.drawPolButton.isChecked()).lower()))
+        js.string = (JS_SCRIPT % (str(self.polygonSettings), str(self.polygonActivated).lower()))
         soup.append(js)
         soup.head.append(soup.new_tag("script", src="qrc:///qtwebchannel/qwebchannel.js"))
         htmlFileName = os.path.join(tempDir, "{}.html".format(self.requestName))
@@ -372,8 +352,6 @@ class RequestWidget(QWidget):
     def clearPolygon(self):
         self.polygonPage.runJavaScript("cleanPolygon();", lambda x: logging.debug("LINE"))
 
-    def enableDisablePolygon(self):
-        if self.drawPolButton.isChecked():
-            self.polygonPage.runJavaScript("enablePolygon();")
-        else:
-            self.polygonPage.runJavaScript("disablePolygon();")
+    def enableDisablePolygon(self, checked):
+        self.polygonActivated = checked
+        self.polygonPage.runJavaScript("enablePolygon();" if checked else "disablePolygon();")
