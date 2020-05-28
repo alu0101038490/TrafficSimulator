@@ -167,6 +167,7 @@ class RequestWidget(QWidget):
                                      filtersButtons.height())
         addFilterButton.setToolTip("Add filter")
         addFilterButton.setFlat(True)
+        addFilterButton.setStyleSheet("""QPushButton::menu-indicator{image: none;}""")
 
         filtersMenu = QMenu()
 

@@ -12,6 +12,7 @@ from Shared.Utils.TaginfoUtils import getKeyDescription, getValuesByKey
 from Shared.View.CardView import CardView
 from Shared.View.IconButton import IconButton
 from Shared.View.VariableInputList import VariableInputList
+from Shared.View.WidgetsFactory import WidgetFactory
 from Shared.constants import picturesDir, TagComparison
 from Tag.Model.OverpassFilter import OverpassFilter
 
@@ -146,10 +147,13 @@ class FilterWidget(CardView):
 
     def __generateMultiKeyWidget__(self):
         topWidget = QWidget()
+        topWidget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         topLayout = QHBoxLayout()
         topLayout.setSpacing(0)
+        topLayout.setAlignment(Qt.AlignRight)
         topLayout.setContentsMargins(0, 0, 0, 0)
         topWidget.setLayout(topLayout)
+
 
         filterOptionsButton = IconButton(QIcon(os.path.join(picturesDir, "options.png")),
                                          topWidget.windowHandle(),
@@ -183,20 +187,9 @@ class FilterWidget(CardView):
 
         self.layout.addWidget(keysArea)
 
-        keysButtons = QWidget()
-        keysButtonsLayout = QHBoxLayout()
-        keysButtonsLayout.setAlignment(Qt.AlignRight)
-        keysButtons.setLayout(keysButtonsLayout)
-        keysButtonsLayout.setSpacing(0)
-        keysButtonsLayout.setContentsMargins(0, 0, 0, 0)
-
-        buttonAdd = IconButton(QIcon(os.path.join(picturesDir, "add.png")), keysButtons.windowHandle(),
-                               keysButtons.height())
-        buttonAdd.setToolTip("Add key")
-        buttonAdd.setFlat(True)
-        buttonAdd.clicked.connect(self.addKey)
-
-        keysButtonsLayout.addWidget(buttonAdd)
+        keysButtons = WidgetFactory.buildIconButtonGroup([
+            {"image": "add.png", "tooltip": "Add key", "checkable": False, "action": self.addKey},
+        ])
 
         self.layout.addWidget(keysButtons)
 
