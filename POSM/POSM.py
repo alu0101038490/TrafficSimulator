@@ -408,13 +408,15 @@ class POSM(QMainWindow):
 
         if filename != "":
             try:
-                f = open(filename, "w+")
+                if self.queryText.isReadOnly():
+                    self.switchManualMode()
+
+                f = open(filename, "r")
                 self.queryText.clear()
                 self.queryText.setPlainText(f.read())
                 f.close()
+
                 logging.info("File read successfully.")
-                if self.queryText.isReadOnly():
-                    self.switchManualMode()
             except OSError:
                 logging.error("There was a problem opening the query file.")
         else:
