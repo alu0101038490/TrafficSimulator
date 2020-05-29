@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import sys
@@ -29,11 +30,15 @@ class POSM(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setLocale(QLocale(QLocale.English))
-        self.htmlSettings = []
         self.initUI()
         self.setAttribute(Qt.WA_AlwaysShowToolTips)
         sizegrip = QtWidgets.QSizeGrip(self)
         self.layout.addWidget(sizegrip, 0, QtCore.Qt.AlignBottom | QtCore.Qt.AlignRight)
+
+        self.record = [None]
+        recordAction = QAction(datetime.datetime.now().strftime('%H:%M:%S'), self)
+        recordAction.triggered.connect(lambda: self.changeMap(0))
+        self.recordMenu.addAction(recordAction)
 
     def initUI(self):
         self.layout = QHBoxLayout()
@@ -71,13 +76,12 @@ class POSM(QMainWindow):
 
         self.horSplitter.addWidget(self.editionSplitter)
 
-        self.emptyMapUrl = QWebEnginePage()
-        self.emptyMapUrl.setHtml(EMPTY_HTML)
-        self.lastMapUrl = None
+        self.emptyMapPage = QWebEnginePage()
+        self.emptyMapPage.setHtml(EMPTY_HTML)
 
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
-        self.mapRenderer.setPage(self.emptyMapUrl)
+        self.mapRenderer.setPage(self.emptyMapPage)
 
         self.consoleSplitter = QSplitter(Qt.Vertical)
         self.consoleSplitter.setChildrenCollapsible(False)
@@ -143,6 +147,8 @@ class POSM(QMainWindow):
         openInteractiveMode = QAction('interactive mode', self)
         openInteractiveMode.triggered.connect(self.openInteractiveQuery)
         openMenu.addAction(openInteractiveMode)
+
+        self.recordMenu = openMenu.addMenu("Record")
 
         runMenu = menubar.addMenu('Run')
 
@@ -220,16 +226,6 @@ class POSM(QMainWindow):
 
         windowsMenu = menubar.addMenu('Windows')
 
-        templatesMenu = windowsMenu.addMenu("Map")
-
-        showEmptyMapAct = QAction('Empty', self)
-        showEmptyMapAct.triggered.connect(self.changeToEmptyMap)
-        templatesMenu.addAction(showEmptyMapAct)
-
-        showLastMapAct = QAction('Last response', self)
-        showLastMapAct.triggered.connect(self.changeToLastMap)
-        templatesMenu.addAction(showLastMapAct)
-
         self.showHideInteractiveModeAct = QAction('Interactive mode', self)
         self.showHideInteractiveModeAct.triggered.connect(self.showHideInteractiveMode)
         windowsMenu.addAction(self.showHideInteractiveModeAct)
@@ -243,27 +239,29 @@ class POSM(QMainWindow):
         windowsMenu.addAction(showHideQuery)
 
     # ACTIONS
-    def changeToEmptyMap(self):
-        if self.mapRenderer.url() != self.emptyMapUrl:
-            self.getPolygons(lambda polygons: self.changeMap(polygons, self.emptyMapUrl))
-            logging.info("Changing to empty map.")
+    def changeMap(self, i):
+        if i == 0:
+            if not self.queryText.isReadOnly():
+                self.switchManualMode()
+            if self.queryText.isReadOnly():
+                self.queryUI.reset()
+                self.queryText.clear()
+                self.mapRenderer.setPage(self.emptyMapPage)
+                self.queryUI.updateMaps(EMPTY_HTML)
+        elif self.record[i]["interactiveMode"]:
+            if not self.queryText.isReadOnly():
+                self.switchManualMode()
+            if self.queryText.isReadOnly():
+                self.queryUI.setQuery(self.record[i]["query"])
+                self.queryText.setPlainText(self.record[i]["query"].getQL())
+                self.mapRenderer.setPage(self.queryUI.updateMaps(self.record[i]["html"]))
         else:
-            logging.warning("The empty map is currently showing.")
-        logging.debug("LINE")
-
-    def changeToLastMap(self):
-        if self.lastMapUrl is None:
-            logging.warning("No request have been made yet.")
-        elif self.mapRenderer.url() != self.emptyMapUrl:
-            logging.warning("The last request map is currently showing.")
-        else:
-            self.getPolygons(lambda polygons: self.changeMap(polygons, self.lastMapUrl))
-            logging.info("Changing to last request map.")
-        logging.debug("LINE")
-
-    def changeMap(self, settings, url):
-        self.htmlSettings = settings
-        self.mapRenderer.load(url)
+            if self.queryText.isReadOnly():
+                self.switchManualMode()
+            if not self.queryText.isReadOnly():
+                self.queryUI.reset()
+                self.queryText.setPlainText(self.record[i]["query"])
+                self.mapRenderer.setPage(self.queryUI.updateMaps(self.record[i]["html"]))
 
     def logManualModePolygonCoords(self, coords):
         logging.info("Polygon coordinates:\"{}\"".format(" ".join([str(c) for point in coords for c in point])))
@@ -483,16 +481,28 @@ class POSM(QMainWindow):
     #POLYGONS
     def changeCurrentMap(self, i):
         if self.queryUI.getCurrentMap() is None:
-            self.mapRenderer.setPage(self.emptyMapUrl)
+            self.mapRenderer.setPage(self.emptyMapPage)
         else:
             self.mapRenderer.setPage(self.queryUI.getCurrentMap())
 
-    def loadMap(self):
+    def playQuery(self):
+        newRecord = {"interactiveMode": self.queryText.isReadOnly() , "query": self.queryText.toPlainText(), "html": ""}
+
+        if self.queryText.isReadOnly():
+            try:
+                query = self.queryUI.getQuery()
+                newRecord["query"] = query
+                self.queryText.setPlainText(query.getQL())
+            except RuntimeError as e:
+                logging.error(str(e))
+                return
         try:
-            self.lastMapUrl = buildHTMLWithQuery(self.queryText.toPlainText())
-            self.mapRenderer.setPage(self.queryUI.updateMaps(self.lastMapUrl))
+            html = buildHTMLWithQuery(self.queryText.toPlainText())
+            newRecord["html"] = html
+            self.mapRenderer.setPage(self.queryUI.updateMaps(html))
             logging.info("Query drawn.")
             logging.debug("LINE")
+            self.addRecord(newRecord)
         except (OverpassRequestException, OsmnxException) as e:
             logging.error(str(e))
         except ox.EmptyOverpassResponse:
@@ -502,15 +512,13 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
-    def playQuery(self):
-        if self.queryText.isReadOnly():
-            try:
-                query = self.queryUI.getQuery()
-                self.queryText.setPlainText(query.getQL())
-            except RuntimeError as e:
-                logging.error(str(e))
-                return
-        self.loadMap()
+    def addRecord(self, newRecord):
+        self.record.append(newRecord)
+        index = len(self.record) - 1
+
+        recordAction = QAction(datetime.datetime.now().strftime('%H:%M:%S'), self)
+        recordAction.triggered.connect(lambda: self.changeMap(index))
+        self.recordMenu.addAction(recordAction)
 
     def playTableRow(self):
         try:
