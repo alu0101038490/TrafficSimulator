@@ -148,7 +148,7 @@ class POSM(QMainWindow):
         openInteractiveMode.triggered.connect(self.openInteractiveQuery)
         openMenu.addAction(openInteractiveMode)
 
-        self.recordMenu = openMenu.addMenu("Record")
+        self.recordMenu = openMenu.addMenu("record")
 
         runMenu = menubar.addMenu('Run')
 
@@ -226,6 +226,10 @@ class POSM(QMainWindow):
 
         windowsMenu = menubar.addMenu('Windows')
 
+        cleanMapAct = QAction('Clean map', self)
+        cleanMapAct.triggered.connect(self.cleanMap)
+        windowsMenu.addAction(cleanMapAct)
+
         self.showHideInteractiveModeAct = QAction('Interactive mode', self)
         self.showHideInteractiveModeAct.triggered.connect(self.showHideInteractiveMode)
         windowsMenu.addAction(self.showHideInteractiveModeAct)
@@ -239,6 +243,10 @@ class POSM(QMainWindow):
         windowsMenu.addAction(showHideQuery)
 
     # ACTIONS
+    def cleanMap(self):
+        self.mapRenderer.setPage(self.queryUI.updateMaps(EMPTY_HTML))
+        logging.info("Cleaning map")
+
     def changeMap(self, i):
         if i == 0:
             if not self.queryText.isReadOnly():
