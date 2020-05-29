@@ -148,8 +148,8 @@ class QueryUI(QWidget):
         query = OverpassQuery(self.requestOps.outputSet())
         query.addDate(self.generalConfig.getDate())
 
-        for requestWidget in self.findChildren(RequestWidget):
-            query.addRequest(requestWidget.getRequest())
+        for i in range(self.requestTabs.count()):
+            query.addRequest(self.requestTabs.widget(i).getRequest())
 
         for op in self.requestOps.ops:
             query.addSetsOp(op)
@@ -171,7 +171,7 @@ class QueryUI(QWidget):
     def reset(self):
         while self.requestTabs.count() > 0:
             self.removeRequest()
-        self.requestOps.reset()
+        self.generalConfig.setDate()
 
     def updateMaps(self, html):
         self.currentHtml = html
