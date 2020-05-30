@@ -1,3 +1,5 @@
+import copy
+
 from PyQt5.QtCore import Qt, QVariant, QModelIndex
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QWidget, QFormLayout, QHBoxLayout, QGraphicsDropShadowEffect, QListView, QFrame, QGroupBox, \
@@ -123,7 +125,7 @@ class RequestsOperations(QWidget):
 
     @property
     def ops(self):
-        return self.__ops
+        return copy.deepcopy(self.__ops)
 
     def __applyOp(self):
         includedSets = [self.requestsModel.item(i).text() for i in range(self.requestsModel.rowCount()) if
