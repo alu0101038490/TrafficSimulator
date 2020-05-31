@@ -120,7 +120,7 @@ class DisconnectedWaysTable(DisambiguationTable):
                     if None in excludedValues:
                         result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
                         excludedValues = excludedValues.difference(frozenset([None]))
-                    result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, " ".join([str(i) for i in excludedValues]), True, True))
+                    result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, list(excludedValues), True, True))
                 return result, []
             elif len(excludedValues) != 0:
                 selectedEdges = list(filter(lambda edge: edge.get(key) not in list(excludedValues), selectedEdges))
@@ -137,7 +137,7 @@ class DisconnectedWaysTable(DisambiguationTable):
                         if None in excludedValues:
                             result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
                             excludedValues = excludedValues.difference(frozenset([None]))
-                        result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, " ".join([str(i) for i in excludedValues]), True, True))
+                        result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, list(excludedValues), True, True))
                     if len(selectedEdges) == 0:
                         return result, []
         ids = list(frozenset([edge["osmid"] for edge in selectedEdges]))

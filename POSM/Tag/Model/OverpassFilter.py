@@ -46,13 +46,13 @@ class OverpassFilter(object):
             return ql
         elif TagComparison.IS_ONE_OF == self.comparison:
             negation = "!" if self.__negated else ""
-            return '[{}{}~^({})$]'.format(repr(self.key), negation, repr("|".join([re.escape(word) if self.__exactValue else word for word in self.value])))
+            return '[{}{}~{}]'.format(repr(self.key), negation, repr("^({})$".format("|".join([re.escape(word) if self.__exactValue else word for word in self.value]))))
         elif TagComparison.HAS_KEY == self.comparison:
             return ('[{}]' if self.__exactValue else '[~{}~".*",i]').format(repr(self.key))
         elif TagComparison.HAS_NOT_KEY == self.comparison:
             return '[!{}]'.format(repr(self.key))
         elif TagComparison.HAS_ONE_KEY == self.comparison:
-            return '[~^({})$~".*"]'.format(repr("|".join([re.escape(word) if self.__exactValue else word for word in self.key])))
+            return '[~{}~".*"]'.format(repr("^({})$".format("|".join([re.escape(word) if self.__exactValue else word for word in self.key]))))
         else:
             comparisonSelection = (1 * self.__negated) | (2 * (TagComparison.AT_LEAST == self.comparison))
             comparisonSymbol = ["<=", ">", ">=", "<"][comparisonSelection]
