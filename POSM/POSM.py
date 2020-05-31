@@ -5,7 +5,9 @@ import sys
 import traceback
 from os.path import expanduser
 
+import bs4
 import osmnx as ox
+import pyperclip
 import qtmodern.styles
 import qtmodern.windows
 from PyQt5 import QtCore, QtWidgets
@@ -21,7 +23,7 @@ from Shared.Utils.OverpassUtils import OverpassQLHighlighter
 from Shared.Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery
 from Shared.View.Console import InformationalConsole
 from Shared.View.NumberedTextEdit import CodeEditor
-from Shared.constants import tempDir, APP_STYLESHEET, EMPTY_HTML, TagComparison
+from Shared.constants import tempDir, APP_STYLESHEET, EMPTY_HTML, TagComparison, MANUAL_MODE_JS_SCRIPT
 from Tag.Model.OverpassFilter import OverpassFilter
 
 
@@ -78,6 +80,14 @@ class POSM(QMainWindow):
 
         self.emptyMapPage = QWebEnginePage()
         self.emptyMapPage.setHtml(EMPTY_HTML)
+
+        self.manualModePage = QWebEnginePage()
+        soup = bs4.BeautifulSoup(EMPTY_HTML, features="html.parser")
+        js = soup.new_tag("script")
+        js.string = (MANUAL_MODE_JS_SCRIPT % (str([])))
+        soup.append(js)
+
+        self.manualModePage.setHtml(str(soup))
 
         self.mapRenderer = QWebEngineView()
         self.mapRenderer.setMinimumWidth(500)
@@ -216,12 +226,12 @@ class POSM(QMainWindow):
         self.manualModeMenu.setEnabled(False)
 
         manualModeCleanPolygonAct = QAction('Clean polygon', self)
-        manualModeCleanPolygonAct.triggered.connect(self.cleanCurrentPolygon)
+        manualModeCleanPolygonAct.triggered.connect(self.cleanManualModePolygon)
         self.manualModeMenu.addAction(manualModeCleanPolygonAct)
 
         manualModeGetPolygonAct = QAction('Polygon coordinates', self)
         manualModeGetPolygonAct.triggered.connect(
-            lambda: self.mapRenderer.page().runJavaScript("getPolygons();", self.logManualModePolygonCoords))
+            lambda: self.manualModePage.runJavaScript("getPolygons();", self.logManualModePolygonCoords))
         self.manualModeMenu.addAction(manualModeGetPolygonAct)
 
         windowsMenu = menubar.addMenu('Windows')
@@ -269,15 +279,18 @@ class POSM(QMainWindow):
             if not self.queryText.isReadOnly():
                 self.queryUI.reset()
                 self.queryText.setPlainText(self.record[i]["query"])
-                self.mapRenderer.setPage(self.queryUI.updateMaps(self.record[i]["html"]))
+                self.manualModePage.setHtml(self.record[i]["html"])
+                self.mapRenderer.setPage(self.manualModePage)
 
     def logManualModePolygonCoords(self, coords):
-        logging.info("Polygon coordinates:\"{}\"".format(" ".join([str(c) for point in coords for c in point])))
+        coordsString = " ".join([str(c) for point in coords for c in point])
+        logging.info("Polygon coordinates:\"{}\"".format(coordsString))
+        pyperclip.copy(coordsString)
         logging.debug("LINE")
 
-    def cleanCurrentPolygon(self):
+    def cleanManualModePolygon(self):
         logging.info("Cleaning polygon.")
-        self.mapRenderer.page().runJavaScript("cleanPolygon();", logging.debug("LINE"))
+        self.manualModePage.runJavaScript("cleanPolygon();", lambda returnValue: logging.debug("LINE"))
 
     def showHideInteractiveMode(self):
         if self.queryUI.isHidden():
@@ -324,6 +337,7 @@ class POSM(QMainWindow):
                 self.manualModeAct.setEnabled(True)
                 self.manualModeMenu.setEnabled(True)
                 self.showHideInteractiveModeAct.setEnabled(False)
+                self.mapRenderer.setPage(self.manualModePage)
 
                 logging.info("Switching to manual mode.")
             else:
@@ -347,6 +361,7 @@ class POSM(QMainWindow):
                     action.setEnabled(True)
                 self.manualModeMenu.setEnabled(False)
                 self.showHideInteractiveModeAct.setEnabled(True)
+                self.mapRenderer.setPage(self.queryUI.getCurrentMap())
 
                 logging.info("Switching to interactive mode.")
             else:
@@ -486,7 +501,7 @@ class POSM(QMainWindow):
         except Exception:
             logging.error(traceback.format_exc())
 
-    #POLYGONS
+    # POLYGONS
     def changeCurrentMap(self, i):
         if self.queryUI.getCurrentMap() is None:
             self.mapRenderer.setPage(self.emptyMapPage)
@@ -494,7 +509,7 @@ class POSM(QMainWindow):
             self.mapRenderer.setPage(self.queryUI.getCurrentMap())
 
     def playQuery(self):
-        newRecord = {"interactiveMode": self.queryText.isReadOnly() , "query": self.queryText.toPlainText(), "html": ""}
+        newRecord = {"interactiveMode": self.queryText.isReadOnly(), "query": self.queryText.toPlainText(), "html": ""}
 
         if self.queryText.isReadOnly():
             try:
@@ -506,8 +521,18 @@ class POSM(QMainWindow):
                 return
         try:
             html = buildHTMLWithQuery(self.queryText.toPlainText())
-            newRecord["html"] = html
-            self.mapRenderer.setPage(self.queryUI.updateMaps(html))
+            if self.queryText.isReadOnly():
+                self.mapRenderer.setPage(self.queryUI.updateMaps(html))
+                newRecord["html"] = html
+            else:
+                soup = bs4.BeautifulSoup(html, features="html.parser")
+                js = soup.new_tag("script")
+                js.string = (MANUAL_MODE_JS_SCRIPT % (str([])))
+                soup.append(js)
+
+                self.manualModePage.setHtml(str(soup))
+                newRecord["html"] = str(soup)
+                self.mapRenderer.setPage(self.manualModePage)
             logging.info("Query drawn.")
             logging.debug("LINE")
             self.addRecord(newRecord)

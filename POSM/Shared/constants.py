@@ -118,6 +118,7 @@ tableDir = os.path.join(tempDir, "table.osm.xml")
 responsePath = os.path.join(tempDir, "response.osm.xml")
 tilePath = os.path.join(resDir, "temp", "tile.html")
 defaultTileMap = os.path.join(resDir, "html", "tile.html")
+manualModeJavascriptFile = os.path.join(resDir, "javascript", "manualModePolygonsManagement.js")
 typemapPath = os.path.join(resDir, "typemap")
 picturesDir = os.path.join(resDir, "pictures")
 
@@ -127,3 +128,6 @@ with open(javascriptFile, "r") as f:
 
 with open(defaultTileMap, "r") as f:
     EMPTY_HTML = f.read()
+
+with open(manualModeJavascriptFile, "r") as f:
+    MANUAL_MODE_JS_SCRIPT = f.read()
