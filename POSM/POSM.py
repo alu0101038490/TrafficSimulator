@@ -208,7 +208,7 @@ class POSM(QMainWindow):
         templatesMenu.addAction(addParkingAct)
 
         addPedestriansAct = QAction('Pedestrians', self)
-        pedestrianHighway = "pedestrian footway path cycleway bridleway steps crossing"
+        pedestrianHighway = ["pedestrian", "footway", "path", "cycleway", "bridleway", "steps", "crossing"]
         addPedestriansAct.triggered.connect(lambda: self.addTemplate([
             OverpassFilter("highway", TagComparison.IS_ONE_OF, pedestrianHighway, True, False)]))
         templatesMenu.addAction(addPedestriansAct)
