@@ -1,4 +1,5 @@
 import copy
+import logging
 
 from PyQt5.QtCore import Qt, QVariant, QModelIndex
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
@@ -135,10 +136,16 @@ class RequestsOperations(QWidget):
             if len(includedSets) > 1:
                 opName = SetNameManagement.getUniqueSetName()
                 self.addOp(OverpassUnion(opName), includedSets)
+                logging.info("Union created.")
+            else:
+                logging.error("The union must have at least two sets.")
         elif self.buttonIntersection.isChecked():
             if len(includedSets) > 1:
                 opName = SetNameManagement.getUniqueSetName()
                 self.addOp(OverpassIntersection(opName), includedSets)
+                logging.info("Intersection created.")
+            else:
+                logging.error("The intersection must have at least two sets.")
         elif self.buttonDiff.isChecked():
             excludedSets = [self.requestsModel2.item(i).text() for i in range(self.requestsModel2.rowCount()) if
                             self.requestsModel2.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
@@ -146,6 +153,10 @@ class RequestsOperations(QWidget):
             if len(includedSets) == 1 and len(excludedSets) > 0:
                 opName = SetNameManagement.getUniqueSetName()
                 self.addOp(OverpassDiff(includedSets[0], opName), excludedSets)
+                logging.info("Difference created.")
+            else:
+                logging.error("The difference must have only one set selected in the first list and at least one in the other.")
+        logging.debug("LINE")
 
     def addOp(self, op, sets=None):
         SetNameManagement.assign(op.name)
@@ -184,7 +195,9 @@ class RequestsOperations(QWidget):
         removeList = [setName]
 
         for set in removeList:
+            logging.info("Removing set '{}'.".format(set))
             removeList.extend([i for i in self.__removeSet(set) if i not in removeList])
+        logging.debug("LINE")
 
     def __removeSet(self, setName):
         dependencies = []
