@@ -24,6 +24,7 @@ from Shared.Utils.SumoUtils import buildNet, openNetedit, buildHTMLWithQuery
 from Shared.View.Console import InformationalConsole
 from Shared.View.NumberedTextEdit import CodeEditor
 from Shared.constants import tempDir, APP_STYLESHEET, EMPTY_HTML, TagComparison, MANUAL_MODE_JS_SCRIPT
+from Tag.Exception.BadFilterAttributes import BadFilterAttributes
 from Tag.Model.OverpassFilter import OverpassFilter
 
 
@@ -368,6 +369,8 @@ class POSM(QMainWindow):
                 try:
                     self.queryText.clear()
                     self.queryText.setPlainText(self.queryUI.getQuery().getQL())
+                except BadFilterAttributes as e:
+                    logging.error(str(e))
                 except RuntimeError:
                     logging.warning("Failed to write query.")
                     self.queryText.clear()
@@ -423,7 +426,7 @@ class POSM(QMainWindow):
                     f.close()
 
                     logging.info("Query saved successfully.")
-                except RuntimeError as e:
+                except (RuntimeError, BadFilterAttributes) as e:
                     logging.error(str(e))
                 except OSError:
                     logging.error("There was a problem creating the file with the query.")
@@ -473,7 +476,7 @@ class POSM(QMainWindow):
                 query = self.queryUI.getQuery()
                 query.saveToFile(filename)
                 logging.info("Query saved successfully.")
-            except RuntimeError as e:
+            except (RuntimeError, BadFilterAttributes) as e:
                 logging.error(str(e))
             except OSError:
                 logging.error("There was a problem creating the file with the query.")
@@ -535,7 +538,7 @@ class POSM(QMainWindow):
                 query = self.queryUI.getQuery()
                 newRecord["query"] = query
                 self.queryText.setPlainText(query.getQL())
-            except RuntimeError as e:
+            except (RuntimeError, BadFilterAttributes) as e:
                 logging.error(str(e))
                 return
         try:

@@ -16,6 +16,7 @@ from Shared.View.IconButton import IconButton
 from Shared.View.VariableInputList import VariableInputList
 from Shared.View.WidgetsFactory import WidgetFactory
 from Shared.constants import picturesDir, Surround, JS_SCRIPT, OsmType, TagComparison, tempDir
+from Tag.Exception.BadFilterAttributes import BadFilterAttributes
 from Tag.View.FilterWidget import FilterWidget
 
 
@@ -253,10 +254,15 @@ class RequestWidget(QWidget):
                                   self.requestName,
                                   self.getAroundRadius())
         request.setLocationName(self.__getLocationName__())
+        if request.locationId is None and request.locationName != "":
+            logging.warning("Location name not found in the request '{}'. It will be ignored.".format(self.requestName))
         request.addPolygon(self.__getPolygon__())
         request.setIds(self.__getIds__())
         for filterWidget in self.filtersWidget.findChildren(FilterWidget):
-            request.addFilter(filterWidget.getFilter())
+            try:
+                request.addFilter(filterWidget.getFilter())
+            except BadFilterAttributes as e:
+                raise BadFilterAttributes("Error in one of the filters of request '{}'. {}".format(self.requestName, str(e)))
         return request
 
     def getName(self):

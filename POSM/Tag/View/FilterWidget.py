@@ -14,6 +14,7 @@ from Shared.View.IconButton import IconButton
 from Shared.View.VariableInputList import VariableInputList
 from Shared.View.WidgetsFactory import WidgetFactory
 from Shared.constants import picturesDir, TagComparison
+from Tag.Exception.BadFilterAttributes import BadFilterAttributes
 from Tag.Model.OverpassFilter import OverpassFilter
 
 
@@ -232,11 +233,27 @@ class FilterWidget(CardView):
     # TAG GETTERS
 
     def getFilter(self):
-        return OverpassFilter(self.getMultipleKeys() if FilterWidget.attributesByComparison[self.comparison]["multipleKeys"] else self.getKey(),
-                              self.getComparison(),
-                              self.getMultipleValues() if FilterWidget.attributesByComparison[self.comparison]["multipleValues"] else self.getValue(),
-                              self.isNegateSelected(),
-                              self.isExactValueSelected())
+        key = self.getMultipleKeys() if FilterWidget.attributesByComparison[self.comparison]["multipleKeys"] else self.getKey()
+        if type(key) is str and key == "":
+            raise BadFilterAttributes("The key is empty.")
+        elif type(key) is list:
+            if len(key) == 0:
+                raise BadFilterAttributes("There is no keys.")
+            elif not all([len(each) > 0 for each in key]):
+                raise BadFilterAttributes("One of the keys is empty.")
+        comparison = self.getComparison()
+        value = self.getMultipleValues() if FilterWidget.attributesByComparison[self.comparison]["multipleValues"] else self.getValue()
+        if type(value) is str and value == "":
+            raise BadFilterAttributes("The value is empty.")
+        elif type(value) is list:
+            if len(value) == 0:
+                raise BadFilterAttributes("There is no values.")
+            elif not all([len(each) > 0 for each in value]):
+                raise BadFilterAttributes("One of the values is empty.")
+        negated = self.isNegateSelected()
+        exactValue = self.isExactValueSelected()
+
+        return OverpassFilter(key, comparison, value, negated, exactValue)
 
     def getKey(self):
         try:

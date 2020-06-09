@@ -68,6 +68,7 @@ class QueryUI(QWidget):
         for requestWidget in self.findChildren(RequestWidget):
             if requestWidget.getName() == requestName:
                 return requestWidget.getRequest()
+        return None
 
     def __applyTableRow__(self, name, data):
         filters, ids = data
@@ -87,6 +88,7 @@ class QueryUI(QWidget):
             self.requestOps.addOp(OverpassDiff(name, differenceOpName), [idsRequestName])
             self.requestOps.setOutputSet(differenceOpName)
 
+        logging.info("Configuration from the table row has been applied.")
 
     def __onToolTabChanged__(self, i):
         for h in range(len(self.headers)):
