@@ -128,8 +128,8 @@ def buildHTMLWithNetworkx(G):
     try:
         graphMap = ox.plot_graph_folium(G, edge_width=2)
     except (ValueError, KeyError):
-        raise OsmnxException("Probably there are elements without all its nodes. It is not possible to show the "
-                             "results but you can use the option 'Open netedit'.")
+        raise OsmnxException("Probably there are elements without all its nodes or the response is empty. "
+                             "It is not possible to show the results but you can use the option 'Open netedit'.")
     graphMap.save(tilePath)
 
     logging.info("Html built.")
@@ -145,8 +145,8 @@ def buildHTMLWithQuery(query):
                             "'Open netedit'.")
         G = ox.graph_from_file(responsePath, retain_all=True)
     except (ValueError, KeyError):
-        raise OsmnxException("Probably there are elements without all its nodes. It is not possible to show the "
-                             "results but you can use the option 'Open netedit'.")
+        raise OsmnxException("Probably there are elements without all its nodes or the response is empty. "
+                             "It is not possible to show the results but you can use the option 'Open netedit'.")
     logging.info("Network built.")
 
     return buildHTMLWithNetworkx(G)
