@@ -254,7 +254,16 @@ class POSM(QMainWindow):
 
     # ACTIONS
     def cleanMap(self):
-        self.mapRenderer.setPage(self.queryUI.updateMaps(EMPTY_HTML))
+        if self.queryText.isReadOnly():
+            if self.queryUI.getCurrentMap() is not None:
+                self.mapRenderer.setPage(self.queryUI.updateMaps(EMPTY_HTML))
+        else:
+            soup = bs4.BeautifulSoup(EMPTY_HTML, features="html.parser")
+            js = soup.new_tag("script")
+            js.string = (MANUAL_MODE_JS_SCRIPT % (str([])))
+            self.manualModePage.setHtml(str(soup))
+            soup.append(js)
+
         logging.info("Cleaning map")
 
     def changeMap(self, i):
@@ -294,9 +303,14 @@ class POSM(QMainWindow):
 
     def showHideInteractiveMode(self):
         if self.queryUI.isHidden():
+            if self.editionSplitter.isHidden():
+                self.editionSplitter.show()
+                self.queryText.hide()
             self.queryUI.show()
             logging.info("Showing 'Interactive mode' window.")
         else:
+            if self.queryText.isHidden():
+                self.editionSplitter.hide()
             self.queryUI.hide()
             logging.info("Hiding 'Interactive mode' window.")
         logging.debug("LINE")
@@ -314,10 +328,15 @@ class POSM(QMainWindow):
 
     def showHideQuery(self):
         if self.queryText.isHidden():
+            if self.editionSplitter.isHidden():
+                self.editionSplitter.show()
+                self.queryUI.hide()
             self.queryText.show()
             logging.info("Showing 'Query' window.")
             self.queryWidget.setMaximumHeight(QWIDGETSIZE_MAX)
         else:
+            if self.queryUI.isHidden():
+                self.editionSplitter.hide()
             self.queryText.hide()
             self.queryWidget.setMaximumHeight(self.queryHeader.sizeHint().height())
             logging.info("Hiding 'Query' window.")
@@ -361,7 +380,7 @@ class POSM(QMainWindow):
                     action.setEnabled(True)
                 self.manualModeMenu.setEnabled(False)
                 self.showHideInteractiveModeAct.setEnabled(True)
-                self.mapRenderer.setPage(self.queryUI.getCurrentMap())
+                self.changeCurrentMap(0)
 
                 logging.info("Switching to interactive mode.")
             else:
