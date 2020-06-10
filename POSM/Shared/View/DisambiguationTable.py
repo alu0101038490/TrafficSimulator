@@ -126,7 +126,7 @@ class DisconnectedWaysTable(DisambiguationTable):
                         result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
                     else:
                         result.append(
-                            OverpassFilter(key, TagComparison.EQUAL, list(excludedValues), True, True))
+                            OverpassFilter(key, TagComparison.EQUAL, list(excludedValues)[0], True, True))
 
                 else:
                     if None in excludedValues:
@@ -142,7 +142,7 @@ class DisconnectedWaysTable(DisambiguationTable):
                             result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
                         else:
                             result.append(
-                                OverpassFilter(key, TagComparison.EQUAL, list(excludedValues), True, True))
+                                OverpassFilter(key, TagComparison.EQUAL, list(excludedValues)[0], True, True))
 
                     else:
                         if None in excludedValues:
