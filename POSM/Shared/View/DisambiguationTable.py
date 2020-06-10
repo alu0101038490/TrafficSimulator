@@ -27,6 +27,12 @@ class DisambiguationTable(QAbstractTableModel):
         self.headerItems = []
         self.alt = []
 
+        self.allKeys = frozenset([])
+        for i in self.data:
+            self.allKeys |= frozenset(i["tags"].keys())
+        self.allKeys -= frozenset(["osmid", "length"])
+        ox.config(useful_tags_path=list(self.allKeys))
+
     def showMore(self):
         newRowCount = min(self.rowCount + 5, len(self.alt)) if self.alt else 0
         if newRowCount != self.rowCount:
@@ -56,6 +62,10 @@ class DisambiguationTable(QAbstractTableModel):
             return "{}".format(section)
 
     @abstractmethod
+    def updateColumns(self, keys):
+        pass
+
+    @abstractmethod
     def getAllColumns(self):
         pass
 
@@ -80,16 +90,18 @@ class DisconnectedWaysTable(DisambiguationTable):
 
     def __init__(self, jsonData):
         super().__init__(jsonData)
-        self.allKeys = frozenset([])
-        for i in self.data:
-            self.allKeys |= frozenset(i["tags"].keys())
-        self.allKeys -= frozenset(["osmid", "length"])
-        ox.config(useful_tags_path=list(self.allKeys))
-
         self.subgraphs = []
 
         self.updateAlt()
         self.rowCount = min(5, len(self.alt)) if self.alt else 0
+
+    def updateColumns(self, keys):
+        keySet = frozenset(keys)
+        if keySet != frozenset(self.headerItems):
+            self.beginResetModel()
+            self.headerItems = list(keySet)
+            self.rowCount = min(self.rowCount, len(self.alt)) if self.alt else 0
+            self.endResetModel()
 
     def getAllColumns(self):
         return self.headerItems
@@ -191,11 +203,6 @@ class SimilarWaysTable(DisambiguationTable):
 
     def __init__(self, jsonData):
         super().__init__(jsonData)
-        self.allKeys = frozenset([])
-        for i in self.data:
-            self.allKeys |= frozenset(i["tags"].keys())
-        self.allKeys -= frozenset(["osmid", "length"])
-        ox.config(useful_tags_path=list(self.allKeys))
 
         self.headerItems = list(frozenset(["highway", "name", "maxspeed", "ref", "lanes", "oneway"]) & self.allKeys)
 

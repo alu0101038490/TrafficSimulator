@@ -2,16 +2,15 @@ import logging
 import os
 import traceback
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QTableView, \
-    QCheckBox, QHeaderView, QFormLayout, QComboBox, QPushButton
-
 import osmnx as ox
+from PyQt5.QtCore import Qt, QModelIndex, QVariant
+from PyQt5.QtGui import QIcon, QStandardItemModel, QStandardItem
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QHBoxLayout, QTableView, \
+    QCheckBox, QHeaderView, QFormLayout, QComboBox, QPushButton, QListView, QFrame
+
 from Query.Model.OverpassQuery import OverpassQuery
 from Shared.Exceptions.OverpassExceptions import OverpassRequestException, OsmnxException
 from Shared.Utils.SumoUtils import writeXMLResponse, buildHTMLWithNetworkx
-from Shared.View.CollapsibleList import CheckableComboBox
 from Shared.View.DisambiguationTable import DisconnectedWaysTable, SimilarWaysTable
 from Shared.View.IconButton import IconButton
 from Shared.constants import picturesDir, tableDir
@@ -39,8 +38,16 @@ class DisambiguationWidget(QWidget):
         self.onlyDisconnectedCB = QCheckBox()
         self.onlyDisconnectedCB.setText("Only disconnected ways")
 
-        self.columnSelection = CheckableComboBox("Keys")
-        self.columnSelection.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        self.columnSelection = QListView()
+        self.columnSelection.setSpacing(3)
+        self.columnSelection.setAutoFillBackground(True)
+        self.columnSelection.setFrameStyle(QFrame.NoFrame)
+        self.columnSelection.viewport().setAutoFillBackground(False)
+        self.columnSelection.setFlow(QListView.LeftToRight)
+        self.columnSelection.setWrapping(True)
+        self.columnSelection.setResizeMode(QListView.Adjust)
+        self.columnSelectionModel = QStandardItemModel()
+        self.columnSelection.setModel(self.columnSelectionModel)
 
         self.applyButton = QPushButton("Apply")
         self.applyButton.clicked.connect(self.showTable)
@@ -53,7 +60,8 @@ class DisambiguationWidget(QWidget):
         horizontalHeader.setStretchLastSection(True)
 
         verticalHeader = self.tableView.verticalHeader()
-        verticalHeader.sectionDoubleClicked.connect(lambda i: self.setFiltersFunction(self.setSelection.currentText(), self.tableView.model().getDictData(i)))
+        verticalHeader.sectionDoubleClicked.connect(
+            lambda i: self.setFiltersFunction(self.setSelection.currentText(), self.tableView.model().getDictData(i)))
 
         self.tableView.setMinimumHeight(300)
 
@@ -105,32 +113,47 @@ class DisambiguationWidget(QWidget):
 
     def showTable(self):
         request = self.getRequestFunction(self.setSelection.currentText())
-        query = OverpassQuery(request.name)
-        query.addRequest(request)
+        if request is not None:
+            query = OverpassQuery(request.name)
+            query.addRequest(request)
 
-        try:
-            writeXMLResponse(query.getQL(), tableDir)
-        except OverpassRequestException as e:
-            logging.error(str(e))
-        except OSError:
-            logging.error("There was a problem creating the file with the request response.")
-        except Exception:
-            logging.error(traceback.format_exc())
+            try:
+                writeXMLResponse(query.getQL(), tableDir)
+            except OverpassRequestException as e:
+                logging.error(str(e))
+            except OSError:
+                logging.error("There was a problem creating the file with the request response.")
+            except Exception:
+                logging.error(traceback.format_exc())
 
-        jsonResponse = ox.overpass_json_from_file(tableDir)
+            jsonResponse = ox.overpass_json_from_file(tableDir)
 
-        self.disconnectedWaysTable = DisconnectedWaysTable(jsonResponse)
-        self.similarWaysTable = SimilarWaysTable(jsonResponse)
-        self.tableView.setModel(self.similarWaysTable)
-        self.tableView.setVisible(True)
+            self.disconnectedWaysTable = DisconnectedWaysTable(jsonResponse)
+            self.similarWaysTable = SimilarWaysTable(jsonResponse)
+            self.showHideOnlyDisconnected()
 
-        for key in self.tableView.model().getAllColumns():
-            self.columnSelection.addItem(key, key in self.tableView.model().getSelectedColumns())
+            for key in self.similarWaysTable.getAllColumns():
+                self.columnSelectionModel.beginInsertRows(QModelIndex(), self.columnSelectionModel.rowCount(),
+                                                          self.columnSelectionModel.rowCount())
+                item = QStandardItem(key)
+                self.columnSelectionModel.itemChanged.connect(self.updateColumns)
+                item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+                item.setData(QVariant(Qt.Checked if key in self.similarWaysTable.getSelectedColumns() else Qt.Unchecked), Qt.CheckStateRole)
+                self.columnSelectionModel.appendRow(item)
+                self.columnSelectionModel.endInsertRows()
 
-        self.columnSelection.setDropdownMenuSignal(
-            lambda: self.tableView.model().updateColumns(self.columnSelection.getSelectedItems()))
+            self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+        else:
+            logging.warning("There is no requests. It is not possible to show the table.")
 
-        self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+    def updateColumns(self):
+        self.disconnectedWaysTable.updateColumns(self.getSelectedKeys())
+        self.similarWaysTable.updateColumns(self.getSelectedKeys())
+
+    def getSelectedKeys(self):
+        return [self.columnSelectionModel.item(i).text()
+                for i in range(self.columnSelectionModel.rowCount())
+                if self.columnSelectionModel.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
 
     def getSelectedRowNetworkx(self):
         indexes = self.tableView.selectionModel().selectedRows()
@@ -146,10 +169,8 @@ class DisambiguationWidget(QWidget):
     def showHideOnlyDisconnected(self):
         if self.onlyDisconnectedCB.isChecked():
             self.tableView.setModel(self.disconnectedWaysTable)
-            self.columnSelection.setEnabled(False)
         else:
             self.tableView.setModel(self.similarWaysTable)
-            self.columnSelection.setEnabled(True)
 
     def showTableSelection(self):
         try:
@@ -166,6 +187,7 @@ class DisambiguationWidget(QWidget):
         logging.debug("LINE")
 
     def addSet(self, setName):
+        self.applyButton.setEnabled(True)
         self.setSelection.addItem(setName)
 
     def removeSet(self, setName):
