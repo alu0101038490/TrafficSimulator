@@ -74,6 +74,10 @@ class DisambiguationTable(QAbstractTableModel):
         pass
 
     @abstractmethod
+    def getDictDataFromCell(self, signal):
+        pass
+
+    @abstractmethod
     def getRowJson(self, indexes):
         pass
 
@@ -154,6 +158,28 @@ class DisconnectedWaysTable(DisambiguationTable):
         ids = list(frozenset([edge["osmid"] for edge in selectedEdges]))
         return result, ids
 
+    def getDictDataFromCell(self, signal):
+        key = self.headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
+        values = list(self.alt[signal.row()][key])
+        if len(values) == 1:
+            if values[0] is None:
+                return [OverpassFilter(key, TagComparison.HAS_NOT_KEY, values[0], False, True)], []
+            else:
+                return [OverpassFilter(key, TagComparison.EQUAL, values[0], False, True)], []
+        else:
+            if None in values:
+                alternatives = [self.alt[i][key] for i in list(range(len(self.alt))) if i != signal.row()]
+                if len(alternatives) == 1:
+                    alternativesUnion = alternatives[0].difference(self.alt[signal.row()][key])
+                else:
+                    alternativesUnion = alternatives[0].union(*alternatives[1:]).difference(self.alt[signal.row()][key])
+                if len(alternativesUnion) == 0:
+                    return [], []
+                else:
+                    return [OverpassFilter(key, TagComparison.IS_ONE_OF, list(alternativesUnion), True, True)], []
+            else:
+                return [OverpassFilter(key, TagComparison.IS_ONE_OF, values, False, True)], []
+
     def getRowJson(self, indexes):
         if len(indexes) > 0:
             G = self.subgraphs[indexes[0].row()]
@@ -226,6 +252,14 @@ class SimilarWaysTable(DisambiguationTable):
 
     def getDictData(self, index):
         return [OverpassFilter(k, TagComparison.EQUAL, self.alt[index][0].get(k), False, True) for k in self.headerItems], []
+
+    def getDictDataFromCell(self, signal):
+        key = self.headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
+        value = self.itemData(signal).get(0)
+        if value == "":
+            return [OverpassFilter(key, TagComparison.HAS_NOT_KEY, value, False, True)], []
+        else:
+            return [OverpassFilter(key, TagComparison.EQUAL, value, False, True)], []
 
     def getRowJson(self, indexes):
         if len(indexes) > 0:

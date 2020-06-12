@@ -13,7 +13,8 @@ from Shared.Exceptions.OverpassExceptions import OverpassRequestException, Osmnx
 from Shared.Utils.SumoUtils import writeXMLResponse, buildHTMLWithNetworkx
 from Shared.View.DisambiguationTable import DisconnectedWaysTable, SimilarWaysTable
 from Shared.View.IconButton import IconButton
-from Shared.constants import picturesDir, tableDir
+from Shared.constants import picturesDir, tableDir, TagComparison
+from Tag.Model.OverpassFilter import OverpassFilter
 
 
 class DisambiguationWidget(QWidget):
@@ -53,7 +54,9 @@ class DisambiguationWidget(QWidget):
         self.applyButton.clicked.connect(self.showTable)
 
         self.tableView = QTableView()
-        self.tableView.doubleClicked.connect(self.addFilterFromCell)
+        self.tableView.doubleClicked.connect(
+            lambda signal: self.setFiltersFunction(self.setSelection.currentText(), self.tableView.model().getDictDataFromCell(signal))
+        )
 
         horizontalHeader = self.tableView.horizontalHeader()
         horizontalHeader.setSectionResizeMode(QHeaderView.ResizeToContents)
@@ -61,7 +64,8 @@ class DisambiguationWidget(QWidget):
 
         verticalHeader = self.tableView.verticalHeader()
         verticalHeader.sectionDoubleClicked.connect(
-            lambda i: self.setFiltersFunction(self.setSelection.currentText(), self.tableView.model().getDictData(i)))
+            lambda i: self.setFiltersFunction(self.setSelection.currentText(), self.tableView.model().getDictData(i))
+        )
 
         self.tableView.setMinimumHeight(300)
 
@@ -109,7 +113,7 @@ class DisambiguationWidget(QWidget):
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
         value = self.tableView.model().itemData(signal).get(0)
-        self.addFilterByValues(key, value, True)
+        return self.setFiltersFunction(self.setSelection.currentText(), ([OverpassFilter(key, TagComparison.EQUAL, value, False, True)], []))
 
     def showTable(self):
         request = self.getRequestFunction(self.setSelection.currentText())
@@ -121,10 +125,16 @@ class DisambiguationWidget(QWidget):
                 writeXMLResponse(query.getQL(), tableDir)
             except OverpassRequestException as e:
                 logging.error(str(e))
+                return
             except OSError:
                 logging.error("There was a problem creating the file with the request response.")
+                return
+            except RuntimeError as e:
+                logging.error(str(e))
+                return
             except Exception:
                 logging.error(traceback.format_exc())
+                return
 
             jsonResponse = ox.overpass_json_from_file(tableDir)
 
