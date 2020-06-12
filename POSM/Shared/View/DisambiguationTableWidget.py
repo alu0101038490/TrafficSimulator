@@ -142,6 +142,7 @@ class DisambiguationWidget(QWidget):
             self.similarWaysTable = SimilarWaysTable(jsonResponse)
             self.showHideOnlyDisconnected()
 
+            self.columnSelectionModel.clear()
             for key in self.similarWaysTable.getAllColumns():
                 self.columnSelectionModel.beginInsertRows(QModelIndex(), self.columnSelectionModel.rowCount(),
                                                           self.columnSelectionModel.rowCount())
