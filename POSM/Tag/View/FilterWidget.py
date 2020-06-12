@@ -382,23 +382,25 @@ class FilterWidget(CardView):
             self.checkboxAccuracy.show()
 
     def getInfo(self):
-        keyName = self.getKey()
+        keyList = self.getMultipleKeys() if FilterWidget.attributesByComparison[self.comparison]["multipleKeys"] else [self.getKey()]
         try:
-            descriptions = getKeyDescription(keyName)
-            if len(descriptions) == 0:
-                logging.warning("'{}' is an unofficial or unused key. No available description.".format(keyName))
-            else:
-                englishDescription = next((d["description"] for d in descriptions if d["language_en"] == "English"),
-                                          "English description not available.")
-                logging.info(keyName + ": " + englishDescription)
+            for keyName in keyList:
+                descriptions = getKeyDescription(keyName)
+                if len(descriptions) == 0:
+                    logging.warning("'{}' is an unofficial or unused key. No available description.".format(keyName))
+                else:
+                    englishDescription = next((d["description"] for d in descriptions if d["language_en"] == "English"),
+                                              "English description not available.")
+                    logging.info(keyName + ": " + englishDescription)
         except RequestException:
             logging.error("There was a problem with the internet connection. Can't get the key description.")
             return
 
-        self.valueInput.clear()
-
         try:
-            self.valueInput.addItems(getValuesByKey(keyName))
+            if self.getValue() is not None:
+                self.valueInput.clear()
+                if not FilterWidget.attributesByComparison[self.comparison]["multipleKeys"]:
+                    self.valueInput.addItems(getValuesByKey(keyList[0]))
         except requests.exceptions.Timeout:
             logging.warning("Too many available values for the given key.")
         except RequestException:
