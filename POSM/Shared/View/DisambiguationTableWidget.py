@@ -152,6 +152,7 @@ class DisambiguationWidget(QWidget):
                 item.setData(QVariant(Qt.Checked if key in self.similarWaysTable.getSelectedColumns() else Qt.Unchecked), Qt.CheckStateRole)
                 self.columnSelectionModel.appendRow(item)
                 self.columnSelectionModel.endInsertRows()
+            self.disconnectedWaysTable.updateColumns(self.similarWaysTable.getSelectedColumns())
 
             self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
         else:
