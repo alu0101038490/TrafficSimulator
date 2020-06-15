@@ -111,36 +111,21 @@ class DisconnectedWaysTable(DisambiguationTable):
         return self.headerItems
 
     def getDictData(self, index):
-        result = []
-        selectedEdges = [edge[2] for i in range(len(self.subgraphs)) if i != index for edge in self.subgraphs[i].edges(data=True)]
-        for key in self.allKeys:
-            if key in ["source", "note"]:
-                continue
-            prevSize = len(selectedEdges)
-            alternatives = [self.alt[i][key] for i in list(range(len(self.alt))) if i != index]
-            if len(alternatives) == 1:
-                alternativesUnion = alternatives[0]
-            else:
-                alternativesUnion = alternatives[0].union(*alternatives[1:])
-            excludedValues = alternativesUnion.difference(self.alt[index][key])
-            if excludedValues == alternativesUnion:
-                result = []
-                if len(excludedValues) == 1:
-                    if None in excludedValues:
-                        result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
-                    else:
-                        result.append(
-                            OverpassFilter(key, TagComparison.EQUAL, list(excludedValues)[0], True, True))
-
+        if len(self.subgraphs) > 1:
+            result = []
+            selectedEdges = [edge[2] for i in range(len(self.subgraphs)) if i != index for edge in self.subgraphs[i].edges(data=True)]
+            for key in self.allKeys:
+                if key in ["source", "note"]:
+                    continue
+                prevSize = len(selectedEdges)
+                alternatives = [self.alt[i][key] for i in list(range(len(self.alt))) if i != index]
+                if len(alternatives) == 1:
+                    alternativesUnion = alternatives[0]
                 else:
-                    if None in excludedValues:
-                        result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
-                        excludedValues = excludedValues.difference(frozenset([None]))
-                    result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, list(excludedValues), True, True))
-                return result, []
-            elif len(excludedValues) != 0:
-                selectedEdges = list(filter(lambda edge: edge.get(key) not in list(excludedValues), selectedEdges))
-                if prevSize != len(selectedEdges):
+                    alternativesUnion = alternatives[0].union(*alternatives[1:])
+                excludedValues = alternativesUnion.difference(self.alt[index][key])
+                if excludedValues == alternativesUnion:
+                    result = []
                     if len(excludedValues) == 1:
                         if None in excludedValues:
                             result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
@@ -153,10 +138,28 @@ class DisconnectedWaysTable(DisambiguationTable):
                             result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
                             excludedValues = excludedValues.difference(frozenset([None]))
                         result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, list(excludedValues), True, True))
-                    if len(selectedEdges) == 0:
-                        return result, []
-        ids = list(frozenset([edge["osmid"] for edge in selectedEdges]))
-        return result, ids
+                    return result, []
+                elif len(excludedValues) != 0:
+                    selectedEdges = list(filter(lambda edge: edge.get(key) not in list(excludedValues), selectedEdges))
+                    if prevSize != len(selectedEdges):
+                        if len(excludedValues) == 1:
+                            if None in excludedValues:
+                                result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
+                            else:
+                                result.append(
+                                    OverpassFilter(key, TagComparison.EQUAL, list(excludedValues)[0], True, True))
+
+                        else:
+                            if None in excludedValues:
+                                result.append(OverpassFilter(key, TagComparison.HAS_KEY, "", False, True))
+                                excludedValues = excludedValues.difference(frozenset([None]))
+                            result.append(OverpassFilter(key, TagComparison.IS_ONE_OF, list(excludedValues), True, True))
+                        if len(selectedEdges) == 0:
+                            return result, []
+            ids = list(frozenset([edge["osmid"] for edge in selectedEdges]))
+            return result, ids
+        else:
+            return [], []
 
     def getDictDataFromCell(self, signal):
         key = self.headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
