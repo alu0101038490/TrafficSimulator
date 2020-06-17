@@ -266,7 +266,7 @@ class SimilarWaysTable(DisambiguationTable):
     def getDictDataFromCell(self, signal):
         key = self.headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
         value = self.itemData(signal).get(0)
-        if value == "":
+        if value is None:
             return [OverpassFilter(key, TagComparison.HAS_NOT_KEY, value, False, True)], []
         else:
             return [OverpassFilter(key, TagComparison.EQUAL, value, False, True)], []
