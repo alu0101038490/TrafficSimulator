@@ -58,6 +58,6 @@ def getIdFromLocationName(name):
     id = item['osm_id']
     if item['osm_type'] == 'relation':
         id += 3600000000
-    elif item['osm_type'] == 'node':
+    elif item['osm_type'] != 'node':
         id += 2400000000
     return id
