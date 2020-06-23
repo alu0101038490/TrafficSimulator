@@ -209,23 +209,27 @@ class DisconnectedWaysTable(DisambiguationTable):
         self.alt = []
         self.subgraphs = []
 
-        G = ox.create_graph([self.json], retain_all=True)
-        updatedHeader = frozenset([])
-        for nodes in nx.weakly_connected_components(G):
-            subgraph = nx.induced_subgraph(G, nodes)
-            self.subgraphs.append(subgraph)
+        try:
+            G = ox.create_graph([self.json], retain_all=True)
+            updatedHeader = frozenset([])
+            for nodes in nx.weakly_connected_components(G):
+                subgraph = nx.induced_subgraph(G, nodes)
+                self.subgraphs.append(subgraph)
 
-            altAppend = {}
-            for key in self.allKeys:
-                values = []
-                edges = subgraph.edges(data=True)
-                for edge in edges:
-                    values.append(edge[2].get(key))
-                altAppend[key] = frozenset(values)
-                if len(altAppend[key]) == 1 and values[0] is not None:
-                    updatedHeader |= frozenset([key])
-            self.alt.append(altAppend)
-        self.headerItems = list(updatedHeader)
+                altAppend = {}
+                for key in self.allKeys:
+                    values = []
+                    edges = subgraph.edges(data=True)
+                    for edge in edges:
+                        values.append(edge[2].get(key))
+                    altAppend[key] = frozenset(values)
+                    if len(altAppend[key]) == 1 and values[0] is not None:
+                        updatedHeader |= frozenset([key])
+                self.alt.append(altAppend)
+            self.headerItems = list(updatedHeader)
+        except ox.errors.EmptyOverpassResponse:
+            pass
+
 
 
 class SimilarWaysTable(DisambiguationTable):

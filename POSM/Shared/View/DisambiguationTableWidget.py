@@ -138,23 +138,30 @@ class DisambiguationWidget(QWidget):
 
             jsonResponse = ox.overpass_json_from_file(tableDir)
 
-            self.disconnectedWaysTable = DisconnectedWaysTable(jsonResponse)
-            self.similarWaysTable = SimilarWaysTable(jsonResponse)
-            self.showHideOnlyDisconnected()
+            if len(jsonResponse["elements"]) == 0:
+                logging.warning("There are no elements to show in the table.")
+                logging.debug("LINE")
+            else:
+                self.disconnectedWaysTable = DisconnectedWaysTable(jsonResponse)
+                self.similarWaysTable = SimilarWaysTable(jsonResponse)
+                self.showHideOnlyDisconnected()
 
-            self.columnSelectionModel.clear()
-            for key in self.similarWaysTable.getAllColumns():
-                self.columnSelectionModel.beginInsertRows(QModelIndex(), self.columnSelectionModel.rowCount(),
-                                                          self.columnSelectionModel.rowCount())
-                item = QStandardItem(key)
-                self.columnSelectionModel.itemChanged.connect(self.updateColumns)
-                item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
-                item.setData(QVariant(Qt.Checked if key in self.similarWaysTable.getSelectedColumns() else Qt.Unchecked), Qt.CheckStateRole)
-                self.columnSelectionModel.appendRow(item)
-                self.columnSelectionModel.endInsertRows()
-            self.disconnectedWaysTable.updateColumns(self.similarWaysTable.getSelectedColumns())
+                self.columnSelectionModel.clear()
+                for key in self.similarWaysTable.getAllColumns():
+                    self.columnSelectionModel.beginInsertRows(QModelIndex(), self.columnSelectionModel.rowCount(),
+                                                              self.columnSelectionModel.rowCount())
+                    item = QStandardItem(key)
+                    self.columnSelectionModel.itemChanged.connect(self.updateColumns)
+                    item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+                    item.setData(QVariant(Qt.Checked if key in self.similarWaysTable.getSelectedColumns() else Qt.Unchecked), Qt.CheckStateRole)
+                    self.columnSelectionModel.appendRow(item)
+                    self.columnSelectionModel.endInsertRows()
+                self.disconnectedWaysTable.updateColumns(self.similarWaysTable.getSelectedColumns())
 
-            self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+                self.onlyDisconnectedCB.stateChanged.connect(self.showHideOnlyDisconnected)
+
+                logging.info("Showing table.")
+                logging.debug("LINE")
         else:
             logging.warning("There is no requests. It is not possible to show the table.")
 
