@@ -184,12 +184,12 @@ class POSM(QMainWindow):
 
         addRoadAct = QAction('Roads', self)
         addRoadAct.triggered.connect(lambda: self.addTemplate([
-            OverpassFilter("highway", TagComparison.EQUAL, "", True, False),
-            OverpassFilter("name", TagComparison.EQUAL, "", True, False),
-            OverpassFilter("ref", TagComparison.EQUAL, "", True, False),
+            OverpassFilter("highway", TagComparison.EQUAL, "", False, True),
+            OverpassFilter("name", TagComparison.EQUAL, "", False, True),
+            OverpassFilter("ref", TagComparison.EQUAL, "", False, True),
             OverpassFilter("maxspeed", TagComparison.AT_MOST, "120", False, False),
-            OverpassFilter("lanes", TagComparison.EQUAL, "", True, False),
-            OverpassFilter("oneway", TagComparison.EQUAL, "", True, False)]))
+            OverpassFilter("lanes", TagComparison.EQUAL, "", False, True),
+            OverpassFilter("oneway", TagComparison.EQUAL, "", False, True)]))
         templatesMenu.addAction(addRoadAct)
 
         addMainRoadAct = QAction('Main roads', self)
@@ -205,13 +205,13 @@ class POSM(QMainWindow):
         addParkingAct = QAction('Parking', self)
         addParkingAct.triggered.connect(lambda: self.addTemplate([
             OverpassFilter("service", TagComparison.EQUAL, "parking", False, False),
-            OverpassFilter("highway", TagComparison.HAS_KEY, "", True, False)]))
+            OverpassFilter("highway", TagComparison.HAS_KEY, "", False, True)]))
         templatesMenu.addAction(addParkingAct)
 
         addPedestriansAct = QAction('Pedestrians', self)
         pedestrianHighway = ["pedestrian", "footway", "path", "cycleway", "bridleway", "steps", "crossing"]
         addPedestriansAct.triggered.connect(lambda: self.addTemplate([
-            OverpassFilter("highway", TagComparison.IS_ONE_OF, pedestrianHighway, True, False)]))
+            OverpassFilter("highway", TagComparison.IS_ONE_OF, pedestrianHighway, False, True)]))
         templatesMenu.addAction(addPedestriansAct)
 
         removeRequestAct = QAction('Remove current request', self)
