@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import os
 import sys
@@ -460,6 +461,8 @@ class POSM(QMainWindow):
                 f.close()
 
                 logging.info("File read successfully.")
+            except UnicodeDecodeError:
+                logging.error("The given file is not readable as text.")
             except OSError:
                 logging.error("There was a problem opening the query file.")
         else:
@@ -491,8 +494,18 @@ class POSM(QMainWindow):
         if filename != "":
             try:
                 self.queryUI.setQuery(OverpassQuery.getFromFile(filename))
+
+                if not self.queryText.isReadOnly():
+                    self.switchManualMode()
+            except json.decoder.JSONDecodeError:
+                logging.error("The given file has not the right format (json). The file could not be opened.")
+            except UnicodeDecodeError:
+                logging.error("The given file is not readable as text. The file could not be opened.")
+            except (TypeError, KeyError):
+                logging.error("Fields are missing from the file or there are fields with the wrong data type. "
+                              "The file could not be opened.")
             except OSError:
-                logging.error("There was a problem opening the query file.")
+                logging.error("There was a problem opening the query file. The file could not be opened.")
         else:
             logging.info("\"Open query\" canceled.")
 
