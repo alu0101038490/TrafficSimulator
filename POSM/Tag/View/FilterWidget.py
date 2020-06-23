@@ -2,8 +2,8 @@ import logging
 import os
 
 import requests
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QRegularExpression
+from PyQt5.QtGui import QIcon, QRegularExpressionValidator
 from PyQt5.QtWidgets import QFormLayout, QWidget, QHBoxLayout, QComboBox, \
     QSizePolicy, QMenu, QAction, QCheckBox, QScrollArea, QVBoxLayout, QLabel, QLineEdit
 from requests import RequestException
@@ -26,49 +26,57 @@ class FilterWidget(CardView):
             "comparisonMessage": "is at least",
             "multipleValues": False,
             "exactValue": False,
-            "negate": True
+            "negate": True,
+            "numeric": True
         }, TagComparison.AT_MOST: {
             "multipleKeys": False,
             "comparisonMessage": "is at most",
             "multipleValues": False,
             "exactValue": False,
-            "negate": True
+            "negate": True,
+            "numeric": True
         }, TagComparison.CONTAIN_ALL: {
             "multipleKeys": False,
             "comparisonMessage": "contain the words",
             "multipleValues": True,
             "exactValue": True,
-            "negate": True
+            "negate": True,
+            "numeric": False
         }, TagComparison.EQUAL: {
             "multipleKeys": False,
             "comparisonMessage": "is equal to",
             "multipleValues": False,
             "exactValue": True,
-            "negate": True
+            "negate": True,
+            "numeric": False
         }, TagComparison.HAS_KEY: {
             "multipleKeys": False,
             "comparisonMessage": "exists",
             "multipleValues": None,
             "exactValue": True,
-            "negate": False
+            "negate": False,
+            "numeric": False
         }, TagComparison.HAS_NOT_KEY: {
             "multipleKeys": False,
             "comparisonMessage": "does not exists",
             "multipleValues": None,
             "exactValue": False,
-            "negate": False
+            "negate": False,
+            "numeric": False
         }, TagComparison.HAS_ONE_KEY: {
             "multipleKeys": True,
             "comparisonMessage": "at least one exists",
             "multipleValues": None,
             "exactValue": True,
-            "negate": False
+            "negate": False,
+            "numeric": False
         }, TagComparison.IS_ONE_OF: {
             "multipleKeys": False,
             "comparisonMessage": "is one of",
             "multipleValues": True,
             "exactValue": True,
-            "negate": True
+            "negate": True,
+            "numeric": False
         }
     }
 
@@ -90,7 +98,7 @@ class FilterWidget(CardView):
         if FilterWidget.attributesByComparison[comparison]["multipleValues"]:
             self.__generateMultiValueWidget__()
         elif FilterWidget.attributesByComparison[comparison]["multipleValues"] == False:
-            self.__generateValueWidget__()
+            self.__generateValueWidget__(FilterWidget.attributesByComparison[comparison]["numeric"])
         if FilterWidget.attributesByComparison[comparison]["exactValue"]:
             self.__generateFlagsWidget__()
             self.__addExactFlag__()
@@ -198,11 +206,13 @@ class FilterWidget(CardView):
         self.comparisonLabel = QLabel(comparisonMessage)
         return self.comparisonLabel
 
-    def __generateValueWidget__(self):
+    def __generateValueWidget__(self, numeric=False):
         self.valueInput = QComboBox()
         self.valueInput.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.valueInput.setEditable(True)
         self.valueInput.lineEdit().setPlaceholderText("'service', 'motorway'...")
+        if numeric:
+            self.valueInput.setValidator(QRegularExpressionValidator(QRegularExpression("^[0-9]+$")))
         self.keyInput.currentTextChanged.connect(self.valueInput.clear)
 
         self.layout.addRow("Value:", self.valueInput)
