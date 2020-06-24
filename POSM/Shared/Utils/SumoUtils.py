@@ -26,7 +26,7 @@ def buildNet(outputName, inputFileName=responsePath):
     options = ["-f", inputFileName]
     options += ["-p", outputName]
 
-    typefiles = [typemaps["net"]]
+    typefiles = [typemaps["net"], typemaps["urban"], typemaps["pedestrians"]]
     netconvertOptions = osmBuild.DEFAULT_NETCONVERT_OPTS
     netconvertOptions += ",--tls.default-type,actuated"
 
