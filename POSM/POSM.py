@@ -263,8 +263,8 @@ class POSM(QMainWindow):
             soup = bs4.BeautifulSoup(EMPTY_HTML, features="html.parser")
             js = soup.new_tag("script")
             js.string = (MANUAL_MODE_JS_SCRIPT % (str([])))
-            self.manualModePage.setHtml(str(soup))
             soup.append(js)
+            self.manualModePage.setHtml(str(soup))
 
         logging.info("Cleaning map")
 
