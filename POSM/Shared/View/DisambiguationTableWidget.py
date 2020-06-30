@@ -105,10 +105,12 @@ class DisambiguationWidget(QWidget):
         self.setLayout(self.layout)
 
     def showMore(self):
-        self.tableView.model().showMore()
+        if self.tableView.model() is not None:
+            self.tableView.model().showMore()
 
     def showLess(self):
-        self.tableView.model().showLess()
+        if self.tableView.model() is not None:
+            self.tableView.model().showLess()
 
     def addFilterFromCell(self, signal):
         key = self.tableView.model().headerData(signal.column(), Qt.Horizontal, Qt.DisplayRole)
@@ -175,8 +177,12 @@ class DisambiguationWidget(QWidget):
                 if self.columnSelectionModel.item(i).data(Qt.CheckStateRole) == QVariant(Qt.Checked)]
 
     def getSelectedRowNetworkx(self):
-        indexes = self.tableView.selectionModel().selectedRows()
-        return self.tableView.model().getRowJson(indexes)
+        if self.tableView.model() is None:
+            logging.warning("The table has not been created yet.")
+            logging.debug("LINE")
+        else:
+            indexes = self.tableView.selectionModel().selectedRows()
+            return self.tableView.model().getRowJson(indexes)
 
     def getHtmlFromSelectedRow(self):
         selectedRows = self.getSelectedRowNetworkx()
